@@ -276,10 +276,8 @@
                 </div>
             </div>
             <div class="chat-input-area">
-                <input type="text" id="chat-msg" placeholder="메시지를 입력하세요...">
-                <button class="chat-send-btn" onclick="sendChatMessage()">
-                    <span style="font-size: 1.2rem;">📤</span>
-                </button>
+                <input type="text" id="chat-msg" placeholder="메시지를 입력하세요..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button class="chat-send-btn" onclick="sendChatMessage()">전송</button>
             </div>
         </div>
     </div>
