@@ -237,3 +237,25 @@ body {
 @keyframes popIn { to { transform: scale(1); } }
 @keyframes pulse-red { 0% { transform: scale(0.9); } 50% { transform: scale(1.2); } 100% { transform: scale(0.9); } }
 @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popIn { to { transform: scale(1); } }
+@keyframes pulse-red { 0% { transform: scale(0.9); } 50% { transform: scale(1.2); } 100% { transform: scale(0.9); } }
+@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } }
+
+/* 선(Link) 스타일 */
+.links line {
+    stroke: #D7CCC8; /* 선 색깔 (은은한 갈색) */
+    stroke-width: 2px; /* 선 두께 */
+    stroke-opacity: 0.5; /* 선 투명도 (반투명) */
+    pointer-events: none; /* 선이 클릭을 방해하지 않게 */
+}
+
+/* 노드 상호작용 스타일 */
+.nodes g {
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+.nodes g:hover {
+    opacity: 0.9;
+}
