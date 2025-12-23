@@ -1,5 +1,5 @@
 // ==========================================
-// 연천장로교회 청년부 기도 네트워크 (Final)
+// 연천장로교회 청년부 기도 네트워크 (Final + IP Tracker)
 // ==========================================
 
 // 1. 기본 설정 및 서비스 워커 (앱 설치 지원)
@@ -89,18 +89,84 @@ let dragStartY = 0;
 let isDragAction = false;
 const brightColors = ["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#BBDEFB", "#B3E5FC", "#B2EBF2", "#B2DFDB", "#C8E6C9", "#DCEDC8", "#F0F4C3", "#FFF9C4", "#FFECB3", "#FFE0B2", "#FFCCBC", "#D7CCC8", "#F5F5F5", "#CFD8DC"];
 
-// 4. Firebase 리스너 (접속자 수 등)
-onlineRef.on('value', (snapshot) => {
+// ===============================================
+// [추가 기능] IP 추적 및 접속자 확인 시스템
+// ===============================================
+
+// 1. 내 IP 알아오기 (외부 서비스 이용)
+async function getMyIp() {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip;
+    } catch (e) {
+        return '알수없음';
+    }
+}
+
+// 2. 접속 시 IP와 기기 정보 저장
+onlineRef.on('value', async (snapshot) => {
     if (snapshot.val()) { 
+        const myIp = await getMyIp(); // IP 가져오기
         const con = presenceRef.push();
+        
         con.onDisconnect().remove();
-        con.set(true);
+        
+        // 정보 저장 (IP, 시간, 기기정보)
+        con.set({
+            ip: myIp,
+            time: Date.now(),
+            device: navigator.userAgent
+        });
     }
 });
+
+// 3. 접속자 수 표시 및 클릭 이벤트 (관리자 전용)
 presenceRef.on('value', (snapshot) => { 
     const count = snapshot.numChildren() || 0;
-    document.getElementById('online-count').innerText = `${count}명 접속 중`;
+    const counterEl = document.getElementById('online-count');
+    counterEl.innerText = `${count}명 접속 중`;
+    
+    // 클릭 이벤트 연결 (중복 방지)
+    const container = document.querySelector('.online-counter');
+    container.onclick = showConnectedUsers;
 });
+
+// 4. 접속자 명단 보기 (관리자만 실행됨)
+function showConnectedUsers() {
+    if (!isAdmin) return; // 관리자 아니면 무시
+
+    presenceRef.once('value').then(snap => {
+        const data = snap.val();
+        if (!data) return alert("현재 접속자가 없습니다.");
+
+        let msg = "🕵️‍♂️ 실시간 접속자 명단 🕵️‍♂️\n----------------------------\n";
+        let i = 1;
+
+        Object.values(data).forEach(user => {
+            // 옛날 코드(IP기록 없는 시절)로 접속한 유령 유저 처리
+            if (user === true) {
+                msg += `${i}. [구버전 접속] 정보 없음 (새로고침 필요)\n`;
+            } else {
+                // 기기 정보 간단히 요약
+                let deviceName = "PC/기타";
+                if (user.device.includes("iPhone")) deviceName = "아이폰";
+                else if (user.device.includes("Android")) deviceName = "갤럭시/안드로이드";
+                else if (user.device.includes("Mac")) deviceName = "맥(Mac)";
+                else if (user.device.includes("Windows")) deviceName = "윈도우 PC";
+
+                // 시간 포맷
+                const time = new Date(user.time).toLocaleTimeString();
+                
+                msg += `${i}. IP: ${user.ip}\n   기기: ${deviceName}\n   접속: ${time}\n`;
+            }
+            msg += "----------------------------\n";
+            i++;
+        });
+
+        alert(msg);
+    });
+}
 
 const bannedWords = ["욕설", "비속어", "시발", "씨발", "개새끼", "병신", "지랄", "존나", "졸라", "미친", "성매매", "섹스", "야동", "조건만남", "주식", "코인", "비트코인", "투자", "리딩방", "수익", "바보", "멍청이"];
 function containsBannedWords(text) { return bannedWords.some(word => text.includes(word)); }
@@ -222,7 +288,7 @@ simulation = d3.forceSimulation()
 
 let link, node;
 
-// ★ 그래프 업데이트 함수 (선 디자인 얇게 수정됨) ★
+// ★ 그래프 업데이트 함수 (선 디자인 및 타이밍 수정됨) ★
 function updateGraph() {
     globalNodes = [centerNode, ...members];
     const links = members.map(m => ({ source: centerNode.id, target: m.id }));
@@ -239,18 +305,18 @@ function updateGraph() {
     link = linkGroup.selectAll("line").data(links, d => d.target.id || d.target);
     link.exit().remove();
     
-    // [디자인 수정] 0.8px 두께로 아주 가늘고 세련되게 수정
+    // [디자인 수정] 0.8px 두께, 은은한 흰색
     const linkEnter = link.enter().append("line")
         .attr("stroke", "#FFFFFF")      // 흰색 빛
-        .attr("stroke-width", 0.8)      // ★핵심: 0.8px로 아주 얇게
+        .attr("stroke-width", 0.8)      // 0.8px로 아주 얇게
         .style("opacity", 0)            // 처음엔 투명하게 시작
-        .style("filter", "drop-shadow(0 0.5px 1px rgba(0,0,0,0.15))"); // 그림자도 은은하게 축소
+        .style("filter", "drop-shadow(0 0.5px 1px rgba(0,0,0,0.15))");
     
     // [애니메이션] 얼굴이 다 나온 뒤에 스르륵 나타남
     linkEnter.transition()
         .delay(800)                     
         .duration(1500)                 
-        .style("opacity", 0.5);         // 투명도 50%로 아주 은은하게
+        .style("opacity", 0.5);         // 50% 밝기로 은은하게
     
     link = linkEnter.merge(link);
 
@@ -616,6 +682,30 @@ messagesRef.on('child_removed', snap => {
     }
 });
 
+// [배경음악] 기능 추가
+let isMusicPlaying = false;
+const bgmAudio = document.getElementById('bgm-player');
+const musicBtn = document.getElementById('music-trigger');
+
+function toggleMusic() {
+    if (isMusicPlaying) {
+        bgmAudio.pause();
+        isMusicPlaying = false;
+        musicBtn.innerText = "🔇";
+        musicBtn.style.animation = "none";
+        showWeatherToast("배경음악", "음악을 껐습니다.");
+    } else {
+        bgmAudio.play().then(() => {
+            isMusicPlaying = true;
+            musicBtn.innerText = "🎵";
+            musicBtn.style.animation = "spin-slow 4s infinite linear";
+            showWeatherToast("배경음악", "음악을 재생합니다 🎹");
+        }).catch(error => {
+            alert("음악을 재생하려면 화면을 먼저 터치해주세요.");
+        });
+    }
+}
+
 // 7. 날씨 및 통합 렌더링 루프
 const apiKey = "39d8b0517ec448eb742a1ee5e39c2bf3"; 
 
@@ -723,7 +813,7 @@ function gameLoop(timestamp) {
         });
         node.attr("transform", d => `translate(${d.x},${d.y}) rotate(${d.rotation || 0})`);
         
-        // [중요] 선 업데이트 위치
+        // 선 업데이트
         if(link) {
             link.attr("x1", d => d.source.x)
                 .attr("y1", d => d.source.y)
