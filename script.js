@@ -1,8 +1,8 @@
 // ==========================================
-// 연천장로교회 청년부 기도 네트워크 (Final + IP Tracker)
+// 연천장로교회 청년부 기도 네트워크 (Final + Kick)
 // ==========================================
 
-// 1. 기본 설정 및 서비스 워커 (앱 설치 지원)
+// 1. 기본 설정 및 서비스 워커
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(function(registration) {
         registration.addEventListener('updatefound', () => {
@@ -16,7 +16,7 @@ if ('serviceWorker' in navigator) {
     }, function(err) { console.log('SW Fail: ', err); });
 }
 
-// UI 핸들러: 메뉴 및 팝업 닫기
+// UI 핸들러
 let isFabOpen = false;
 function toggleFabMenu() {
     isFabOpen = !isFabOpen;
@@ -64,14 +64,13 @@ const onlineRef = database.ref('.info/connected');
 const presenceRef = database.ref('presence');
 const messagesRef = database.ref('messages');
 
-// 사용자 세션 관리
 let mySessionId = localStorage.getItem('mySessionId');
 if (!mySessionId) {
     mySessionId = 'user_' + Date.now();
     localStorage.setItem('mySessionId', mySessionId);
 }
 
-// 3. 변수 및 상태 관리
+// 3. 변수 및 상태
 let isAdmin = false;
 let isFirstRender = true;
 let readStatus = {}; 
@@ -90,10 +89,10 @@ let isDragAction = false;
 const brightColors = ["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#BBDEFB", "#B3E5FC", "#B2EBF2", "#B2DFDB", "#C8E6C9", "#DCEDC8", "#F0F4C3", "#FFF9C4", "#FFECB3", "#FFE0B2", "#FFCCBC", "#D7CCC8", "#F5F5F5", "#CFD8DC"];
 
 // ===============================================
-// [추가 기능] IP 추적 및 접속자 확인 시스템
+// [업그레이드] IP 추적 및 강제 퇴장(Kick) 시스템
 // ===============================================
 
-// 1. 내 IP 알아오기 (외부 서비스 이용)
+// 1. IP 가져오기
 async function getMyIp() {
     try {
         const response = await fetch('https://api.ipify.org?format=json');
@@ -104,15 +103,12 @@ async function getMyIp() {
     }
 }
 
-// 2. 접속 시 IP와 기기 정보 저장
+// 2. 접속 정보 저장
 onlineRef.on('value', async (snapshot) => {
     if (snapshot.val()) { 
-        const myIp = await getMyIp(); // IP 가져오기
+        const myIp = await getMyIp();
         const con = presenceRef.push();
-        
         con.onDisconnect().remove();
-        
-        // 정보 저장 (IP, 시간, 기기정보)
         con.set({
             ip: myIp,
             time: Date.now(),
@@ -121,57 +117,93 @@ onlineRef.on('value', async (snapshot) => {
     }
 });
 
-// 3. 접속자 수 표시 및 클릭 이벤트 (관리자 전용)
+// 3. 접속자 수 표시 및 관리자 클릭 이벤트
 presenceRef.on('value', (snapshot) => { 
     const count = snapshot.numChildren() || 0;
     const counterEl = document.getElementById('online-count');
     counterEl.innerText = `${count}명 접속 중`;
     
-    // 클릭 이벤트 연결 (중복 방지)
     const container = document.querySelector('.online-counter');
-    container.onclick = showConnectedUsers;
+    container.onclick = showConnectedUsers; // 클릭하면 명단 팝업
 });
 
-// 4. 접속자 명단 보기 (관리자만 실행됨)
+// 4. [NEW] 접속자 관리 팝업 띄우기 (Kick 버튼 포함)
 function showConnectedUsers() {
-    if (!isAdmin) return; // 관리자 아니면 무시
+    if (!isAdmin) return; // 관리자만 가능
 
     presenceRef.once('value').then(snap => {
         const data = snap.val();
-        if (!data) return alert("현재 접속자가 없습니다.");
+        
+        // 기존 팝업 있으면 닫기
+        const existing = document.getElementById('kick-modal');
+        if(existing) existing.remove();
 
-        let msg = "🕵️‍♂️ 실시간 접속자 명단 🕵️‍♂️\n----------------------------\n";
-        let i = 1;
+        // 팝업 배경
+        const modal = document.createElement('div');
+        modal.id = 'kick-modal';
+        modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;animation:fadeIn 0.2s;";
+        
+        // 팝업 내용 박스
+        let content = `<div style="background:white;width:85%;max-width:350px;border-radius:15px;padding:20px;max-height:70vh;overflow-y:auto;box-shadow:0 10px 25px rgba(0,0,0,0.5);">`;
+        
+        // 헤더
+        content += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;border-bottom:2px solid #FFAB91;padding-bottom:10px;">
+                        <h3 style="margin:0;color:#5D4037;">👮 접속자 관리</h3>
+                        <button onclick="document.getElementById('kick-modal').remove()" style="border:none;background:none;font-size:1.5rem;cursor:pointer;">&times;</button>
+                    </div>`;
+        
+        if (!data) {
+            content += `<p style="text-align:center;color:#888;">현재 접속자가 없습니다.</p>`;
+        } else {
+            Object.entries(data).forEach(([key, user]) => {
+                let info = "정보 없음 (구버전)";
+                let isMe = false; // (참고용) 본인 확인 로직은 복잡해서 생략, IP로 판단
 
-        Object.values(data).forEach(user => {
-            // 옛날 코드(IP기록 없는 시절)로 접속한 유령 유저 처리
-            if (user === true) {
-                msg += `${i}. [구버전 접속] 정보 없음 (새로고침 필요)\n`;
-            } else {
-                // 기기 정보 간단히 요약
-                let deviceName = "PC/기타";
-                if (user.device.includes("iPhone")) deviceName = "아이폰";
-                else if (user.device.includes("Android")) deviceName = "갤럭시/안드로이드";
-                else if (user.device.includes("Mac")) deviceName = "맥(Mac)";
-                else if (user.device.includes("Windows")) deviceName = "윈도우 PC";
+                if(user && user.ip) {
+                    let device = "기타 기기";
+                    if (user.device.includes("iPhone")) device = "아이폰";
+                    else if (user.device.includes("Android")) device = "갤럭시/안드로이드";
+                    else if (user.device.includes("Windows")) device = "윈도우 PC";
+                    else if (user.device.includes("Mac")) device = "맥(Mac)";
+                    
+                    const time = new Date(user.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    info = `<b>${device}</b><br><span style="font-size:0.8rem;color:#888;">${user.ip} / ${time}</span>`;
+                }
 
-                // 시간 포맷
-                const time = new Date(user.time).toLocaleTimeString();
-                
-                msg += `${i}. IP: ${user.ip}\n   기기: ${deviceName}\n   접속: ${time}\n`;
-            }
-            msg += "----------------------------\n";
-            i++;
-        });
-
-        alert(msg);
+                // 리스트 아이템
+                content += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed #eee;">
+                                <div style="font-size:0.9rem;color:#333;line-height:1.4;">${info}</div>
+                                <button onclick="kickUser('${key}')" style="background:#FF5252;color:white;border:none;padding:6px 12px;border-radius:20px;cursor:pointer;font-weight:bold;font-size:0.8rem;box-shadow:0 2px 5px rgba(0,0,0,0.2);">Kick 👢</button>
+                            </div>`;
+            });
+        }
+        content += `</div>`;
+        modal.innerHTML = content;
+        
+        // 닫기 이벤트 (배경 클릭 시)
+        modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+        
+        document.body.appendChild(modal);
     });
+}
+
+// 5. [NEW] 강제 퇴장 함수
+function kickUser(key) {
+    if(confirm("이 접속자를 강제로 내보내시겠습니까?\n(데이터베이스에서 즉시 삭제합니다)")) {
+        presenceRef.child(key).remove().then(() => {
+            alert("성공적으로 퇴장시켰습니다.");
+            document.getElementById('kick-modal').remove(); // 팝업 닫기
+            setTimeout(showConnectedUsers, 500); // 0.5초 뒤 다시 열어서 갱신 확인
+        }).catch(err => {
+            alert("오류가 발생했습니다: " + err);
+        });
+    }
 }
 
 const bannedWords = ["욕설", "비속어", "시발", "씨발", "개새끼", "병신", "지랄", "존나", "졸라", "미친", "성매매", "섹스", "야동", "조건만남", "주식", "코인", "비트코인", "투자", "리딩방", "수익", "바보", "멍청이"];
 function containsBannedWords(text) { return bannedWords.some(word => text.includes(word)); }
 
-// 관리자 인증 상태 감지
+// 관리자 인증 상태 체크
 firebase.auth().onAuthStateChanged((user) => {
     if (user) {
         isAdmin = true;
@@ -184,7 +216,6 @@ firebase.auth().onAuthStateChanged((user) => {
     }
 });
 
-// 데이터 로드
 let centerNode = { id: "center", name: "연천장로교회\n청년부\n함께 기도해요", type: "root", icon: "✝️", color: "#FFF8E1" };
 let members = [];
 let isDataLoaded = false;
@@ -225,7 +256,6 @@ function loadData() {
 }
 loadData();
 
-// 실시간 데이터 동기화
 membersRef.on('child_added', (snap) => {
     if(!isDataLoaded) return;
     const val = snap.val();
@@ -268,7 +298,7 @@ membersRef.on('child_removed', (snap) => {
     }
 });
 
-// 5. D3 시각화 (업데이트된 디자인 적용)
+// 5. D3 시각화
 const width = window.innerWidth;
 const height = window.innerHeight;
 const svg = d3.select("#visualization").append("svg").attr("width", width).attr("height", height);
@@ -288,12 +318,11 @@ simulation = d3.forceSimulation()
 
 let link, node;
 
-// ★ 그래프 업데이트 함수 (선 디자인 및 타이밍 수정됨) ★
 function updateGraph() {
     globalNodes = [centerNode, ...members];
     const links = members.map(m => ({ source: centerNode.id, target: m.id }));
 
-    // 1. 패턴(이미지) 업데이트
+    // 패턴
     const patterns = defs.selectAll("pattern").data(members, d => d.id);
     patterns.enter().append("pattern")
         .attr("id", d => "img-" + d.id).attr("width", 1).attr("height", 1).attr("patternContentUnits", "objectBoundingBox")
@@ -301,26 +330,24 @@ function updateGraph() {
     patterns.select("image").attr("xlink:href", d => d.photoUrl);
     patterns.exit().remove();
 
-    // 2. 선(Link) 업데이트
+    // 선 (얇게 0.8px)
     link = linkGroup.selectAll("line").data(links, d => d.target.id || d.target);
     link.exit().remove();
     
-    // [디자인 수정] 0.8px 두께, 은은한 흰색
     const linkEnter = link.enter().append("line")
-        .attr("stroke", "#FFFFFF")      // 흰색 빛
-        .attr("stroke-width", 0.8)      // 0.8px로 아주 얇게
-        .style("opacity", 0)            // 처음엔 투명하게 시작
+        .attr("stroke", "#FFFFFF")
+        .attr("stroke-width", 0.8)
+        .style("opacity", 0)
         .style("filter", "drop-shadow(0 0.5px 1px rgba(0,0,0,0.15))");
     
-    // [애니메이션] 얼굴이 다 나온 뒤에 스르륵 나타남
     linkEnter.transition()
         .delay(800)                     
         .duration(1500)                 
-        .style("opacity", 0.5);         // 50% 밝기로 은은하게
+        .style("opacity", 0.5);
     
     link = linkEnter.merge(link);
 
-    // 3. 노드(얼굴) 업데이트
+    // 노드
     node = nodeGroup.selectAll("g").data(globalNodes, d => d.id);
     node.exit().remove();
 
@@ -542,7 +569,7 @@ function closeAdminModal(e) { if(e.target.id === 'admin-modal') document.getElem
 
 function checkAdmin() { 
     const inputPw = document.getElementById('admin-pw').value;
-    const adminEmail = "admin@church.com"; // Firebase에 등록된 이메일
+    const adminEmail = "admin@church.com"; 
     
     firebase.auth().signInWithEmailAndPassword(adminEmail, inputPw)
     .then(() => {
@@ -623,14 +650,11 @@ function renderPrayers() {
     });
 }
 
-// [해결] 실시간 삭제 기능 개선 (Optimistic UI)
+// 실시간 삭제 기능
 function deletePrayer(i) {
     if(confirm("정말 삭제하시겠습니까?")) {
-        // 1. 화면에서 즉시 제거
         currentMemberData.prayers.splice(i, 1);
         renderPrayers(); 
-        
-        // 2. 서버에 업데이트
         const updateData = currentMemberData.prayers.length > 0 ? currentMemberData.prayers : [];
         membersRef.child(currentMemberData.firebaseKey).update({prayers: updateData});
     }
@@ -682,7 +706,7 @@ messagesRef.on('child_removed', snap => {
     }
 });
 
-// [배경음악] 기능 추가
+// 배경음악
 let isMusicPlaying = false;
 const bgmAudio = document.getElementById('bgm-player');
 const musicBtn = document.getElementById('music-trigger');
