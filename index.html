@@ -49,7 +49,7 @@
         .spinner { width: 50px; height: 50px; border: 5px solid #FFE0B2; border-top: 5px solid #FF7043; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* --- Top UI (Slim Design) --- */
+        /* --- Top UI --- */
         .top-ui-common {
             position: fixed; z-index: 100;
             background: rgba(255, 255, 255, 0.95);
@@ -74,7 +74,7 @@
             .online-counter { top: 20px; right: 20px; }
         }
 
-        /* --- Bottom Buttons --- */
+        /* --- Floating Buttons (Bottom Right Row) --- */
         .float-btn {
             position: fixed; z-index: 100; cursor: pointer; transition: transform 0.2s;
             box-shadow: 0 4px 10px rgba(141, 110, 99, 0.2); border: none;
@@ -82,31 +82,41 @@
             border-radius: 50% !important; padding: 0 !important; margin: 0 !important;
             display: flex !important; align-items: center !important; justify-content: center !important;
             -webkit-appearance: none; appearance: none;
+            /* 정렬을 위한 기본 위치 (하단 고정) */
+            bottom: 30px;
         }
         .float-btn:hover { transform: scale(1.05); }
         .float-btn:active { transform: scale(0.95); }
 
-        .admin-btn { bottom: 30px; left: 30px; background: #E0E0E0; color: #616161; border: 2px solid #BDBDBD; font-size: 1.2rem; }
-        .admin-btn.active { background: #333; color: #FFD700; border-color: #FFD700; }
-        
-        .add-member-btn { bottom: 90px; left: 30px; background: white; color: var(--theme-orange); border: 2px solid var(--theme-orange); }
-        .add-member-btn svg { fill: var(--theme-orange); width: 24px; height: 24px; }
-        
-        /* [수정 완료] 채팅 버튼 우측 하단 고정 */
+        /* 1번 타자: 채팅 (가장 우측) */
         .chat-btn { 
-            bottom: 30px; right: 30px; 
+            right: 30px; 
             background: #FFECB3; color: #5D4037; 
             border: 2px solid #FFCA28; font-size: 1.4rem; 
-            position: relative; 
         }
+        
+        /* 2번 타자: 사람 추가 (그 왼쪽) */
+        .add-member-btn { 
+            right: 110px; /* 30 + 80 */
+            background: white; color: var(--theme-orange); 
+            border: 2px solid var(--theme-orange); 
+        }
+        .add-member-btn svg { fill: var(--theme-orange); width: 24px; height: 24px; }
+
+        /* 3번 타자: 관리자 (더 왼쪽) */
+        .admin-btn { 
+            right: 190px; /* 110 + 80 */
+            background: #E0E0E0; color: #616161; 
+            border: 2px solid #BDBDBD; font-size: 1.2rem; 
+        }
+        .admin-btn.active { background: #333; color: #FFD700; border-color: #FFD700; }
+
         .chat-badge { position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; background: #FF5252; border-radius: 50%; border: 2px solid white; display: none; animation: pulse-red 1.5s infinite; z-index: 101; }
         .chat-badge.active { display: block; }
 
         @media (max-width: 768px) {
-            .admin-btn { bottom: calc(20px + env(safe-area-inset-bottom)); left: 20px; }
-            .add-member-btn { bottom: calc(80px + env(safe-area-inset-bottom)); left: 20px; }
             /* 모바일 하단 안전 영역 고려 */
-            .chat-btn { bottom: calc(20px + env(safe-area-inset-bottom)); right: 20px; }
+            .float-btn { bottom: calc(30px + env(safe-area-inset-bottom)); }
         }
 
         /* --- Popup & Modal --- */
@@ -155,24 +165,22 @@
         .edit-name-btn { background: white; border: 1px solid var(--main-node-color); border-radius: 15px; padding: 5px 12px; cursor: pointer; color: var(--main-node-color); font-weight: bold; font-size: 0.8rem; }
         .color-trigger-btn { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #ddd; cursor: pointer; background-color: #E0F2F1; }
         
-        #prayer-list { flex-grow: 1; overflow-y: auto; padding: 12px; background: #fff; }
+        #prayer-list { flex-grow: 1; overflow-y: auto; padding: 15px; background: #fff; }
         
         .prayer-card { background: #FFF; border-radius: 12px; padding: 14px; margin-bottom: 12px; border-left: 4px solid #FFCC80; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .prayer-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.75rem; color: #8D6E63; }
-        .prayer-content { font-size: 0.95rem; line-height: 1.5; color: #3E2723; word-wrap: break-word; margin-bottom: 10px; }
+        .prayer-content { font-size: 0.95rem; line-height: 1.5; color: #3E2723; }
         .action-group { display: flex; gap: 12px; margin-top: 10px; border-top: 1px solid #FFF3E0; padding-top: 8px; }
         .text-btn { font-size: 0.85rem; background: none; border: none; cursor: pointer; color: #FF7043; font-weight: bold; padding: 4px 8px;}
         
         .reply-section { margin-top: 10px; background-color: #FFF8E1; border-radius: 8px; padding: 10px; }
         .reply-item { font-size: 0.85rem; border-bottom: 1px dashed #FFE0B2; padding: 5px 0; color: #E65100; }
-        .reply-item:last-child { border-bottom: none; }
         
         .prayer-input-area { padding: 12px; background: #fff; border-top: 2px solid #FFE0B2; flex-shrink: 0; }
-        .prayer-verse { background: #FFF8E1; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.8rem; color: #5D4037; text-align: center; line-height: 1.4; }
+        .prayer-verse { background: #FFF8E1; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.8rem; color: #5D4037; text-align: center; }
         .prayer-input-row { display: flex; gap: 8px; align-items: center; }
-        #new-prayer { flex: 1; padding: 10px 15px; border: 2px solid #FFE0B2; border-radius: 20px; font-size: 0.9rem; font-family: inherit; }
+        #new-prayer { flex: 1; padding: 10px 15px; border: 2px solid #FFE0B2; border-radius: 20px; font-size: 0.9rem; }
         .prayer-send-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background: linear-gradient(135deg, #8D6E63, #6D4C41); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(141,110,99,0.3); }
-        .prayer-send-btn:active { transform: scale(0.95); }
         .delete-member-btn { margin-top: 8px; background: transparent; color: #ef5350; border: 1px solid #ef5350; padding: 6px 12px; border-radius: 15px; cursor: pointer; font-size: 0.75rem; float: right; }
         
         .admin-delete-chat { font-size: 0.7rem; color: red; cursor: pointer; margin-left: 5px; font-weight: bold; display: none; }
@@ -183,7 +191,7 @@
         /* Lightbox & Modal */
         #lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 3000; justify-content: center; align-items: center; }
         #lightbox.active { display: flex; }
-        #lightbox img { max-width: 95%; max-height: 90%; border-radius: 8px; }
+        #lightbox img { max-width: 95%; max-height: 90%; border-radius: 8px; animation: popIn 0.3s forwards; }
         #admin-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: center; }
         #admin-modal.active { display: flex; }
         .admin-box { background: white; padding: 25px; border-radius: 12px; width: 300px; text-align: center; }
@@ -192,15 +200,17 @@
 
         /* Color Picker */
         #color-modal { display: none; position: fixed; z-index: 3000; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
-        #color-modal.active { display: flex; }
+        #color-modal.active { display: flex; animation: fadeIn 0.2s; }
         .color-box { background:white; width: 320px; border-radius: 20px; padding: 20px; text-align:center; }
         .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-top: 20px; }
         .color-swatch { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
         .color-swatch:hover { transform: scale(1.1); }
         .color-swatch.selected { border-color: #333; transform: scale(1.1); }
 
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { to { transform: scale(1); } }
         @keyframes pulse-red { 0% { transform: scale(0.9); } 50% { transform: scale(1.2); } 100% { transform: scale(0.9); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } }
     </style>
 </head>
 <body id="body">
@@ -223,16 +233,17 @@
         <img id="lightbox-img" src="" alt="확대 이미지">
     </div>
 
-    <button class="admin-btn float-btn" id="admin-trigger" onclick="event.stopPropagation(); toggleAdminMode()" title="관리자 모드">🔒</button>
-    <button class="add-member-btn float-btn" onclick="event.stopPropagation(); addNewMember()" title="사람 추가">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-    </button>
-    
     <button class="chat-btn float-btn" onclick="event.stopPropagation(); toggleChatPopup()">
         💬
         <div id="chat-badge" class="chat-badge"></div>
     </button>
     
+    <button class="add-member-btn float-btn" onclick="event.stopPropagation(); addNewMember()" title="사람 추가">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+    </button>
+    
+    <button class="admin-btn float-btn" id="admin-trigger" onclick="event.stopPropagation(); toggleAdminMode()" title="관리자 모드">🔒</button>
+
     <div id="admin-modal" onclick="closeAdminModal(event)">
         <div class="admin-box" onclick="event.stopPropagation()">
             <h3 style="margin-top:0; color:#5D4037;">관리자 인증</h3>
@@ -281,9 +292,7 @@
             </div>
             <div class="chat-input-area">
                 <input type="text" id="chat-msg" placeholder="메시지를 입력하세요..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
-                <button class="chat-send-btn" onclick="sendChatMessage()">
-                    <span style="font-size: 1.2rem;">📤</span>
-                </button>
+                <button class="chat-send-btn" onclick="sendChatMessage()">전송</button>
             </div>
         </div>
     </div>
@@ -317,14 +326,10 @@
     <script>
         // PWA Registration
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(registration => {
-                        console.log('ServiceWorker registration successful');
-                    })
-                    .catch(err => {
-                        console.log('ServiceWorker registration failed:', err);
-                    });
+            navigator.serviceWorker.register('sw.js').then(function(registration) {
+                console.log('ServiceWorker registration successful');
+            }, function(err) {
+                console.log('ServiceWorker registration failed: ', err);
             });
         }
 
@@ -359,18 +364,6 @@
         let newMemberIds = new Set();
         let globalNodes = [];
         let simulation = null;
-        let currentMemberData = null;
-
-        // 터치 이벤트 변수
-        let touchStartTime = 0;
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let isTouchMove = false;
-
-        // 드래그 변수
-        let dragStartX = 0;
-        let dragStartY = 0;
-        let isDragAction = false;
 
         const brightColors = ["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#BBDEFB", "#B3E5FC", "#B2EBF2", "#B2DFDB", "#C8E6C9", "#DCEDC8", "#F0F4C3", "#FFF9C4", "#FFECB3", "#FFE0B2", "#FFCCBC", "#D7CCC8", "#F5F5F5", "#CFD8DC"];
 
@@ -386,7 +379,7 @@
             document.getElementById('online-count').innerText = `${count}명 접속 중`;
         });
 
-        const bannedWords = ["욕설", "비속어", "시발", "씨발", "개새끼", "병신", "지랄", "존나", "졸라", "미친"];
+        const bannedWords = ["욕설", "비속어", "시발", "씨발", "개새끼", "병신", "지랄", "존나", "졸라", "미친", "성매매", "섹스", "야동", "조건만남", "주식", "코인", "비트코인", "투자", "리딩방", "수익", "바보", "멍청이"];
         function containsBannedWords(text) { return bannedWords.some(word => text.includes(word)); }
 
         let centerNode = { id: "center", name: "연천장로교회\n청년부\n함께 기도해요", type: "root", icon: "✝️", color: "#FFF8E1" };
@@ -394,6 +387,7 @@
         let isDataLoaded = false;
 
         function loadData() {
+            // Safety Timeout
             setTimeout(() => {
                 document.getElementById('loading').classList.add('hide');
                 if (!isDataLoaded) {
@@ -411,7 +405,7 @@
                     members = Object.keys(mData).map(key => ({ firebaseKey: key, ...mData[key] }));
                 } else {
                     members = Array.from({length: 15}, (_, i) => ({
-                        id: `member_${i}`, name: `청년 ${i+1}`, type: "member", color: getRandomColor(), rotation: 0, rotationDirection: Math.random() < 0.5 ? 1 : -1
+                        id: `member_${i}`, name: `청년 ${i+1}`, type: "member", color: getRandomColor(), rotation: 0
                     }));
                     members.forEach(m => membersRef.push(m));
                 }
@@ -483,7 +477,7 @@
             }
         });
 
-        // D3 Setup
+        // --- D3 Setup ---
         const width = window.innerWidth;
         const height = window.innerHeight;
         const svg = d3.select("#visualization").append("svg").attr("width", width).attr("height", height);
@@ -495,13 +489,15 @@
         const nodeGroup = g.append("g").attr("class", "nodes");
         const sizeScale = d3.scaleSqrt().domain([0, 15]).range([28, 60]).clamp(true);
         
-        simulation = d3.forceSimulation()
-            .force("link", d3.forceLink().id(d => d.id).distance(140))
-            .force("charge", d3.forceManyBody().strength(-400))
-            .force("center", d3.forceCenter(width / 2, height / 2))
-            .force("collide", d3.forceCollide().radius(d => calculateRadius(d) + 30));
+        simulation = d3.forceSimulation().force("link", d3.forceLink().id(d => d.id).distance(140)).force("charge", d3.forceManyBody().strength(-400)).force("center", d3.forceCenter(width / 2, height / 2)).force("collide", d3.forceCollide().radius(d => calculateRadius(d) + 30));
 
         let link, node;
+        let dragStartX, dragStartY;
+        let isDragAction = false; 
+        let touchStartTime = 0;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let isTouchMove = false;
 
         function updateGraph() {
             globalNodes = [centerNode, ...members];
@@ -519,8 +515,8 @@
             const linkEnter = link.enter().append("line")
                 .attr("stroke", "#D7CCC8").attr("stroke-width", 2).attr("stroke-opacity", 0);
             
-            if (isFirstRender) linkEnter.transition().delay(1800).duration(1200).attr("stroke-opacity", 0.5);
-            else linkEnter.transition().duration(600).attr("stroke-opacity", 0.5);
+            if (isFirstRender) linkEnter.transition().delay(2200).duration(800).attr("stroke-opacity", 0.5);
+            else linkEnter.transition().duration(500).attr("stroke-opacity", 0.5);
             link = linkEnter.merge(link);
 
             node = nodeGroup.selectAll("g").data(globalNodes, d => d.id);
@@ -529,59 +525,67 @@
             const nodeEnter = node.enter().append("g")
                 .attr("cursor", "pointer")
                 .style("pointer-events", "all")
-                // [Touch Handling]
+                // 1. Touch Start
                 .on("touchstart", function(event, d) {
                     event.stopPropagation();
                     touchStartTime = Date.now();
                     touchStartX = event.touches[0].clientX;
                     touchStartY = event.touches[0].clientY;
                     isTouchMove = false;
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    d.fx = d.x; d.fy = d.y;
                 })
+                // 2. Touch Move
                 .on("touchmove", function(event, d) {
                     if (event.touches.length > 0) {
                         const dx = event.touches[0].clientX - touchStartX;
                         const dy = event.touches[0].clientY - touchStartY;
-                        if (Math.sqrt(dx*dx + dy*dy) > 10) isTouchMove = true;
+                        const distance = Math.sqrt(dx*dx + dy*dy);
+                        if (distance > 10) isTouchMove = true;
+                        d.fx = event.touches[0].clientX; 
+                        d.fy = event.touches[0].clientY;
                     }
                 })
+                // 3. Touch End
                 .on("touchend", function(event, d) {
-                    event.preventDefault();
-                    event.stopPropagation();
+                    if (!event.active) simulation.alphaTarget(0);
+                    d.fx = null; d.fy = null;
                     const duration = Date.now() - touchStartTime;
-                    if (duration < 300 && !isTouchMove && d.type === 'member') {
+                    if (duration < 500 && !isTouchMove && d.type === 'member') {
+                        event.preventDefault(); 
                         openPrayerPopup(d);
                     }
                 })
+                // 4. Mouse Click
                 .on("click", function(event, d) {
                     event.stopPropagation();
                     if (!isDragAction && d.type === 'member') openPrayerPopup(d);
                 })
+                // 5. Mouse Drag
                 .call(d3.drag()
                     .on("start", dragstarted)
                     .on("drag", dragged)
                     .on("end", dragended));
 
-            // [Safari Fix] -webkit-filter & will-change
-            nodeEnter.append("circle")
-                .attr("r", 0)
-                .style("pointer-events", "all")
+            nodeEnter.append("circle").attr("stroke-width", 0).attr("r", 0)
                 .style("will-change", "transform, filter")
-                .style("-webkit-filter", d => d.type === 'root' ? "drop-shadow(0 0 15px #FFD54F)" : "drop-shadow(0 2px 4px rgba(0,0,0,0.1))");
+                .style("-webkit-filter", d => {
+                    if (d.type === 'root') return "drop-shadow(0 0 15px #FFD54F)";
+                    return "drop-shadow(0 2px 4px rgba(0,0,0,0.1))";
+                });
 
             nodeEnter.append("rect").attr("rx", 10).attr("ry", 10).attr("fill", "rgba(255, 255, 255, 0.7)").style("opacity", 0).style("pointer-events", "none");
             nodeEnter.append("text").attr("text-anchor", "middle").attr("dominant-baseline", "middle").attr("font-weight", "bold").style("pointer-events", "none").style("opacity", 0);
             
             const badge = nodeEnter.append("g").attr("class", "node-badge").style("opacity", 0).style("pointer-events", "none");
-            badge.append("circle").attr("r", 9).attr("fill", "#FF5252").attr("stroke", "#fff").attr("stroke-width", 2);
-            badge.append("text").attr("dy", "0.35em").attr("text-anchor", "middle").attr("fill", "white").style("font-size", "11px").style("font-weight", "bold");
+            badge.append("circle").attr("r", 9).attr("cx", 0).attr("cy", 0).attr("fill", "#FF5252").attr("stroke", "#fff").attr("stroke-width", 2);
+            badge.append("text").attr("x", 0).attr("y", 0).attr("dy", "0.35em").attr("text-anchor", "middle").attr("fill", "white").style("font-size", "11px").style("font-weight", "bold");
 
             node = nodeEnter.merge(node);
             node.style("pointer-events", "all");
 
             updateNodeVisuals();
-            simulation.nodes(globalNodes); 
-            simulation.force("link").links(links); 
-            simulation.alpha(1).restart();
+            simulation.nodes(globalNodes); simulation.force("link").links(links); simulation.alpha(1).restart();
         }
 
         function updateNodeVisuals() {
@@ -593,10 +597,11 @@
                 const circle = el.select("circle");
                 
                 if (circle.attr("r") == 0) {
-                    const delay = isFirstRender ? (d.id === 'center' ? 0 : 800 + (members.indexOf(d) * 80)) : 0;
-                    circle.transition().delay(delay).duration(isFirstRender ? 1200 : 600).ease(d3.easeCubicOut).attr("r", r);
+                     const delay = isFirstRender ? (d.id === 'center' ? 0 : 1100 + (globalNodes.indexOf(d) * 60)) : 0;
+                     const dur = isFirstRender ? 800 : 500;
+                     circle.transition().delay(delay).duration(dur).ease(d3.easeElasticOut.amplitude(3)).attr("r", r);
                 } else {
-                    circle.transition().duration(600).ease(d3.easeCubicOut).attr("r", r);
+                     circle.transition().duration(500).attr("r", r);
                 }
 
                 const fillUrl = (d.photoUrl && d.type !== 'root') ? `url(#img-${d.id})` : (d.type === "root" ? "#FFF8E1" : d.color);
@@ -609,31 +614,37 @@
                 }
 
                 circle.attr("fill", fillUrl)
-                    .style("filter", filterStr)
-                    .style("-webkit-filter", filterStr) // Safari Fix
-                    .attr("stroke", d => (d.type !== 'root' && getTotalPrayerCount(d) > 0) ? "#FF7043" : "#fff")
-                    .attr("stroke-width", d => (d.type !== 'root' && getTotalPrayerCount(d) > 0) ? 3 : 2);
+                      .style("opacity", 1) 
+                      .style("filter", filterStr)
+                      .style("-webkit-filter", filterStr)
+                      .attr("stroke", d => (d.type !== 'root' && getTotalPrayerCount(d) > 0) ? "#FF7043" : "#fff")
+                      .attr("stroke-width", d => (d.type !== 'root' && getTotalPrayerCount(d) > 0) ? 3 : 2);
 
                 const textEl = el.select("text");
                 const rectEl = el.select("rect");
                 textEl.text(null);
                 
+                let textY = 0;
                 if (d.type === 'root') {
                     textEl.append("tspan").text(d.icon).attr("x", 0).attr("dy", "-1.2em").attr("font-size", "2.8rem");
                     d.name.split("\n").forEach((l, i) => textEl.append("tspan").text(l).attr("x", 0).attr("dy", i===0?"4.0em":"1.3em").attr("font-size", "14px"));
                     rectEl.style("display", "none");
-                    textEl.transition().delay(isFirstRender?2400:0).duration(1200).ease(d3.easeCubicOut).style("opacity", 1);
+                    textEl.transition().delay(isFirstRender?3300:0).duration(800).style("opacity", 1);
                 } else {
-                    let textY = d.photoUrl ? r + 15 : 0;
+                    if (d.photoUrl) textY = r + 15;
                     textEl.attr("y", textY).text(d.name).attr("font-size", "12px");
                     
+                    const bbox = textEl.node().getBBox(); 
+                    const w = bbox.width > 0 ? bbox.width + 16 : d.name.length * 12 + 16;
+                    
                     if (d.photoUrl) {
-                        const bbox = textEl.node().getBBox();
-                        const w = bbox.width > 0 ? bbox.width + 16 : d.name.length * 12 + 16;
-                        rectEl.style("display", "block").attr("x", -w/2).attr("y", textY-10).attr("width", w).attr("height", 20)
-                            .transition().delay(isFirstRender?2400:0).duration(600).ease(d3.easeCubicOut).style("opacity", 1);
-                    } else rectEl.style("display", "none");
-                    textEl.transition().delay(isFirstRender?2400:0).duration(1200).ease(d3.easeCubicOut).style("opacity", 1);
+                        rectEl.style("display", "block")
+                            .attr("x", -w / 2).attr("y", textY - 10).attr("width", w).attr("height", 20)
+                            .transition().delay(isFirstRender?3300:0).duration(500).style("opacity", 1);
+                    } else {
+                        rectEl.style("display", "none");
+                    }
+                    textEl.transition().delay(isFirstRender?3300:0).duration(800).style("opacity", 1);
                 }
 
                 if (d.type !== 'root') {
@@ -648,20 +659,16 @@
                         badge.style("display", "block");
                         badge.select("circle").attr("fill", unread > 0 ? "#FF5252" : "#FF9800");
                         badge.select("text").text(unread > 0 ? unread : "N");
-                        badge.transition().delay(isFirstRender ? (800 + (members.indexOf(d) * 80)) : 0)
-                            .duration(1200).ease(d3.easeCubicOut).attr("transform", `translate(${bx}, ${by})`).style("opacity", 1);
-                    } else badge.style("opacity", 0);
+                        badge.transition().duration(200).attr("transform", `translate(${bx}, ${by})`).style("opacity", 1);
+                    } else {
+                        badge.style("opacity", 0);
+                    }
                 }
             });
         }
 
-        function calculateRadius(d) { return d.type === 'root' ? 80 : sizeScale(getTotalPrayerCount(d)); }
-        function getTotalPrayerCount(d) { 
-            if (d.type === 'root') return 0; 
-            let t = d.prayers ? d.prayers.length : 0; 
-            if(d.prayers) d.prayers.forEach(p => {if(p.replies) t+=p.replies.length}); 
-            return t; 
-        }
+        function calculateRadius(d) { if (d.type === 'root') return 80; return sizeScale(getTotalPrayerCount(d)); }
+        function getTotalPrayerCount(d) { if (d.type === 'root') return 0; let t = d.prayers ? d.prayers.length : 0; if(d.prayers) d.prayers.forEach(p => {if(p.replies) t+=p.replies.length}); return t; }
         function getRandomColor() { return brightColors[Math.floor(Math.random()*brightColors.length)]; }
 
         simulation.on("tick", () => {
@@ -671,75 +678,51 @@
 
         setInterval(() => {
             if(node) {
-                members.forEach(m => { 
-                    m.rotation = (m.rotation || 0) + (m.rotationDirection * 0.1); 
-                    if(m.rotation > 360) m.rotation -= 360; 
-                    else if(m.rotation < -360) m.rotation += 360; 
-                });
+                members.forEach(m => { m.rotation = (m.rotation || 0) + (m.rotationDirection * 0.1); if(m.rotation > 360) m.rotation -= 360; else if(m.rotation < -360) m.rotation += 360; });
                 node.attr("transform", d => `translate(${d.x},${d.y}) rotate(${d.rotation || 0})`);
             }
         }, 1000/60);
 
-        function dragstarted(event) {
+        function dragstarted(event) { 
             isDragAction = false;
-            dragStartX = event.x;
-            dragStartY = event.y;
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            event.subject.fx = event.subject.x;
-            event.subject.fy = event.subject.y;
+            dragStartX = event.x; dragStartY = event.y;
+            if (!event.active) simulation.alphaTarget(0.3).restart(); 
+            event.subject.fx = event.subject.x; event.subject.fy = event.subject.y; 
         }
-        function dragged(event) {
-            const distance = Math.sqrt((event.x - dragStartX)**2 + (event.y - dragStartY)**2);
-            if (distance > 5) isDragAction = true;
-            event.subject.fx = event.x;
-            event.subject.fy = event.y;
+        function dragged(event) { 
+            const dx = event.x - dragStartX; const dy = event.y - dragStartY;
+            if (dx*dx + dy*dy > 25) isDragAction = true;
+            event.subject.fx = event.x; event.subject.fy = event.y; 
         }
-        function dragended(event) {
-            if (!event.active) simulation.alphaTarget(0);
-            event.subject.fx = null;
-            event.subject.fy = null;
-            setTimeout(() => { isDragAction = false; }, 150);
+        function dragended(event) { 
+            if (!event.active) simulation.alphaTarget(0); 
+            event.subject.fx = null; event.subject.fy = null; 
         }
+        window.addEventListener("resize", () => { const w = window.innerWidth; const h = window.innerHeight; svg.attr("width", w).attr("height", h); simulation.force("center", d3.forceCenter(w/2, h/2)); simulation.alpha(0.5).restart(); resizeWeatherCanvas(); });
 
-        window.addEventListener("resize", () => {
-            const w = window.innerWidth, h = window.innerHeight;
-            svg.attr("width", w).attr("height", h);
-            simulation.force("center", d3.forceCenter(w/2, h/2)).alpha(0.5).restart();
-        });
-
-        // UI Functions
+        // --- Interaction Handlers ---
+        let currentMemberData = null;
         function toggleCampPopup() { document.getElementById('camp-popup').classList.toggle('active'); }
         function toggleChatPopup() { 
-            const el = document.getElementById('chat-popup');
-            el.classList.toggle('active'); 
+            const el = document.getElementById('chat-popup'); el.classList.toggle('active'); 
             if(el.classList.contains('active')) {
                 document.getElementById('chat-badge').classList.remove('active');
                 setTimeout(() => document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight, 100);
             }
         }
-        
         function openPrayerPopup(data) {
             currentMemberData = data;
             newMemberIds.delete(data.id);
             readStatus[data.id] = getTotalPrayerCount(data); 
             updateNodeVisuals(); 
             document.getElementById("panel-name").innerText = data.name;
-            document.getElementById("current-color-display").style.backgroundColor = data.color || "#E0F2F1";
-            document.getElementById("prayer-popup").classList.add('active');
+            document.getElementById("current-color-display").style.backgroundColor = data.color;
+            document.getElementById("prayer-popup").classList.add('active'); // Open Modal
             renderPrayers();
         }
+        function closePrayerPopup() { document.getElementById("prayer-popup").classList.remove('active'); currentMemberData = null; }
         
-        function closePrayerPopup() { 
-            document.getElementById("prayer-popup").classList.remove('active'); 
-            currentMemberData = null; 
-        }
-
-        function openLightbox(src) { 
-            document.getElementById('lightbox-img').src=src; 
-            document.getElementById('lightbox').classList.add('active'); 
-        }
-        function closeLightbox() { document.getElementById('lightbox').classList.remove('active'); }
-
+        // Color Picker
         function openColorModal() {
             const grid = document.getElementById('color-grid');
             grid.innerHTML = '';
@@ -754,57 +737,19 @@
         }
         function closeColorModal() { document.getElementById('color-modal').classList.remove('active'); }
         function selectColor(color) {
-            if(currentMemberData) membersRef.child(currentMemberData.firebaseKey).update({color: color});
+            updateMemberColor(color);
             document.getElementById("current-color-display").style.backgroundColor = color;
             closeColorModal();
         }
 
-        function toggleAdminMode() { 
-            if(isAdmin) { 
-                isAdmin=false; 
-                document.getElementById('body').classList.remove('admin-mode'); 
-                document.getElementById('admin-trigger').classList.remove('active'); 
-                alert("관리자 모드 해제"); 
-                if(currentMemberData) renderPrayers(); 
-            } else {
-                document.getElementById('admin-modal').classList.add('active');
-                document.getElementById('admin-pw').focus();
-            }
-        }
+        function toggleAdminMode() { if(isAdmin) { isAdmin=false; document.getElementById('body').classList.remove('admin-mode'); document.getElementById('admin-trigger').classList.remove('active'); alert("관리자 모드 해제"); if(currentMemberData) renderPrayers(); } else openAdminModal(); }
+        function openAdminModal() { document.getElementById('admin-modal').classList.add('active'); document.getElementById('admin-pw').focus(); }
         function closeAdminModal(e) { if(e.target.id === 'admin-modal') document.getElementById('admin-modal').classList.remove('active'); }
-        function checkAdmin() { 
-            if(document.getElementById('admin-pw').value === "006291") { 
-                isAdmin=true; 
-                document.getElementById('admin-modal').classList.remove('active'); 
-                document.getElementById('admin-trigger').classList.add('active'); 
-                document.getElementById('body').classList.add('admin-mode'); 
-                alert("관리자 모드 활성"); 
-                document.getElementById('admin-pw').value=""; 
-                if(currentMemberData) renderPrayers(); 
-            } else alert("비밀번호 오류"); 
-        }
+        function checkAdmin() { if(document.getElementById('admin-pw').value === "006291") { isAdmin=true; document.getElementById('admin-modal').classList.remove('active'); document.getElementById('admin-trigger').classList.add('active'); document.getElementById('body').classList.add('admin-mode'); alert("관리자 모드 활성"); document.getElementById('admin-pw').value=""; if(currentMemberData) renderPrayers(); const btns = document.querySelectorAll('.admin-delete-chat'); btns.forEach(b => b.style.display = 'inline-block'); } else alert("비밀번호 오류"); }
 
-        function addNewMember() { 
-            const n = prompt("이름:"); 
-            if(n && n.trim()) { 
-                if(containsBannedWords(n)) return alert("부적절한 이름"); 
-                membersRef.push({
-                    id:`member_${Date.now()}`, 
-                    name:n.trim(), 
-                    type:"member", 
-                    color:getRandomColor(), 
-                    prayers:[], 
-                    rotation:0, 
-                    rotationDirection:Math.random()<0.5?1:-1
-                }); 
-            } 
-        }
-        function deleteMember() { 
-            if(currentMemberData && confirm("삭제하시겠습니까?")) {
-                membersRef.child(currentMemberData.firebaseKey).remove(); 
-                closePrayerPopup();
-            }
-        }
+        function addNewMember() { const n = prompt("이름:"); if(n && n.trim()) { if(containsBannedWords(n)) return alert("부적절한 이름"); membersRef.push({id:`member_${Date.now()}`, name:n.trim(), type:"member", color:getRandomColor(), prayers:[], rotation:0, rotationDirection:1}); } }
+        function updateMemberColor(v) { if(currentMemberData) membersRef.child(currentMemberData.firebaseKey).update({color: v}); }
+        function deleteMember() { if(currentMemberData && confirm("삭제하시겠습니까?")) { membersRef.child(currentMemberData.firebaseKey).remove(); closePrayerPopup(); }}
         function editProfile() { 
             if (!currentMemberData) return;
             const newName = prompt("이름 수정:", currentMemberData.name);
@@ -819,109 +764,29 @@
         }
 
         function renderPrayers() {
-            const list = document.getElementById("prayer-list");
-            list.innerHTML = "";
-            if(!currentMemberData || !currentMemberData.prayers || currentMemberData.prayers.length === 0) { 
-                list.innerHTML = "<p style='text-align:center; margin:40px 20px; color:#888; font-size:0.9rem;'>아직 등록된 기도 제목이 없습니다.<br>첫 번째 기도 제목을 나눠주세요! 🙏</p>"; 
-                return; 
-            }
+            const list = document.getElementById("prayer-list"); list.innerHTML = "";
+            if(!currentMemberData || !currentMemberData.prayers) { list.innerHTML = "<p style='text-align:center; margin:40px 20px; color:#888; font-size:0.9rem;'>아직 등록된 기도 제목이 없습니다.<br>첫 번째 기도 제목을 나눠주세요! 🙏</p>"; return; }
             currentMemberData.prayers.forEach((p, i) => {
-                const div = document.createElement("div");
-                div.className = "prayer-card";
+                const div = document.createElement("div"); div.className = "prayer-card";
                 const replies = p.replies ? `<div class="reply-section">${p.replies.map(r=>`<div class="reply-item">💬 ${r.content}</div>`).join('')}</div>` : "";
-                const delBtn = isAdmin ? 
-                    `<button class="text-btn admin-delete-btn" onclick="adminDeletePrayer(${i})" style="color:red;">강제삭제</button>` : 
-                    `<button class="text-btn" onclick="deletePrayer(${i})">삭제</button>`;
-                div.innerHTML = `
-                    <div class="prayer-header"><span>📅 ${p.date}</span></div>
-                    <div class="prayer-content">${p.content}</div>
-                    <div class="action-group">
-                        <button class="text-btn" onclick="editPrayer(${i})">✏️ 수정</button>
-                        ${delBtn}
-                        <button class="text-btn" onclick="addReply(${i})">💬 답글</button>
-                    </div>
-                    ${replies}
-                `;
+                const delBtn = isAdmin ? `<button class="text-btn admin-delete-btn" onclick="adminDeletePrayer(${i})">강제삭제</button>` : `<button class="text-btn" onclick="deletePrayer(${i})">삭제</button>`;
+                div.innerHTML = `<div class="prayer-header"><span>📅 ${p.date}</span></div><div class="prayer-content">${p.content}</div><div class="action-group"><button class="text-btn" onclick="editPrayer(${i})">수정</button>${delBtn}<button class="text-btn" onclick="addReply(${i})">답글</button></div>${replies}`;
                 list.appendChild(div);
             });
         }
-        
-        function addPrayer() { 
-            const v = document.getElementById("new-prayer").value.trim(); 
-            if(v) { 
-                if(containsBannedWords(v)) return alert("부적절한 내용"); 
-                const p = currentMemberData.prayers||[]; 
-                p.unshift({content:v, date:new Date().toISOString().split('T')[0]}); 
-                membersRef.child(currentMemberData.firebaseKey).update({prayers:p}); 
-                document.getElementById("new-prayer").value=""; 
-            } 
-        }
-        function editPrayer(i) { 
-            const v = prompt("수정:", currentMemberData.prayers[i].content); 
-            if(v) { 
-                if(containsBannedWords(v)) return alert("부적절한 내용"); 
-                currentMemberData.prayers[i].content = v; 
-                membersRef.child(currentMemberData.firebaseKey).update({prayers:currentMemberData.prayers}); 
-            } 
-        }
-        function deletePrayer(i) { 
-            if(confirm("삭제하시겠습니까?")) { 
-                currentMemberData.prayers.splice(i,1); 
-                membersRef.child(currentMemberData.firebaseKey).update({prayers:currentMemberData.prayers}); 
-            } 
-        }
-        function adminDeletePrayer(i) { 
-            if(confirm("관리자 강제 삭제?")) { 
-                currentMemberData.prayers.splice(i,1); 
-                membersRef.child(currentMemberData.firebaseKey).update({prayers:currentMemberData.prayers}); 
-            } 
-        }
-        function addReply(i) { 
-            const v = prompt("답글:"); 
-            if(v) { 
-                if(containsBannedWords(v)) return alert("부적절한 내용"); 
-                if(!currentMemberData.prayers[i].replies) currentMemberData.prayers[i].replies=[]; 
-                currentMemberData.prayers[i].replies.push({content:v}); 
-                membersRef.child(currentMemberData.firebaseKey).update({prayers:currentMemberData.prayers}); 
-            } 
-        }
+        function addPrayer() { const v = document.getElementById("new-prayer").value.trim(); if(v) { if(containsBannedWords(v)) return alert("부적절한 내용"); const p = currentMemberData.prayers||[]; p.unshift({content:v, date:new Date().toISOString().split('T')[0]}); membersRef.child(currentMemberData.firebaseKey).update({prayers:p}); document.getElementById("new-prayer").value=""; } }
+        function editPrayer(i) { const v = prompt("수정:", currentMemberData.prayers[i].content); if(v) { if(containsBannedWords(v)) return alert("부적절한 내용"); currentMemberData.prayers[i].content = v; membersRef.child(currentMemberData.firebaseKey).update({prayers:currentMemberData.prayers}); } }
+        function deletePrayer(i) { if(confirm("삭제?")) { currentMemberData.prayers.splice(i,1); membersRef.child(currentMemberData.firebaseKey).update({prayers:currentMemberData.prayers}); } }
+        function adminDeletePrayer(i) { if(confirm("관리자 강제 삭제?")) { currentMemberData.prayers.splice(i,1); membersRef.child(currentMemberData.firebaseKey).update({prayers:currentMemberData.prayers}); } }
+        function addReply(i) { const v = prompt("답글:"); if(v) { if(containsBannedWords(v)) return alert("부적절한 내용"); if(!currentMemberData.prayers[i].replies) currentMemberData.prayers[i].replies=[]; currentMemberData.prayers[i].replies.push({content:v}); membersRef.child(currentMemberData.firebaseKey).update({prayers:currentMemberData.prayers}); } }
 
-        // Chat
-        let isComposing = false;
-        const chatInput = document.getElementById('chat-msg');
-        chatInput.addEventListener('compositionstart', () => { isComposing = true; });
-        chatInput.addEventListener('compositionend', () => { isComposing = false; });
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !isComposing) {
-                e.preventDefault();
-                sendChatMessage();
-            }
-        });
-
-        function sendChatMessage() { 
-            const t = document.getElementById("chat-msg").value.trim(); 
-            if(t) { 
-                if(containsBannedWords(t)) return alert("부적절한 내용"); 
-                messagesRef.push({
-                    name:"익명", 
-                    text:t, 
-                    senderId:mySessionId, 
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                }); 
-                document.getElementById("chat-msg").value=""; 
-            } 
-        }
+        function sendChatMessage() { const t = document.getElementById("chat-msg").value; if(t) { messagesRef.push({name:"익명", text:t, senderId:mySessionId, timestamp: firebase.database.ServerValue.TIMESTAMP}); document.getElementById("chat-msg").value=""; }}
         function deleteChatMessage(k) { if(confirm("관리자 삭제?")) messagesRef.child(k).remove(); }
         
         messagesRef.limitToLast(50).on('child_added', snap => {
-            const d = snap.val();
-            const isMine = d.senderId === mySessionId;
-            const div = document.createElement("div");
-            div.className = "chat-bubble-wrapper";
-            div.setAttribute('data-key', snap.key);
-            div.style.display="flex";
-            div.style.flexDirection="column";
-            div.style.alignItems=isMine?"flex-end":"flex-start";
+            const d = snap.val(); const isMine = d.senderId === mySessionId;
+            const div = document.createElement("div"); div.className = "chat-bubble-wrapper"; div.setAttribute('data-key', snap.key);
+            div.style.display="flex"; div.style.flexDirection="column"; div.style.alignItems=isMine?"flex-end":"flex-start";
             const del = `<span class="admin-delete-chat" onclick="deleteChatMessage('${snap.key}')"> [삭제]</span>`;
             div.innerHTML = `${isMine?'':`<span class="chat-sender">${d.name}</span>`}<div style="display:flex;align-items:center;gap:5px">${isMine?del:''}<div class="chat-bubble ${isMine?'mine':'others'}">${d.text}</div>${!isMine?del:''}</div>`;
             document.getElementById("chat-messages").appendChild(div);
@@ -929,23 +794,27 @@
             if(!popup.classList.contains('active') && !isMine) document.getElementById('chat-badge').classList.add('active');
             setTimeout(() => document.getElementById("chat-messages").scrollTop = document.getElementById("chat-messages").scrollHeight, 100);
         });
-        messagesRef.on('child_removed', snap => {
-            const el = document.querySelector(`.chat-bubble-wrapper[data-key="${snap.key}"]`);
-            if(el) el.remove();
-        });
-
-        // Weather
+        messagesRef.on('child_removed', snap => { const el = document.querySelector(`.chat-bubble-wrapper[data-key="${snap.key}"]`); if(el) el.remove(); });
+        
         async function fetchWeather() {
-            try { 
-                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=38.0964&longitude=127.0748&current_weather=true");
-                const d = await res.json();
-                centerNode.icon = d.current_weather.is_day ? "☀️" : "🌙";
-                if(d.current_weather.weathercode > 50) centerNode.icon="🌧️";
-                updateNodeVisuals();
-            } catch(e){ console.log('Weather fetch error:', e); }
+            try { const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=38.0964&longitude=127.0748&current_weather=true"); const d = await res.json();
+            centerNode.icon = d.current_weather.is_day ? "☀️" : "🌙";
+            if(d.current_weather.weathercode > 50) { if(d.current_weather.weathercode > 70) createSnow(); else createRain(); centerNode.icon="🌧️"; }
+            updateNodeVisuals(); } catch(e){}
         }
 
-        // REMOVED ALL AUDIO LOGIC
+        const wc = document.getElementById('weather-canvas'); const wctx = wc.getContext('2d'); let wParts = [];
+        function resizeWeatherCanvas() { wc.width = window.innerWidth; wc.height = window.innerHeight; }
+        function createRain() { wParts=[]; for(let i=0;i<200;i++) wParts.push({x:Math.random()*wc.width, y:Math.random()*wc.height, s:5+Math.random()*5, l:10+Math.random()*10}); animateWeather('rain'); }
+        function createSnow() { wParts=[]; for(let i=0;i<100;i++) wParts.push({x:Math.random()*wc.width, y:Math.random()*wc.height, s:1+Math.random()*2, r:2+Math.random()*3}); animateWeather('snow'); }
+        function animateWeather(type) {
+            wctx.clearRect(0,0,wc.width,wc.height); wctx.fillStyle = "rgba(255,255,255,0.8)"; wctx.strokeStyle = "rgba(174,194,224,0.5)"; wctx.lineWidth=1;
+            wParts.forEach(p => { if(type==='rain') { wctx.beginPath(); wctx.moveTo(p.x,p.y); wctx.lineTo(p.x,p.y+p.l); wctx.stroke(); p.y+=p.s; if(p.y>wc.height) p.y=-p.l; } else { wctx.beginPath(); wctx.moveTo(p.x,p.y); wctx.arc(p.x,p.y,p.r,0,Math.PI*2); wctx.fill(); p.y+=p.s; if(p.y>wc.height) p.y=-5; } });
+            requestAnimationFrame(() => animateWeather(type));
+        }
+
+        function openLightbox(src) { document.getElementById('lightbox-img').src=src; document.getElementById('lightbox').classList.add('active'); }
+        function closeLightbox() { document.getElementById('lightbox').classList.remove('active'); }
     </script>
 </body>
 </html>
