@@ -212,11 +212,30 @@
         #lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 3000; justify-content: center; align-items: center; }
         #lightbox.active { display: flex; }
         #lightbox img { max-width: 95%; max-height: 90%; border-radius: 8px; animation: popIn 0.3s forwards; }
+        
+        /* [MODIFIED] Slimmer Admin Modal */
         #admin-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: center; }
         #admin-modal.active { display: flex; }
-        .admin-box { background: white; padding: 25px; border-radius: 12px; width: 300px; text-align: center; }
-        #admin-pw { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; text-align: center; margin-bottom: 10px; }
-        .submit-btn { width: 100%; padding: 12px; background: linear-gradient(to right, #8D6E63, #6D4C41); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
+        .admin-box { 
+            background: white; 
+            width: 260px; /* Reduced width */
+            padding: 20px; /* Reduced padding */
+            border-radius: 16px; 
+            text-align: center; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .admin-box h3 { margin-top: 0; margin-bottom: 15px; color: #5D4037; font-size: 1.1rem; }
+        #admin-pw { 
+            width: 100%; padding: 10px; margin-bottom: 12px;
+            border: 1px solid #ddd; border-radius: 8px; 
+            text-align: center; font-size: 1rem; box-sizing: border-box;
+        }
+        .submit-btn { 
+            width: 100%; padding: 10px; 
+            background: linear-gradient(to right, #8D6E63, #6D4C41); 
+            color: white; border: none; border-radius: 8px; 
+            font-weight: bold; font-size: 1rem; cursor: pointer; 
+        }
 
         /* Color Picker */
         #color-modal { display: none; position: fixed; z-index: 3000; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
@@ -545,6 +564,7 @@
             }
         });
 
+        // --- D3 Setup ---
         const width = window.innerWidth;
         const height = window.innerHeight;
         const svg = d3.select("#visualization").append("svg").attr("width", width).attr("height", height);
@@ -608,7 +628,7 @@
                     if (!event.active) simulation.alphaTarget(0);
                     d.fx = null; d.fy = null;
                     const duration = Date.now() - touchStartTime;
-                    if (duration < 300 && !isTouchMove && d.type === 'member') {
+                    if (duration < 500 && !isTouchMove && d.type === 'member') {
                         event.preventDefault(); 
                         openPrayerPopup(d);
                     }
@@ -650,6 +670,8 @@
                 const el = d3.select(this);
                 const r = calculateRadius(d);
                 const circle = el.select("circle");
+                
+                // [FIX] Sync Text with Circle
                 const textDelay = isFirstRender ? (d.id === 'center' ? 0 : 800 + (globalNodes.indexOf(d) * 80)) : 0;
                 
                 if (circle.attr("r") == 0) {
@@ -661,6 +683,7 @@
                 }
 
                 const fillUrl = (d.photoUrl && d.type !== 'root') ? `url(#img-${d.id})` : (d.type === "root" ? "#FFF8E1" : d.color);
+                
                 let filterStr = "drop-shadow(0 2px 4px rgba(0,0,0,0.1))";
                 if (d.type === 'root') filterStr = "drop-shadow(0 0 15px #FFD54F)";
                 else {
@@ -684,6 +707,7 @@
                     textEl.append("tspan").text(d.icon).attr("x", 0).attr("dy", "-1.2em").attr("font-size", "2.8rem");
                     d.name.split("\n").forEach((l, i) => textEl.append("tspan").text(l).attr("x", 0).attr("dy", i===0?"4.0em":"1.3em").attr("font-size", "14px"));
                     rectEl.style("display", "none");
+                    // [FIX] Sync text appearance
                     textEl.transition().delay(textDelay).duration(800).style("opacity", 1);
                 } else {
                     if (d.photoUrl) textY = r + 15;
@@ -699,6 +723,7 @@
                     } else {
                         rectEl.style("display", "none");
                     }
+                    // [FIX] Sync text appearance
                     textEl.transition().delay(textDelay).duration(800).style("opacity", 1);
                 }
 
@@ -714,6 +739,7 @@
                         badge.style("display", "block");
                         badge.select("circle").attr("fill", unread > 0 ? "#FF5252" : "#FF9800");
                         badge.select("text").text(unread > 0 ? unread : "N");
+                        // [FIX] Sync badge appearance (slightly delayed to pop after node)
                         badge.transition().delay(textDelay + 400).duration(200).attr("transform", `translate(${bx}, ${by})`).style("opacity", 1);
                     } else {
                         badge.style("opacity", 0);
@@ -878,12 +904,51 @@
         });
         
         async function fetchWeather() {
-            try { const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=38.0964&longitude=127.0748&current_weather=true"); const d = await res.json();
-            centerNode.icon = d.current_weather.is_day ? "☀️" : "🌙";
-            if(d.current_weather.weathercode > 50) { if(d.current_weather.weathercode > 70) createSnow(); else createRain(); centerNode.icon="🌧️"; }
-            updateNodeVisuals(); } catch(e){}
+            // [MODIFIED] Location Permission Request
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        try {
+                            const lat = position.coords.latitude;
+                            const lon = position.coords.longitude;
+                            // Fetch weather for REAL location
+                            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                            const d = await res.json();
+                            applyWeather(d);
+                        } catch(e) { console.log('Weather Error (Real)', e); useDefaultWeather(); }
+                    },
+                    (err) => {
+                        console.log('Location denied, using default.', err);
+                        useDefaultWeather();
+                    }
+                );
+            } else {
+                useDefaultWeather();
+            }
         }
 
+        async function useDefaultWeather() {
+             try { 
+                // Default: Yeoncheon-gun (38.0964, 127.0748)
+                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=38.0964&longitude=127.0748&current_weather=true");
+                const d = await res.json();
+                applyWeather(d);
+            } catch(e){ console.log('Weather fetch error:', e); }
+        }
+
+        function applyWeather(d) {
+            centerNode.icon = d.current_weather.is_day ? "☀️" : "🌙";
+            // Weather Code Logic
+            if(d.current_weather.weathercode > 50) { 
+                // Rain or Snow based on code
+                if(d.current_weather.weathercode >= 71) createSnow(); 
+                else createRain(); 
+                centerNode.icon="🌧️"; 
+            }
+            updateNodeVisuals();
+        }
+
+        // [MODIFIED] Weather: 35 particles (PC/Mobile Same)
         const wc = document.getElementById('weather-canvas'); const wctx = wc.getContext('2d'); let wParts = [];
         function resizeWeatherCanvas() { wc.width = window.innerWidth; wc.height = window.innerHeight; }
         
