@@ -130,6 +130,20 @@
             .chat-btn { bottom: calc(20px + env(safe-area-inset-bottom)); right: 20px; }
         }
 
+        /* --- Update Toast Notification --- */
+        #update-toast {
+            position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: #333; color: white; padding: 12px 24px;
+            border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 10000; font-size: 0.9rem; font-weight: bold;
+            display: flex; align-items: center; gap: 10px; cursor: pointer;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0; pointer-events: none;
+        }
+        #update-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+        .refresh-icon { animation: spin-slow 2s infinite linear; font-size: 1.1rem; }
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
         /* --- Popup & Modal --- */
         .popup-overlay {
             position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 2000;
@@ -185,7 +199,6 @@
         .admin-mode .admin-delete-btn { display: inline-block !important; }
 
         @media (max-width: 768px) {
-            /* [수정됨] 모바일에서도 팝업창 하단 라운드 적용 (20px) */
             .popup-content { width: 95%; height: 90vh; border-radius: 20px; }
             #prayer-list { padding: 10px; }
             .prayer-card { padding: 12px; margin-bottom: 10px; }
@@ -253,6 +266,11 @@
 
     <div id="lightbox" onclick="closeLightbox()">
         <img id="lightbox-img" src="" alt="확대 이미지">
+    </div>
+
+    <div id="update-toast" onclick="window.location.reload(true)">
+        <div class="refresh-icon">🔄</div>
+        <span>새 버전이 있습니다! (터치하여 업데이트)</span>
     </div>
 
     <div id="menu-container">
@@ -349,12 +367,24 @@
     </div>
 
     <script>
-        // PWA Registration
+        // PWA Update Detection Logic
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(function(registration) {
-                console.log('ServiceWorker registration successful');
-            }, function(err) {
-                console.log('ServiceWorker registration failed: ', err);
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            document.getElementById('update-toast').classList.add('show');
+                        }
+                    });
+                });
+            });
+
+            let refreshing;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                window.location.reload();
+                refreshing = true;
             });
         }
 
@@ -473,7 +503,7 @@
                     members = Object.keys(mData).map(key => ({ firebaseKey: key, ...mData[key] }));
                 } else {
                     members = Array.from({length: 15}, (_, i) => ({
-                        id: `member_${i}`, name: `청년 ${i+1}`, type: "member", color: getRandomColor(), rotation: 0, rotationDirection: Math.random() < 0.5 ? 1 : -1
+                        id: `member_${i}`, name: `청년 ${i+1}`, type: "member", color: getRandomColor(), rotation: 0
                     }));
                     members.forEach(m => membersRef.push(m));
                 }
@@ -874,6 +904,9 @@
             }
         });
         
+        // [OpenWeatherMap API Logic]
+        const apiKey = "39d8b0517ec448eb742a1ee5e39c2bf3"; // Provided Key
+
         async function fetchWeather() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -881,7 +914,7 @@
                         try {
                             const lat = position.coords.latitude;
                             const lon = position.coords.longitude;
-                            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                            const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`);
                             const d = await res.json();
                             applyWeather(d);
                         } catch(e) { console.log('Weather Error (Real)', e); useDefaultWeather(); }
@@ -898,19 +931,30 @@
 
         async function useDefaultWeather() {
              try { 
-                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=38.0964&longitude=127.0748&current_weather=true");
+                // Default: Yeoncheon-gun (38.0964, 127.0748)
+                const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=38.0964&lon=127.0748&appid=${apiKey}&units=metric`);
                 const d = await res.json();
                 applyWeather(d);
             } catch(e){ console.log('Weather fetch error:', e); }
         }
 
         function applyWeather(d) {
-            centerNode.icon = d.current_weather.is_day ? "☀️" : "🌙";
-            if(d.current_weather.weathercode > 50) { 
-                if(d.current_weather.weathercode >= 71) createSnow(); 
-                else createRain(); 
-                centerNode.icon="🌧️"; 
+            const isDay = d.dt > d.sys.sunrise && d.dt < d.sys.sunset;
+            centerNode.icon = isDay ? "☀️" : "🌙";
+            
+            const code = d.weather[0].id;
+            
+            // Rain (2xx, 3xx, 5xx)
+            if (code >= 200 && code < 600) {
+                createRain();
+                centerNode.icon = "🌧️";
+            } 
+            // Snow (6xx)
+            else if (code >= 600 && code < 700) {
+                createSnow();
+                centerNode.icon = "❄️";
             }
+            
             updateNodeVisuals();
         }
 
