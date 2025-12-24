@@ -1,349 +1,143 @@
-// ==========================================
-// 연천장로교회 청년부 기도 네트워크 (Final v13 - More Options Menu)
-// ==========================================
-
-// 1. 서비스 워커 등록
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').then(function(registration) {
-        registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    document.getElementById('update-toast').classList.add('show');
-                }
-            });
-        });
-    }, function(err) { console.log('SW Fail: ', err); });
+/* --- CSS Variables --- */
+:root {
+    --bg-gradient: radial-gradient(circle at center, #FFFCF2 0%, #FFF3E0 60%, #FFE0B2 100%);
+    --main-node-color: #8D6E63;
+    --text-color: #5D4037;
+    --panel-bg: rgba(255, 255, 255, 0.98);
+    --theme-orange: #FF7043;
 }
 
-// PWA 설치 버튼 로직
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    const installBtn = document.getElementById('installBtn');
-    if (installBtn) {
-        installBtn.style.display = 'block';
-        installBtn.onclick = () => {
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((result) => {
-                if (result.outcome === 'accepted') installBtn.style.display = 'none';
-                deferredPrompt = null;
-            });
-        };
-    }
-});
-
-// UI 핸들러
-let isFabOpen = false;
-function toggleFabMenu() {
-    isFabOpen = !isFabOpen;
-    const container = document.getElementById('menu-container');
-    if(isFabOpen) container.classList.add('menu-open');
-    else container.classList.remove('menu-open');
-}
-document.body.addEventListener('click', (e) => {
-    if(isFabOpen && !e.target.closest('#menu-container')) { toggleFabMenu(); }
-    // 화면 클릭 시 열려있는 더보기 메뉴 닫기
-    if (!e.target.closest('.more-btn')) {
-        document.querySelectorAll('.more-options').forEach(el => el.classList.remove('active'));
-    }
-});
-
-function forceRefresh() {
-    if(confirm("화면을 강제로 새로고침 하시겠습니까?\n(캐시된 데이터를 모두 삭제합니다)")) {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let registration of registrations) registration.unregister();
-            });
-        }
-        if ('caches' in window) {
-            caches.keys().then(function(names) {
-                for (let name of names) caches.delete(name);
-                window.location.reload(true);
-            });
-        } else { window.location.reload(true); }
-    }
+/* --- Base Reset --- */
+body {
+    margin: 0; padding: 0;
+    background: var(--bg-gradient);
+    font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+    overflow: hidden;
+    color: var(--text-color);
+    overscroll-behavior: none;
+    touch-action: pan-x pan-y;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
 }
 
-// 2. Firebase 설정
-const firebaseConfig = {
-    apiKey: "AIzaSyAF-L1RGBMb_uZBR4a3Aj0OVFu_KjccWZQ",
-    authDomain: "ycprayer-7eac2.firebaseapp.com",
-    databaseURL: "https://ycprayer-7eac2-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "ycprayer-7eac2",
-    storageBucket: "ycprayer-7eac2.firebasestorage.app",
-    messagingSenderId: "308314713888",
-    appId: "1:308314713888:web:dc52dc7ba1ac7b76153145",
-    measurementId: "G-XGEMDBQG2J"
-};
+#visualization { width: 100vw; height: 100dvh; position: relative; z-index: 10; }
+#visualization svg { touch-action: none; }
+#weather-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
 
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
-const membersRef = database.ref('members');
-const centerNodeRef = database.ref('centerNode');
-const onlineRef = database.ref('.info/connected');
-const presenceRef = database.ref('presence');
-const messagesRef = database.ref('messages');
+/* --- Loading Screen --- */
+#loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-gradient); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; transition: opacity 0.5s; }
+#loading.hide { opacity: 0; pointer-events: none; }
+.loading-text { font-size: 1.5rem; color: var(--main-node-color); margin-top: 20px; font-weight: bold; }
+.spinner { width: 50px; height: 50px; border: 5px solid #FFE0B2; border-top: 5px solid #FF7043; border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-let mySessionId = localStorage.getItem('mySessionId');
-if (!mySessionId) {
-    mySessionId = 'user_' + Date.now();
-    localStorage.setItem('mySessionId', mySessionId);
+/* --- Top UI --- */
+.top-ui-common {
+    position: fixed; z-index: 100;
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--main-node-color);
+    border: 1.5px solid var(--main-node-color);
+    border-radius: 50px; 
+    height: 35px; padding: 0 14px; font-size: 0.85rem; line-height: 1;      
+    box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-weight: 700; box-shadow: 0 3px 8px rgba(141, 110, 99, 0.15); backdrop-filter: blur(5px); white-space: nowrap;
 }
+.camp-btn { cursor: pointer; top: 30px; left: 30px; transition: transform 0.2s; }
+.camp-btn:hover { background: var(--main-node-color); color: white; transform: scale(1.05); }
+.online-counter { top: 30px; right: 30px; }
+.online-dot { width: 8px; height: 8px; background: #4CAF50; border-radius: 50%; animation: pulse 2s infinite; }
 
-// 3. 변수 및 상태
-let isAdmin = false;
-let isFirstRender = true;
-let readStatus = JSON.parse(localStorage.getItem('readStatus')) || {};
-let isNotiEnabled = localStorage.getItem('isNotiEnabled') !== 'false'; 
+@media (max-width: 768px) { .camp-btn { top: 20px; left: 20px; } .online-counter { top: 20px; right: 20px; } }
 
-let newMemberIds = new Set();
-let globalNodes = [];
-let simulation = null;
-const loadTime = Date.now();
-let unreadChatKeys = new Set();
-let touchStartTime = 0;
-let touchStartX = 0;
-let touchStartY = 0;
-let isTouchMove = false;
-let dragStartX = 0;
-let dragStartY = 0;
-let isDragAction = false;
-const brightColors = ["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#BBDEFB", "#B3E5FC", "#B2EBF2", "#B2DFDB", "#C8E6C9", "#DCEDC8", "#F0F4C3", "#FFF9C4", "#FFECB3", "#FFE0B2", "#FFCCBC", "#D7CCC8", "#F5F5F5", "#CFD8DC"];
-
-let lastChatReadTime = Number(localStorage.getItem('lastChatReadTime')) || Date.now();
-
-// 설정 및 알림 기능 로직들
-function openSettingsModal() {
-    const notiToggle = document.getElementById('setting-noti-toggle');
-    if (isNotiEnabled && Notification.permission === "granted") notiToggle.checked = true;
-    else notiToggle.checked = false;
-    const adminToggle = document.getElementById('setting-admin-toggle');
-    adminToggle.checked = isAdmin;
-    document.getElementById('settings-modal').classList.add('active');
-    if(isFabOpen) toggleFabMenu();
+/* --- Floating Buttons --- */
+.float-btn {
+    cursor: pointer; transition: transform 0.2s;
+    box-shadow: 0 4px 10px rgba(141, 110, 99, 0.2); border: none;
+    width: 50px !important; height: 50px !important; border-radius: 50% !important; padding: 0 !important; margin: 0 !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    -webkit-appearance: none; appearance: none;
 }
-function closeSettingsModal() { document.getElementById('settings-modal').classList.remove('active'); }
+.float-btn:hover { transform: scale(1.05); }
+.float-btn:active { transform: scale(0.95); }
 
-function handleNotiToggle(checkbox) {
-    if (checkbox.checked) {
-        if (!("Notification" in window)) { alert("알림을 지원하지 않습니다."); checkbox.checked = false; return; }
-        Notification.requestPermission().then(permission => {
-            if (permission === "granted") enableNotification(); 
-            else { alert("알림 권한이 거부되었습니다."); checkbox.checked = false; }
-        });
-    } else {
-        isNotiEnabled = false;
-        localStorage.setItem('isNotiEnabled', 'false');
-        updateNotiButtonUI();
-        alert("알림이 해제되었습니다.");
-    }
+#menu-container {
+    position: fixed; bottom: 30px; left: 30px; z-index: 100;
+    display: flex; flex-direction: column-reverse; gap: 15px; align-items: center;
 }
+.menu-main-btn { background: #3E2723; color: white; font-size: 1.5rem; z-index: 101; transition: transform 0.3s ease; }
+.menu-open .menu-main-btn { transform: rotate(90deg); background: #5D4037; }
+.sub-btn { opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; }
+.menu-open .sub-btn { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.add-member-btn { background: white; color: var(--theme-orange); border: 2px solid var(--theme-orange); }
+.add-member-btn svg { fill: var(--theme-orange); width: 24px; height: 24px; }
 
-function handleAdminToggle(checkbox) {
-    if (checkbox.checked) { checkbox.checked = false; openAdminModal(); }
-    else {
-        if (confirm("관리자 모드를 해제하시겠습니까?")) {
-            firebase.auth().signOut().then(() => { isAdmin = false; alert("관리자 모드가 해제되었습니다."); });
-        } else { checkbox.checked = true; }
-    }
+/* Chat Button */
+.chat-btn { position: fixed; bottom: 30px; right: 30px; background: #FFECB3; color: #5D4037; border: 2px solid #FFCA28; font-size: 1.4rem; z-index: 100;}
+.chat-badge { position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; background: #FF5252; border-radius: 50%; border: 2px solid white; display: none; animation: pulse-red 1.5s infinite; z-index: 101; }
+.chat-badge.active { display: block; }
+
+@media (max-width: 768px) { #menu-container { bottom: calc(20px + env(safe-area-inset-bottom)); left: 20px; } .chat-btn { bottom: calc(20px + env(safe-area-inset-bottom)); right: 20px; } }
+
+/* --- Popup & Modal --- */
+.popup-overlay {
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 2000;
+    display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease;
 }
-
-function toggleNotification() {
-    if (isNotiEnabled) {
-        isNotiEnabled = false; localStorage.setItem('isNotiEnabled', 'false');
-        updateNotiButtonUI(); alert("알림이 해제되었습니다. 🔕");
-    } else {
-        if (!("Notification" in window)) return alert("이 기기는 알림을 지원하지 않습니다.");
-        if (Notification.permission === "granted") enableNotification();
-        else if (Notification.permission !== "denied") {
-            Notification.requestPermission().then(permission => {
-                if (permission === "granted") enableNotification();
-                else alert("알림 권한이 거부되었습니다.");
-            });
-        } else alert("알림 권한이 차단되어 있습니다.");
-    }
+.popup-overlay.active { display: flex; opacity: 1; }
+.popup-content {
+    background: #FFF8E1; width: 90%; max-width: 500px; height: 85vh; max-height: 700px;
+    border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    display: flex; flex-direction: column; overflow: hidden; transform: scale(0.9); transition: transform 0.3s ease; position: relative;
 }
+.popup-overlay.active .popup-content { transform: scale(1); }
+.popup-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #FFE0B2; padding: 15px; flex-shrink: 0; background: rgba(255, 255, 255, 0.5); }
+.popup-header h2 { margin: 0; font-size: 1.2rem; color: #8D6E63; }
+.close-btn { cursor: pointer; font-size: 2rem; border: none; background: none; color: #888; padding: 0 10px; }
 
-function enableNotification() {
-    isNotiEnabled = true; localStorage.setItem('isNotiEnabled', 'true');
-    updateNotiButtonUI();
-    const toggle = document.getElementById('setting-noti-toggle');
-    if(toggle) toggle.checked = true;
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(reg => {
-            reg.showNotification("알림 설정 완료!", { body: "이제부터 알림을 받아보세요.", icon: 'icon-192.png', vibrate: [100] });
-        });
-    }
+#prayer-list { flex-grow: 1; overflow-y: auto; padding: 12px; background: #fff; -webkit-overflow-scrolling: touch; }
+.prayer-card { background: #FFF; border-radius: 12px; padding: 14px; margin-bottom: 12px; border-left: 4px solid #FFCC80; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); position: relative; animation: slideIn 0.3s ease; }
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 기도카드 내부 레이아웃 */
+.prayer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.75rem; color: #8D6E63; }
+.prayer-content { font-size: 0.95rem; line-height: 1.5; color: #3E2723; word-wrap: break-word; margin-bottom: 10px; }
+.action-group { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; margin-top: 5px; border-top: 1px solid #FFF3E0; }
+
+/* 더보기 메뉴(···) 스타일 */
+.more-btn { border: none; background: none; color: #8D6E63; font-size: 1.5rem; font-weight: bold; cursor: pointer; padding: 0 5px; line-height: 1; }
+.more-options {
+    position: absolute; right: 15px; top: 40px; background: white; border: 1px solid #FFE0B2; border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none; flex-direction: column; z-index: 100; overflow: hidden;
 }
+.more-options.active { display: flex; }
+.opt-btn { border: none; background: none; padding: 10px 20px; font-size: 0.9rem; color: #5D4037; cursor: pointer; text-align: left; white-space: nowrap; }
+.opt-btn:hover { background-color: #FFF3E0; }
+.opt-btn.del-opt { color: #ef5350; }
 
-function updateNotiButtonUI() {
-    const btn = document.getElementById('noti-btn');
-    const toggle = document.getElementById('setting-noti-toggle');
-    if (btn) {
-        if (isNotiEnabled) { btn.innerText = "🔕 알림 끄기"; btn.style.backgroundColor = "#FFCDD2"; btn.style.borderColor = "#EF9A9A"; }
-        else { btn.innerText = "🔔 알림 켜기"; btn.style.backgroundColor = "#FFF3E0"; btn.style.borderColor = "#FF9800"; }
-    }
-    if(toggle) toggle.checked = isNotiEnabled;
-}
-setTimeout(updateNotiButtonUI, 500);
+.text-btn { font-size: 0.85rem; background: none; border: none; cursor: pointer; color: #FF7043; font-weight: bold; padding: 4px 8px; transition: opacity 0.2s; }
+.reply-section { margin-top: 10px; background-color: #FFF8E1; border-radius: 8px; padding: 10px; }
+.reply-item { font-size: 0.85rem; border-bottom: 1px dashed #FFE0B2; padding: 5px 0; color: #E65100; display: flex; justify-content: space-between; }
 
-// 데이터 로드 및 초기화
-function loadData() {
-    setTimeout(() => { document.getElementById('loading').classList.add('hide'); if (!isDataLoaded) { updateGraph(); fetchWeather(); } }, 3000);
-    Promise.all([membersRef.once('value'), centerNodeRef.once('value')])
-    .then(([mSnap, cSnap]) => {
-        const mData = mSnap.val(); const cData = cSnap.val();
-        if (mData) members = Object.keys(mData).map(key => ({ firebaseKey: key, ...mData[key] }));
-        if(cData && cData.icon) centerNode.icon = cData.icon;
-        members.forEach(m => { if(!m.rotationDirection) m.rotationDirection = Math.random() < 0.5 ? 1 : -1; if(m.rotation === undefined) m.rotation = 0; });
-        isDataLoaded = true; document.getElementById('loading').classList.add('hide');
-        updateGraph(); fetchWeather(); setTimeout(() => { isFirstRender = false; }, 5000);
-    }).catch(err => { console.log("Firebase Load Error:", err); document.getElementById('loading').classList.add('hide'); updateGraph(); });
-}
-loadData();
+/* 설정창 관련 */
+.settings-list { display: flex; flex-direction: column; gap: 20px; padding: 10px; width: 100%; box-sizing: border-box; }
+.settings-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #FFE0B2; }
+.settings-label { font-size: 1rem; color: #5D4037; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+.setting-action-btn { background: #78909C; color: white; border: none; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
+.settings-btn { background: white; color: #455A64; border: 2px solid #455A64; font-size: 1.8rem; padding-bottom: 3px !important; }
 
-// Firebase 리스너 및 관리 기능들 (addNewMember, deleteMember, saveProfileChanges 등 기존 로직 유지)
-function checkAdmin() { 
-    const inputPw = document.getElementById('admin-pw').value; const adminEmail = "admin@church.com"; 
-    firebase.auth().signInWithEmailAndPassword(adminEmail, inputPw)
-    .then(() => {
-        document.getElementById('admin-modal').classList.remove('active'); alert("관리자 모드 활성! 환영합니다.");
-        document.getElementById('admin-pw').value=""; 
-        const adminToggle = document.getElementById('setting-admin-toggle'); if(adminToggle) adminToggle.checked = true;
-        if(currentMemberData) renderPrayers();
-    }).catch((error) => { alert("비밀번호가 틀렸습니다."); console.error(error); });
-}
+/* 토글 스위치 디자인 */
+.switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+input:checked + .slider { background-color: #FF9800; }
+input:checked + .slider:before { transform: translateX(22px); }
 
-function addNewMember() { const n = prompt("이름:"); if(n && n.trim()) { if(containsBannedWords(n)) return alert("부적절한 이름"); membersRef.push({id:`member_${Date.now()}`, name:n.trim(), type:\"member\", color:getRandomColor(), prayers:[], rotation:0, rotationDirection:1}); } }
-function updateMemberColor(v) { if(currentMemberData) membersRef.child(currentMemberData.firebaseKey).update({color: v}); }
-function deleteMember() { if(currentMemberData && confirm("삭제하시겠습니까?")) { membersRef.child(currentMemberData.firebaseKey).remove(); closePrayerPopup(); }}
+/* 고정 핀 아이콘 */
+.prayer-card.pinned { background-color: #FFFDE7; border: 2px solid #FFD54F; border-left: 6px solid #FFC107; box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2); margin-bottom: 15px; }
+.pinned-icon { margin-right: 6px; font-size: 1.1rem; vertical-align: middle; color: #FF8F00; }
 
-function createSafeElement(tag, className, text) { const el = document.createElement(tag); if (className) el.className = className; if (text) el.textContent = text; return el; }
-
-// ==========================================
-// [수정] 기도제목 렌더링 함수 (··· 더보기 메뉴 적용)
-// ==========================================
-function renderPrayers() {
-    const list = document.getElementById("prayer-list"); 
-    list.innerHTML = "";
-    
-    if(!currentMemberData || !currentMemberData.prayers) { 
-        list.innerHTML = "<p style='text-align:center; margin-top:20px;'>기도제목을 나눠주세요!</p>"; 
-        return; 
-    }
-
-    const displayList = currentMemberData.prayers.map((p, index) => ({ ...p, originalIndex: index }));
-    displayList.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
-
-    displayList.forEach((p) => {
-        const i = p.originalIndex;
-        const div = createSafeElement("div", "prayer-card");
-        if (p.isPinned) div.classList.add("pinned"); 
-
-        // 1. [헤더] 왼쪽(고정+날짜) | 오른쪽(··· 더보기)
-        const header = createSafeElement("div", "prayer-header");
-        header.style.display = "flex";
-        header.style.justifyContent = "space-between";
-        header.style.alignItems = "center";
-
-        const headerLeft = createSafeElement("div");
-        headerLeft.style.display = "flex";
-        headerLeft.style.alignItems = "center";
-        headerLeft.style.gap = "8px"; 
-
-        const pinLabel = p.isPinned ? "📌 해제" : "📍 고정";
-        const pinBtn = createSafeElement("button", "text-btn", pinLabel);
-        pinBtn.onclick = () => togglePin(i);
-        pinBtn.style.color = p.isPinned ? "#E65100" : "#aaa";
-        headerLeft.appendChild(pinBtn);
-
-        const dateSpan = createSafeElement("span", "", p.date);
-        dateSpan.style.color = "#8D6E63";
-        headerLeft.appendChild(dateSpan);
-
-        // [핵심] 더보기(···) 버튼 및 드롭다운 메뉴
-        const moreWrapper = document.createElement("div");
-        moreWrapper.style.position = "relative";
-        const moreBtn = createSafeElement("button", "more-btn", "···");
-        
-        const optionsMenu = createSafeElement("div", "more-options");
-        optionsMenu.id = `opt-${i}`;
-
-        const optEdit = createSafeElement("button", "opt-btn", "📝 수정");
-        optEdit.onclick = (e) => { e.stopPropagation(); editPrayer(i); optionsMenu.classList.remove('active'); };
-
-        const optDel = createSafeElement("button", "opt-btn del-opt", "🗑️ 삭제");
-        optDel.onclick = (e) => { e.stopPropagation(); deletePrayer(i); optionsMenu.classList.remove('active'); };
-
-        optionsMenu.appendChild(optEdit);
-        optionsMenu.appendChild(optDel);
-        
-        moreBtn.onclick = (e) => {
-            e.stopPropagation();
-            document.querySelectorAll('.more-options').forEach(el => {
-                if(el.id !== `opt-${i}`) el.classList.remove('active');
-            });
-            optionsMenu.classList.toggle('active');
-        };
-
-        moreWrapper.appendChild(moreBtn);
-        moreWrapper.appendChild(optionsMenu);
-
-        header.appendChild(headerLeft);
-        header.appendChild(moreWrapper);
-
-        // 2. [본문] 내용
-        const content = createSafeElement("div", "prayer-content", p.content);
-
-        // 3. [하단] 답글 버튼만 배치
-        const actionGroup = createSafeElement("div", "action-group");
-        const replyBtn = createSafeElement("button", "text-btn", "💬 답글");
-        replyBtn.onclick = () => addReply(i);
-        replyBtn.style.color = "#FF7043"; 
-        replyBtn.style.fontWeight = "bold";
-        actionGroup.appendChild(replyBtn);
-        
-        div.appendChild(header); 
-        div.appendChild(content); 
-        div.appendChild(actionGroup);
-
-        // 답글 섹션 렌더링
-        if (p.replies) {
-            const replySection = createSafeElement("div", "reply-section");
-            p.replies.forEach((r, rIdx) => { 
-                const rItem = createSafeElement("div", "reply-item");
-                rItem.style.display = "flex"; rItem.style.justifyContent = "space-between";
-                const textSpan = createSafeElement("span", "", "💬 " + r.content); textSpan.style.flex = "1";
-                const delBtn = document.createElement("button");
-                delBtn.innerHTML = "&times;"; delBtn.style.cssText = "border:none; background:none; color:#aaa; cursor:pointer; font-size:1.2rem; padding:0 0 0 10px;";
-                delBtn.onclick = function() { deleteReply(i, rIdx); };
-                rItem.appendChild(textSpan); rItem.appendChild(delBtn); replySection.appendChild(rItem); 
-            });
-            div.appendChild(replySection);
-        }
-        list.appendChild(div);
-    });
-}
-
-// 답글 삭제 및 고정, 기타 기도 기능들
-function deleteReply(prayerIdx, replyIdx) {
-    if(confirm("이 답글을 삭제하시겠습니까?")) {
-        currentMemberData.prayers[prayerIdx].replies.splice(replyIdx, 1);
-        membersRef.child(currentMemberData.firebaseKey).update({prayers: currentMemberData.prayers}).then(() => renderPrayers());
-    }
-}
-function togglePin(index) {
-    if (!currentMemberData) return;
-    const currentState = currentMemberData.prayers[index].isPinned || false;
-    currentMemberData.prayers[index].isPinned = !currentState;
-    membersRef.child(currentMemberData.firebaseKey).update({prayers: currentMemberData.prayers}).then(() => renderPrayers());
-}
-function deletePrayer(i) { if(confirm("정말 삭제하시겠습니까?")) { currentMemberData.prayers.splice(i, 1); const updateData = currentMemberData.prayers.length > 0 ? currentMemberData.prayers : []; membersRef.child(currentMemberData.firebaseKey).update({prayers: updateData}).then(() => renderPrayers()); } }
-function editPrayer(i) { const v = prompt("수정:", currentMemberData.prayers[i].content); if(v) { if(containsBannedWords(v)) return alert("부적절한 내용"); currentMemberData.prayers[i].content = v; membersRef.child(currentMemberData.firebaseKey).update({prayers:currentMemberData.prayers}).then(() => renderPrayers()); } }
-function addPrayer() { const v = document.getElementById(\"new-prayer\").value.trim(); if(v) { if(containsBannedWords(v)) return alert(\"부적절한 내용\"); const p = currentMemberData.prayers||[]; p.unshift({content:v, date:new Date().toISOString().split('T')[0]}); membersRef.child(currentMemberData.firebaseKey).update({prayers:p}); document.getElementById(\"new-prayer\").value=\"\"; } }
-function addReply(i) { const v = prompt(\"답글:\"); if(v) { if(containsBannedWords(v)) return alert(\"부적절한 내용\"); if(!currentMemberData.prayers[i].replies) currentMemberData.prayers[i].replies=[]; currentMemberData.prayers[i].replies.push({content:v}); membersRef.child(currentMemberData.firebaseKey).update({prayers:currentMemberData.prayers}); } }
-
-// 채팅 및 날씨 등 기존의 나머지 코드들 (gameLoop 등) 유지...
-// [기존 파일 뒷부분 코드들 생략 없이 그대로 유지하여 통합하세요]
+/* 기타 UI */
+#weather-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+.system-toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #333; color: white; padding: 12px 24px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 10000; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: transform 0.4s; opacity: 0; pointer-events: none; }
+.system-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
