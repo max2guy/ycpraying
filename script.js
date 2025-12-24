@@ -1,5 +1,5 @@
 // ==========================================
-// 연천장로교회 청년부 기도 네트워크 (Final Complete)
+// 연천장로교회 청년부 기도 네트워크 (Final + Notification)
 // ==========================================
 
 // 1. 기본 설정 및 서비스 워커
@@ -16,30 +16,22 @@ if ('serviceWorker' in navigator) {
     }, function(err) { console.log('SW Fail: ', err); });
 }
 
-// ★ [복구됨] PWA 설치 프롬프트 로직 ★
+// PWA 설치 프롬프트
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     const installBtn = document.getElementById('installBtn');
     if (installBtn) {
-        installBtn.style.display = 'block'; // 버튼 보이게 하기
+        installBtn.style.display = 'block';
         installBtn.onclick = () => {
             deferredPrompt.prompt();
             deferredPrompt.userChoice.then((result) => {
-                if (result.outcome === 'accepted') {
-                    installBtn.style.display = 'none';
-                }
+                if (result.outcome === 'accepted') installBtn.style.display = 'none';
                 deferredPrompt = null;
             });
         };
     }
-});
-
-window.addEventListener('appinstalled', () => {
-    const installBtn = document.getElementById('installBtn');
-    if(installBtn) installBtn.style.display = 'none';
-    deferredPrompt = null;
 });
 
 // UI 핸들러
@@ -114,17 +106,27 @@ let dragStartY = 0;
 let isDragAction = false;
 const brightColors = ["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#BBDEFB", "#B3E5FC", "#B2EBF2", "#B2DFDB", "#C8E6C9", "#DCEDC8", "#F0F4C3", "#FFF9C4", "#FFECB3", "#FFE0B2", "#FFCCBC", "#D7CCC8", "#F5F5F5", "#CFD8DC"];
 
-// 마지막 채팅 읽은 시간 (앱 뱃지용)
+// 마지막 채팅 읽은 시간
 let lastChatReadTime = Number(localStorage.getItem('lastChatReadTime')) || Date.now();
 
-// 앱 아이콘 뱃지 관리 (Badging API)
+// ==========================================
+// ★ [핵심] 알림 권한 및 배지 관리 (갤럭시 대응)
+// ==========================================
+function checkNotificationPermission() {
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "denied" && Notification.permission !== "granted") {
+        Notification.requestPermission();
+    }
+}
+
+// 앱 실행 시 권한 확인
+checkNotificationPermission();
+
 function setAppBadge(count) {
+    // 1. Badging API (지원하는 경우)
     if ('setAppBadge' in navigator) {
-        if (count > 0) {
-            navigator.setAppBadge(count).catch(error => console.log('뱃지 설정 실패:', error));
-        } else {
-            navigator.clearAppBadge().catch(error => console.log('뱃지 제거 실패:', error));
-        }
+        if (count > 0) navigator.setAppBadge(count).catch(e=>console.log(e));
+        else navigator.clearAppBadge().catch(e=>console.log(e));
     }
 }
 
@@ -481,18 +483,20 @@ window.addEventListener("resize", () => { const w = window.innerWidth; const h =
 let currentMemberData = null;
 function toggleCampPopup() { document.getElementById('camp-popup').classList.toggle('active'); }
 
-// 채팅 팝업 열 때 읽음 처리 및 배지 초기화
+// ★ [수정] 채팅창 열 때 배지 초기화 + 알림 권한 재확인
 function toggleChatPopup() { 
     const el = document.getElementById('chat-popup'); 
     el.classList.toggle('active'); 
     if(el.classList.contains('active')) {
-        document.getElementById('chat-badge').classList.remove('active'); 
+        document.getElementById('chat-badge').classList.remove('active');
         unreadChatKeys.clear(); 
-        setAppBadge(0); // 뱃지 초기화
+        setAppBadge(0); // 앱 아이콘 뱃지 제거
 
-        // 현재 시간 저장 (이후 메시지만 알림)
         lastChatReadTime = Date.now();
         localStorage.setItem('lastChatReadTime', lastChatReadTime);
+        
+        // 채팅방 들어올 때 권한 한 번 더 체크
+        checkNotificationPermission();
 
         setTimeout(() => document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight, 100);
     }
@@ -545,9 +549,7 @@ function addNewMember() { const n = prompt("이름:"); if(n && n.trim()) { if(co
 function updateMemberColor(v) { if(currentMemberData) membersRef.child(currentMemberData.firebaseKey).update({color: v}); }
 function deleteMember() { if(currentMemberData && confirm("삭제하시겠습니까?")) { membersRef.child(currentMemberData.firebaseKey).remove(); closePrayerPopup(); }}
 
-// 프로필 편집 기능
 let tempProfileImage = "";
-
 function editProfile() {
     if (!currentMemberData) return;
     document.getElementById('edit-profile-name').value = currentMemberData.name;
@@ -556,9 +558,7 @@ function editProfile() {
     tempProfileImage = currentMemberData.photoUrl || "";
     document.getElementById('profile-edit-modal').classList.add('active');
 }
-
 function closeProfileEditModal() { document.getElementById('profile-edit-modal').classList.remove('active'); }
-
 function handleProfileFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -582,7 +582,6 @@ function handleProfileFileSelect(event) {
         };
     };
 }
-
 function saveProfileChanges() {
     if (!currentMemberData) return;
     const newName = document.getElementById('edit-profile-name').value.trim();
@@ -629,17 +628,32 @@ function addReply(i) { const v = prompt("답글:"); if(v) { if(containsBannedWor
 function sendChatMessage() { const t = document.getElementById("chat-msg").value; if(t) { messagesRef.push({name:"익명", text:t, senderId:mySessionId, timestamp: firebase.database.ServerValue.TIMESTAMP}); document.getElementById("chat-msg").value=""; }}
 function deleteChatMessage(k) { if(confirm("관리자 삭제?")) messagesRef.child(k).remove(); }
 
+// ==========================================
+// ★ [수정] 메시지 수신 시 알림+배지 띄우기
+// ==========================================
 messagesRef.limitToLast(50).on('child_added', snap => {
     const d = snap.val();
     
-    // ★ [수정] 마지막 읽은 시간 이후 온 메시지만 카운트 (앱 켜기 전 메시지 포함 안 함)
+    // 내가 보낸 게 아니고, 마지막 읽은 시간 이후에 온 메시지라면
     if (d.timestamp > lastChatReadTime && d.senderId !== mySessionId) {
         unreadChatKeys.add(snap.key);
         const popup = document.getElementById('chat-popup');
         
-        if (!popup.classList.contains('active')) { 
+        // 채팅창이 닫혀있다면 배지 & 알림 실행
+        if (!popup.classList.contains('active')) {
+            // 1. 내부 빨간 점
             document.getElementById('chat-badge').classList.add('active'); 
+            // 2. 앱 아이콘 숫자
             setAppBadge(unreadChatKeys.size); 
+            
+            // 3. ★ [핵심] 상단바 알림 띄우기 (갤럭시 배지 트리거)
+            if (document.hidden && Notification.permission === "granted") {
+                new Notification("새로운 기도/채팅 메시지", {
+                    body: d.text,
+                    icon: 'icon-192.png',
+                    tag: 'prayer-chat' // 덮어쓰기 방지용 태그
+                });
+            }
         }
     }
 
@@ -658,7 +672,6 @@ messagesRef.on('child_removed', snap => {
     if(unreadChatKeys.has(snap.key)) { unreadChatKeys.delete(snap.key); if(unreadChatKeys.size === 0) { document.getElementById('chat-badge').classList.remove('active'); setAppBadge(0); } }
 });
 
-// 날씨 및 게임 루프
 const apiKey = "39d8b0517ec448eb742a1ee5e39c2bf3"; 
 async function fetchWeather() { if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(async (position) => { try { const lat = position.coords.latitude; const lon = position.coords.longitude; const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`); const d = await res.json(); applyWeather(d, true); } catch(e) { useFallbackWeather(); } }, (err) => { useFallbackWeather(); }); } else { useFallbackWeather(); } }
 async function useFallbackWeather() { try { const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=38.0964&longitude=127.0748&current_weather=true"); const d = await res.json(); const simulatedData = { name: "연천군 (기본)", main: { temp: d.current_weather.temperature }, weather: [{ id: convertMeteoCode(d.current_weather.weathercode) }], sys: { sunrise: 0, sunset: 0 }, dt: Date.now() / 1000 }; const hour = new Date().getHours(); const isDay = hour > 6 && hour < 18; centerNode.icon = isDay ? "☀️" : "🌙"; applyWeather(simulatedData, false); } catch(e){ showWeatherToast("날씨 정보 없음", ""); } }
