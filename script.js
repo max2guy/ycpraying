@@ -1,5 +1,5 @@
 // ==========================================
-// 연천장로교회 청년부 기도 네트워크 (Final v9 - Settings Menu)
+// 연천장로교회 청년부 기도 네트워크 (Final v10 - Layout Update)
 // ==========================================
 
 // 1. 서비스 워커 등록
@@ -93,7 +93,6 @@ let isAdmin = false;
 let isFirstRender = true;
 let readStatus = JSON.parse(localStorage.getItem('readStatus')) || {};
 
-// 알림 설정 상태 (기본값: 켜짐 true)
 let isNotiEnabled = localStorage.getItem('isNotiEnabled') !== 'false'; 
 
 let newMemberIds = new Set();
@@ -112,7 +111,67 @@ const brightColors = ["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#B
 
 let lastChatReadTime = Number(localStorage.getItem('lastChatReadTime')) || Date.now();
 
-// 알림 토글 기능 (채팅창 버튼용)
+// 설정창 및 스위치 로직
+function openSettingsModal() {
+    const notiToggle = document.getElementById('setting-noti-toggle');
+    if (isNotiEnabled && Notification.permission === "granted") {
+        notiToggle.checked = true;
+    } else {
+        notiToggle.checked = false;
+    }
+
+    const adminToggle = document.getElementById('setting-admin-toggle');
+    adminToggle.checked = isAdmin;
+
+    document.getElementById('settings-modal').classList.add('active');
+    if(isFabOpen) toggleFabMenu();
+}
+
+function closeSettingsModal() {
+    document.getElementById('settings-modal').classList.remove('active');
+}
+
+function handleNotiToggle(checkbox) {
+    if (checkbox.checked) {
+        if (!("Notification" in window)) {
+            alert("알림을 지원하지 않는 기기입니다.");
+            checkbox.checked = false;
+            return;
+        }
+        
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                enableNotification(); 
+            } else {
+                alert("알림 권한이 거부되었습니다.");
+                checkbox.checked = false;
+            }
+        });
+    } else {
+        isNotiEnabled = false;
+        localStorage.setItem('isNotiEnabled', 'false');
+        updateNotiButtonUI();
+        alert("알림이 해제되었습니다.");
+    }
+}
+
+function handleAdminToggle(checkbox) {
+    if (checkbox.checked) {
+        checkbox.checked = false; 
+        openAdminModal(); 
+    } else {
+        if (confirm("관리자 모드를 해제하시겠습니까?")) {
+            firebase.auth().signOut().then(() => {
+                isAdmin = false;
+                alert("관리자 모드가 해제되었습니다.");
+            });
+        } else {
+            checkbox.checked = true;
+        }
+    }
+}
+
+// 알림 토글 기능 (채팅창)
 function toggleNotification() {
     if (isNotiEnabled) {
         isNotiEnabled = false;
@@ -141,7 +200,6 @@ function enableNotification() {
     localStorage.setItem('isNotiEnabled', 'true');
     updateNotiButtonUI();
     
-    // 설정창 스위치도 동기화
     const toggle = document.getElementById('setting-noti-toggle');
     if(toggle) toggle.checked = true;
 
@@ -172,7 +230,6 @@ function updateNotiButtonUI() {
         }
     }
     
-    // 설정창 스위치 동기화
     if(toggle) toggle.checked = isNotiEnabled;
 }
 setTimeout(updateNotiButtonUI, 500);
@@ -258,7 +315,6 @@ firebase.auth().onAuthStateChanged((user) => {
     if (user) {
         isAdmin = true;
         document.getElementById('body').classList.add('admin-mode');
-        // [수정] admin 버튼이 사라졌으므로 트리거 처리 제외
     } else {
         isAdmin = false;
         document.getElementById('body').classList.remove('admin-mode');
@@ -576,11 +632,8 @@ function toggleChatPopup() {
 function openPrayerPopup(data) {
     currentMemberData = data;
     newMemberIds.delete(data.id);
-    
-    // 읽음 상태 저장 (숫자 배지 초기화 방지)
     readStatus[data.id] = getTotalPrayerCount(data); 
     localStorage.setItem('readStatus', JSON.stringify(readStatus));
-
     updateNodeVisuals(); 
     document.getElementById("panel-name").innerText = data.name;
     document.getElementById("current-color-display").style.backgroundColor = data.color;
@@ -607,80 +660,6 @@ function toggleAdminMode() { if(isAdmin) { firebase.auth().signOut().then(() => 
 function openAdminModal() { document.getElementById('admin-modal').classList.add('active'); document.getElementById('admin-pw').focus(); }
 function closeAdminModal(e) { if(e.target.id === 'admin-modal') document.getElementById('admin-modal').classList.remove('active'); }
 
-// ==========================================
-// ★ [신규] 설정창 및 스위치 로직
-// ==========================================
-
-function openSettingsModal() {
-    // 1. 알림 스위치 상태 동기화
-    const notiToggle = document.getElementById('setting-noti-toggle');
-    // 사용자가 켰다고 저장했고 & 실제 브라우저 권한도 있을 때만 ON
-    if (isNotiEnabled && Notification.permission === "granted") {
-        notiToggle.checked = true;
-    } else {
-        notiToggle.checked = false;
-    }
-
-    // 2. 관리자 스위치 상태 동기화
-    const adminToggle = document.getElementById('setting-admin-toggle');
-    adminToggle.checked = isAdmin;
-
-    document.getElementById('settings-modal').classList.add('active');
-    // 메뉴 닫기
-    if(isFabOpen) toggleFabMenu();
-}
-
-function closeSettingsModal() {
-    document.getElementById('settings-modal').classList.remove('active');
-}
-
-// 알림 스위치 조작 시
-function handleNotiToggle(checkbox) {
-    if (checkbox.checked) {
-        // 켜려고 할 때 -> 권한 요청 로직 실행
-        if (!("Notification" in window)) {
-            alert("알림을 지원하지 않는 기기입니다.");
-            checkbox.checked = false;
-            return;
-        }
-        
-        Notification.requestPermission().then(permission => {
-            if (permission === "granted") {
-                enableNotification(); // 기존 함수 호출
-            } else {
-                alert("알림 권한이 거부되었습니다.");
-                checkbox.checked = false; // 스위치 끄기
-            }
-        });
-    } else {
-        // 끄려고 할 때
-        isNotiEnabled = false;
-        localStorage.setItem('isNotiEnabled', 'false');
-        updateNotiButtonUI(); // 채팅방 버튼 동기화
-        alert("알림이 해제되었습니다.");
-    }
-}
-
-// 관리자 스위치 조작 시
-function handleAdminToggle(checkbox) {
-    if (checkbox.checked) {
-        // 켜려고 할 때 -> 비밀번호 입력창 띄우기
-        checkbox.checked = false; 
-        openAdminModal(); 
-    } else {
-        // 끄려고 할 때 -> 로그아웃
-        if (confirm("관리자 모드를 해제하시겠습니까?")) {
-            firebase.auth().signOut().then(() => {
-                isAdmin = false;
-                alert("관리자 모드가 해제되었습니다.");
-            });
-        } else {
-            checkbox.checked = true; // 취소하면 다시 켜둠
-        }
-    }
-}
-
-// 관리자 인증 함수 수정 (성공 시 스위치 ON)
 function checkAdmin() { 
     const inputPw = document.getElementById('admin-pw').value;
     const adminEmail = "admin@church.com"; 
@@ -689,11 +668,8 @@ function checkAdmin() {
         document.getElementById('admin-modal').classList.remove('active');
         alert("관리자 모드 활성! 환영합니다.");
         document.getElementById('admin-pw').value=""; 
-        
-        // [추가된 부분] 설정창이 열려있다면 스위치 켜기
         const adminToggle = document.getElementById('setting-admin-toggle');
         if(adminToggle) adminToggle.checked = true;
-        
         if(currentMemberData) renderPrayers();
     })
     .catch((error) => { 
@@ -754,7 +730,7 @@ function saveProfileChanges() {
 function createSafeElement(tag, className, text) { const el = document.createElement(tag); if (className) el.className = className; if (text) el.textContent = text; return el; }
 
 // ==========================================
-// [수정] 기도제목 렌더링 함수 (답글 삭제 기능 포함)
+// [수정] 기도제목 렌더링 함수 (레이아웃 대폭 수정)
 // ==========================================
 function renderPrayers() {
     const list = document.getElementById("prayer-list"); 
@@ -765,58 +741,74 @@ function renderPrayers() {
         return; 
     }
 
-    // 1. 원본 인덱스 기억 & 배열 복사
-    const displayList = currentMemberData.prayers.map((p, index) => ({
-        ...p,
-        originalIndex: index
-    }));
+    const displayList = currentMemberData.prayers.map((p, index) => ({ ...p, originalIndex: index }));
+    displayList.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
 
-    // 2. 고정된 글(isPinned) 맨 위로 정렬
-    displayList.sort((a, b) => {
-        return (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0);
-    });
-
-    // 3. 화면에 그리기
     displayList.forEach((p) => {
         const i = p.originalIndex;
         const div = createSafeElement("div", "prayer-card");
         if (p.isPinned) div.classList.add("pinned"); 
 
+        // 1. [헤더] 고정/해제 버튼 - 날짜 - 수정 버튼
         const header = createSafeElement("div", "prayer-header");
-        
-        const dateWrapper = createSafeElement("div");
-        dateWrapper.style.display = "flex";
-        dateWrapper.style.alignItems = "center";
+        header.style.justifyContent = "space-between"; 
+        header.style.alignItems = "center";
 
-        if (p.isPinned) {
-            const pinIcon = createSafeElement("span", "pinned-icon", "📌");
-            dateWrapper.appendChild(pinIcon);
-        }
+        // 왼쪽 그룹 (고정버튼 + 날짜)
+        const headerLeft = createSafeElement("div");
+        headerLeft.style.display = "flex";
+        headerLeft.style.alignItems = "center";
+        headerLeft.style.gap = "8px"; // 간격 조정
 
+        // 고정/해제 버튼 (텍스트 아이콘)
+        const pinLabel = p.isPinned ? "📌 해제" : "📍 고정";
+        const pinBtn = createSafeElement("button", "text-btn", pinLabel);
+        pinBtn.onclick = () => togglePin(i);
+        pinBtn.style.color = p.isPinned ? "#E65100" : "#aaa";
+        headerLeft.appendChild(pinBtn);
+
+        // 날짜
         const dateSpan = createSafeElement("span", "", p.date);
-        dateWrapper.appendChild(dateSpan);
-        
-        header.appendChild(dateWrapper);
+        dateSpan.style.color = "#8D6E63";
+        headerLeft.appendChild(dateSpan);
 
+        // 오른쪽 그룹 (수정 버튼)
+        const editBtn = createSafeElement("button", "text-btn", "수정");
+        editBtn.onclick = () => editPrayer(i);
+        editBtn.style.color = "#8D6E63"; // 갈색 톤
+
+        header.appendChild(headerLeft);
+        header.appendChild(editBtn);
+
+        // 2. [본문] 내용
         const content = createSafeElement("div", "prayer-content", p.content);
+
+        // 3. [푸터/액션그룹] 답글 - 삭제
         const actionGroup = createSafeElement("div", "action-group");
-        
-        let delBtnHtml = `<button class="text-btn" onclick="deletePrayer(${i})">삭제</button>`;
+        actionGroup.style.justifyContent = "space-between"; // 양끝 정렬
+
+        // 왼쪽: 답글 버튼
+        const replyBtn = createSafeElement("button", "text-btn", "💬 답글");
+        replyBtn.onclick = () => addReply(i);
+        replyBtn.style.color = "#FF7043"; // 주황색 톤
+        replyBtn.style.fontWeight = "bold";
+
+        // 오른쪽: 삭제 버튼
+        let delBtnHtml = `<button class="text-btn" onclick="deletePrayer(${i})" style="color:#ef5350;">삭제</button>`;
         if(isAdmin) delBtnHtml = `<button class="text-btn admin-delete-btn" onclick="adminDeletePrayer(${i})">강제삭제</button>`;
         
-        const pinLabel = p.isPinned ? "해제" : "고정";
-        
-        actionGroup.innerHTML = `
-            <button class="text-btn" onclick="togglePin(${i})" style="color:#FF9800; font-weight:bold;">${pinLabel}</button>
-            <button class="text-btn" onclick="editPrayer(${i})">수정</button>
-            ${delBtnHtml}
-            <button class="text-btn" onclick="addReply(${i})">답글</button>
-        `;
+        // innerHTML로 버튼 배치
+        const rightGroup = document.createElement("div");
+        rightGroup.innerHTML = delBtnHtml;
+
+        actionGroup.appendChild(replyBtn);
+        actionGroup.appendChild(rightGroup);
         
         div.appendChild(header); 
         div.appendChild(content); 
         div.appendChild(actionGroup);
 
+        // 답글 섹션
         if (p.replies) {
             const replySection = createSafeElement("div", "reply-section");
             p.replies.forEach((r, rIdx) => { 
@@ -827,9 +819,8 @@ function renderPrayers() {
                 const textSpan = createSafeElement("span", "", "💬 " + r.content);
                 textSpan.style.flex = "1";
                 
-                // 삭제 버튼
                 const delBtn = document.createElement("button");
-                delBtn.innerHTML = "&times;"; // X 모양
+                delBtn.innerHTML = "&times;"; 
                 delBtn.style.border = "none";
                 delBtn.style.background = "none";
                 delBtn.style.color = "#aaa";
@@ -848,7 +839,6 @@ function renderPrayers() {
     });
 }
 
-// 답글 삭제 함수
 function deleteReply(prayerIdx, replyIdx) {
     if(confirm("이 답글을 삭제하시겠습니까?")) {
         currentMemberData.prayers[prayerIdx].replies.splice(replyIdx, 1);
