@@ -327,3 +327,32 @@ body {
     vertical-align: middle; /* 텍스트와 높이 맞춤 */
     color: #FF8F00; 
 }
+
+/* [설정 모달 스타일] */
+.settings-list {
+    display: flex; flex-direction: column; gap: 20px; padding: 10px; width: 100%; box-sizing: border-box;
+}
+.settings-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px; background: white; border-radius: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #FFE0B2;
+}
+.settings-label { font-size: 1rem; color: #5D4037; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+
+/* [토글 스위치 디자인] */
+.switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc; transition: .4s; border-radius: 34px;
+}
+.slider:before {
+    position: absolute; content: ""; height: 22px; width: 22px;
+    left: 3px; bottom: 3px; background-color: white;
+    transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+input:checked + .slider { background-color: #FF9800; }
+input:checked + .slider:before { transform: translateX(22px); }
+
+/* 메뉴의 설정 버튼 아이콘 */
+.settings-btn { background: #607D8B; color: white; border: 2px solid #455A64; }
