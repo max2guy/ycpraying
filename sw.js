@@ -1,6 +1,6 @@
 // 파일명: sw.js
-// 버전: yc-prayer-v15-full-update
-const CACHE_NAME = 'yc-prayer-v15-full-update';
+// 버전: yc-prayer-v15-complete-reset
+const CACHE_NAME = 'yc-prayer-v15-complete-reset';
 
 const ASSETS_TO_CACHE = [
     './',
