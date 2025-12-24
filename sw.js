@@ -1,6 +1,6 @@
 // 파일명: sw.js
-// 버전: yc-prayer-v14-final (버전을 올려서 강제 갱신 유도)
-const CACHE_NAME = 'yc-prayer-v14-final';
+// 버전: yc-prayer-v15-full-update
+const CACHE_NAME = 'yc-prayer-v15-full-update';
 
 const ASSETS_TO_CACHE = [
     './',
