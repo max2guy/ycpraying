@@ -818,5 +818,6 @@ membersRef.on('value', snap => {
 
 // 4. 앱 시작! (이게 없어서 멈춰 있었음)
 loadData();
-// --- v19 script.js 끝 ---
+// --- v19 Pro script.js 끝 ---
+
 
