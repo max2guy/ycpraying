@@ -1,5 +1,5 @@
 // ==========================================
-// 연천장로교회 청년부 기도 네트워크 (Final v11 - Delete Icon Style)
+// 연천장로교회 청년부 기도 네트워크 (Final v12 - Reset & Fix)
 // ==========================================
 
 // 1. 서비스 워커 등록
@@ -171,7 +171,6 @@ function handleAdminToggle(checkbox) {
     }
 }
 
-// 알림 토글 기능 (채팅창)
 function toggleNotification() {
     if (isNotiEnabled) {
         isNotiEnabled = false;
