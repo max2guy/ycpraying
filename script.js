@@ -1,5 +1,5 @@
 // ==========================================
-// 연천장로교회 청년부 기도 네트워크 (Final Fix v5)
+// 연천장로교회 청년부 기도 네트워크 (Final Fix v6)
 // ==========================================
 
 // 1. 서비스 워커 등록
@@ -91,7 +91,10 @@ if (!mySessionId) {
 // 3. 변수 및 상태
 let isAdmin = false;
 let isFirstRender = true;
-let readStatus = {}; 
+
+// ★ [수정] 읽음 상태를 로컬 저장소에서 불러오기 (숫자 배지 초기화 방지)
+let readStatus = JSON.parse(localStorage.getItem('readStatus')) || {};
+
 let newMemberIds = new Set();
 let globalNodes = [];
 let simulation = null;
@@ -109,7 +112,7 @@ const brightColors = ["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#B
 // 마지막 채팅 읽은 시간
 let lastChatReadTime = Number(localStorage.getItem('lastChatReadTime')) || Date.now();
 
-// ★ [수정] 알림 권한 수동 요청 함수 (버튼 클릭 시 실행)
+// 알림 권한 수동 요청 함수
 function requestNotificationPermission() {
     if (!("Notification" in window)) {
         alert("이 기기는 알림을 지원하지 않습니다.");
@@ -118,15 +121,13 @@ function requestNotificationPermission() {
     
     Notification.requestPermission().then((permission) => {
         if (permission === "granted") {
-            // 버튼 숨기기
             const btn = document.getElementById('noti-btn');
             if(btn) btn.style.display = 'none';
             
-            // 테스트 알림 발송
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then(function(registration) {
                     registration.showNotification("알림이 설정되었습니다!", {
-                        body: "이제 새로운 메시지가 오면 알려드릴게요.",
+                        body: "이제 새로운 메시지와 기도제목 알림을 받습니다.",
                         icon: 'icon-192.png',
                         vibrate: [200]
                     });
@@ -138,7 +139,6 @@ function requestNotificationPermission() {
     });
 }
 
-// 초기 로딩 시 권한 확인하여 버튼 표시 여부 결정
 function checkInitialPermission() {
     if (Notification.permission === "granted") {
         const btn = document.getElementById('noti-btn');
@@ -147,8 +147,6 @@ function checkInitialPermission() {
 }
 setTimeout(checkInitialPermission, 1000);
 
-
-// 앱 아이콘 배지 설정
 function setAppBadge(count) {
     if ('setAppBadge' in navigator) {
         if (count > 0) navigator.setAppBadge(count).catch(e=>console.log(e));
@@ -286,18 +284,45 @@ membersRef.on('child_added', (snap) => {
     }
 });
 
+// ★ [수정] 기도제목/답글 업데이트 감지 및 알림 발송
 membersRef.on('child_changed', (snap) => {
     if(!isDataLoaded) return;
     const val = snap.val();
     const idx = members.findIndex(m => m.firebaseKey === snap.key);
+    
     if(idx !== -1) {
-        const old = members[idx];
+        const oldMember = members[idx];
+        
+        // 이전 데이터와 새 데이터의 기도 갯수 비교
+        const getCount = (m) => {
+            let t = m.prayers ? m.prayers.length : 0;
+            if(m.prayers) m.prayers.forEach(p => { if(p.replies) t += p.replies.length });
+            return t;
+        };
+        const oldTotal = getCount(oldMember);
+        const newTotal = getCount(val);
+
+        // 갯수가 늘어났고, 첫 로딩이 아니라면 알림 발송
+        if (!isFirstRender && newTotal > oldTotal) {
+             if (document.hidden && Notification.permission === "granted" && 'serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification("🙏 새로운 기도나눔", {
+                        body: `${val.name}님의 기도제목/답글이 업데이트 되었습니다.`,
+                        icon: 'icon-192.png',
+                        tag: 'prayer-update',
+                        vibrate: [200, 100, 200]
+                    });
+                });
+             }
+        }
+
+        // 데이터 업데이트
         Object.assign(members[idx], { 
             ...val, 
             firebaseKey: snap.key, 
-            x: old.x, y: old.y, vx: old.vx, vy: old.vy, 
-            rotation: old.rotation, 
-            rotationDirection: old.rotationDirection 
+            x: oldMember.x, y: oldMember.y, vx: oldMember.vx, vy: oldMember.vy, 
+            rotation: oldMember.rotation, 
+            rotationDirection: oldMember.rotationDirection 
         });
         updateNodeVisuals(); 
         if(currentMemberData && currentMemberData.firebaseKey === snap.key) {
@@ -517,7 +542,6 @@ function toggleChatPopup() {
         lastChatReadTime = Date.now();
         localStorage.setItem('lastChatReadTime', lastChatReadTime);
         
-        // ★ 팝업 열 때, 이미 권한이 있으면 버튼 숨김 확인
         if (Notification.permission === "granted") {
             const btn = document.getElementById('noti-btn');
             if(btn) btn.style.display = 'none';
@@ -530,7 +554,11 @@ function toggleChatPopup() {
 function openPrayerPopup(data) {
     currentMemberData = data;
     newMemberIds.delete(data.id);
+    
+    // ★ [수정] 읽음 처리 후 즉시 로컬 저장소에 저장 (새로고침 시 숫자 유지)
     readStatus[data.id] = getTotalPrayerCount(data); 
+    localStorage.setItem('readStatus', JSON.stringify(readStatus));
+
     updateNodeVisuals(); 
     document.getElementById("panel-name").innerText = data.name;
     document.getElementById("current-color-display").style.backgroundColor = data.color;
