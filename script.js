@@ -102,7 +102,7 @@ const messagesRef = database.ref('messages');
 const messaging = firebase.messaging();
 
 // TODO: Firebase 콘솔 > 프로젝트 설정 > 클라우드 메시징 > 웹 구성 > "키 쌍 생성" 후 아래에 붙여넣기
-const VAPID_KEY = "여기에_VAPID_키를_붙여넣으세요"; 
+const VAPID_KEY = "BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U"; 
 
 async function requestPushPermission() {
     try {
@@ -840,4 +840,5 @@ function gameLoop(timestamp) {
 }
 resizeWeatherCanvas();
 requestAnimationFrame(gameLoop);
+
 
