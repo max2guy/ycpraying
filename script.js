@@ -97,7 +97,7 @@ const messagesRef = database.ref('messages');
 
 const messaging = firebase.messaging();
 // TODO: VAPID 키 설정 (없으면 푸시 알림 작동 안 함)
-const VAPID_KEY = "YOUR_VAPID_KEY_HERE"; 
+const VAPID_KEY = "BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U"; 
 
 async function requestPushPermission() {
     try {
@@ -845,3 +845,4 @@ function gameLoop(timestamp) {
 }
 resizeWeatherCanvas();
 requestAnimationFrame(gameLoop);
+
