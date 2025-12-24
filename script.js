@@ -1,5 +1,6 @@
 // ==========================================
-// 연천장로교회 청년부 기도 네트워크 (Final Fix + Pin + Skeleton + UI Renew)
+// 연천장로교회 청년부 기도 네트워크
+// (기능: UI 최적화 + 스켈레톤 + 푸시알림 + 핀 고정)
 // ==========================================
 
 // 1. 서비스 워커 등록
@@ -16,13 +17,14 @@ if ('serviceWorker' in navigator) {
     }, function(err) { console.log('SW Fail: ', err); });
 }
 
-// [PWA 설치 버튼 로직]
+// [PWA 설치 배너 로직]
 let deferredPrompt;
 const installBanner = document.getElementById('install-banner');
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
+    // 앱 접속 5초 후 설치 배너 노출
     setTimeout(() => {
         if(installBanner) installBanner.classList.add('show');
     }, 5000);
@@ -46,7 +48,7 @@ if(document.getElementById('btn-close-install')) {
     });
 }
 
-// UI 핸들러
+// UI 핸들러 (플로팅 메뉴)
 let isFabOpen = false;
 function toggleFabMenu() {
     isFabOpen = !isFabOpen;
@@ -94,11 +96,39 @@ const onlineRef = database.ref('.info/connected');
 const presenceRef = database.ref('presence');
 const messagesRef = database.ref('messages');
 
-// [푸시 알림] 메시징 설정 (필요시 키 입력)
+// ==========================================
+// [푸시 알림 설정] VAPID 키 입력 필요
+// ==========================================
 const messaging = firebase.messaging();
-// const VAPID_KEY = "여기에_키를_넣으세요"; 
-// async function requestPushPermission() { ... } 
-// requestPushPermission();
+
+// TODO: Firebase 콘솔 > 프로젝트 설정 > 클라우드 메시징 > 웹 구성 > "키 쌍 생성" 후 아래에 붙여넣기
+const VAPID_KEY = "BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U"; 
+
+async function requestPushPermission() {
+    try {
+        if (!VAPID_KEY || VAPID_KEY.includes("여기에")) {
+            console.log("VAPID 키가 설정되지 않았습니다.");
+            return;
+        }
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            console.log('알림 권한 허용됨');
+            const registration = await navigator.serviceWorker.ready;
+            const token = await messaging.getToken({ 
+                vapidKey: VAPID_KEY,
+                serviceWorkerRegistration: registration 
+            });
+
+            if (token && currentMemberData) {
+                console.log('FCM Token:', token);
+                // 내 프로필에 토큰 저장
+                membersRef.child(currentMemberData.firebaseKey).update({ fcmToken: token });
+            }
+        }
+    } catch (err) {
+        console.log('푸시 권한 요청 실패:', err);
+    }
+}
 
 let mySessionId = localStorage.getItem('mySessionId');
 if (!mySessionId) {
@@ -113,7 +143,6 @@ let readStatus = {};
 let newMemberIds = new Set();
 let globalNodes = [];
 let simulation = null;
-const loadTime = Date.now();
 let unreadChatKeys = new Set();
 let touchStartTime = 0;
 let touchStartX = 0;
@@ -127,7 +156,7 @@ const brightColors = ["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#B
 // 마지막 채팅 읽은 시간
 let lastChatReadTime = Number(localStorage.getItem('lastChatReadTime')) || Date.now();
 
-// 알림 권한 요청 (앱 실행 시)
+// 로컬 알림 권한 요청 (앱 실행 시)
 function checkNotificationPermission() {
     if (!("Notification" in window)) return;
     if (Notification.permission !== "denied" && Notification.permission !== "granted") {
@@ -136,7 +165,6 @@ function checkNotificationPermission() {
 }
 checkNotificationPermission();
 
-// 앱 아이콘 배지 설정
 function setAppBadge(count) {
     if ('setAppBadge' in navigator) {
         if (count > 0) navigator.setAppBadge(count).catch(e=>console.log(e));
@@ -144,7 +172,6 @@ function setAppBadge(count) {
     }
 }
 
-// IP 추적 및 강제 퇴장
 async function getMyIp() {
     try {
         const response = await fetch('https://api.ipify.org?format=json');
@@ -231,6 +258,7 @@ let centerNode = { id: "center", name: "연천장로교회\n청년부\n함께 �
 let members = [];
 let isDataLoaded = false;
 
+// 데이터 로딩 (3초 딜레이 제거됨)
 function loadData() {
     Promise.all([membersRef.once('value'), centerNodeRef.once('value')])
     .then(([mSnap, cSnap]) => {
@@ -285,6 +313,7 @@ membersRef.on('child_changed', (snap) => {
         updateNodeVisuals(); 
         if(currentMemberData && currentMemberData.firebaseKey === snap.key) {
             currentMemberData = members[idx];
+            // 데이터 변경 시 기도카드 다시 렌더링
             renderPrayers();
         }
     }
@@ -506,7 +535,7 @@ function toggleChatPopup() {
     }
 }
 
-// [3] Skeleton UI 적용 + [UI Renew] 아이콘 UI
+// [UI 최적화] 스켈레톤 로딩 + 아이콘 UI + 말풍선 댓글
 function openPrayerPopup(data) {
     currentMemberData = data;
     newMemberIds.delete(data.id);
@@ -517,7 +546,7 @@ function openPrayerPopup(data) {
     document.getElementById("current-color-display").style.backgroundColor = data.color;
     document.getElementById("prayer-popup").classList.add('active'); 
     
-    // [Skeleton] 먼저 빈 껍데기(스켈레톤)를 그림
+    // 1. 스켈레톤 UI (로딩 효과) 표시
     const list = document.getElementById("prayer-list");
     list.innerHTML = `
         <div class="skeleton-card">
@@ -532,7 +561,10 @@ function openPrayerPopup(data) {
         </div>
     `;
 
-    // [Skeleton] 애니메이션 프레임 확보 후 실제 데이터 렌더링
+    // 2. 푸시 권한 요청 시도 (프로필 열 때 자연스럽게)
+    requestPushPermission();
+
+    // 3. 실제 데이터 렌더링 (아주 짧은 딜레이 후 교체)
     requestAnimationFrame(() => {
         setTimeout(() => {
             renderPrayers();
@@ -625,7 +657,7 @@ function saveProfileChanges() {
 function createSafeElement(tag, className, text) { const el = document.createElement(tag); if (className) el.className = className; if (text) el.textContent = text; return el; }
 
 // ==========================================
-// [UI 최적화] 아이콘 기반의 기도카드 렌더링
+// [UI 최적화 핵심] 아이콘 버튼 + 카드 UI + 말풍선 댓글
 // ==========================================
 function renderPrayers() {
     const list = document.getElementById("prayer-list"); 
@@ -640,30 +672,29 @@ function renderPrayers() {
         return; 
     }
 
-    // 1. 인덱스 보존 및 정렬 (고정된 글 위로)
+    // 1. 정렬: 고정된 글(isPinned) 상단 배치
     const displayList = currentMemberData.prayers.map((p, index) => ({ ...p, originalIndex: index }));
     displayList.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
 
-    // 2. 카드 생성
+    // 2. 카드 렌더링
     displayList.forEach((p) => {
         const i = p.originalIndex;
         const div = createSafeElement("div", "prayer-card");
         if (p.isPinned) div.classList.add("pinned");
 
-        // (1) 헤더: 날짜 & 핀 표시
+        // (1) 헤더 영역
         const header = createSafeElement("div", "prayer-header");
         const dateDiv = createSafeElement("div", "prayer-date");
         if(p.isPinned) dateDiv.innerHTML += `<span class="pinned-mark">📌</span>`;
         dateDiv.innerHTML += `<span>${p.date}</span>`;
         header.appendChild(dateDiv);
         
-        // (2) 본문
+        // (2) 본문 영역
         const content = createSafeElement("div", "prayer-content", p.content);
         
-        // (3) 액션 버튼 (아이콘)
+        // (3) 액션 버튼 (SVG 아이콘)
         const actionGroup = createSafeElement("div", "action-group");
         
-        // 아이콘 SVG 데이터
         const icons = {
             pin: '<svg viewBox="0 0 24 24"><path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg>',
             edit: '<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
@@ -671,7 +702,6 @@ function renderPrayers() {
             reply: '<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>'
         };
 
-        // 관리자 삭제 버튼 처리
         let delBtnHtml = `<button class="icon-btn" onclick="deletePrayer(${i})" title="삭제">${icons.trash}</button>`;
         if(isAdmin) delBtnHtml = `<button class="icon-btn" style="color:#ef5350;" onclick="adminDeletePrayer(${i})" title="관리자 삭제">${icons.trash}</button>`;
 
@@ -686,7 +716,7 @@ function renderPrayers() {
         div.appendChild(content);
         div.appendChild(actionGroup);
 
-        // (4) 답글 섹션 (말풍선 스타일)
+        // (4) 댓글(답글) 영역 - 말풍선 스타일
         if (p.replies && p.replies.length > 0) {
             const replySection = createSafeElement("div", "reply-section");
             p.replies.forEach(r => { 
@@ -705,11 +735,10 @@ function renderPrayers() {
 function togglePin(index) {
     if (!currentMemberData) return;
     
-    // 현재 상태 반대로 뒤집기 (true <-> false)
+    // 현재 상태 토글
     const currentState = currentMemberData.prayers[index].isPinned || false;
     currentMemberData.prayers[index].isPinned = !currentState;
 
-    // DB에 저장
     membersRef.child(currentMemberData.firebaseKey).update({
         prayers: currentMemberData.prayers
     }).then(() => {
@@ -735,6 +764,7 @@ messagesRef.limitToLast(50).on('child_added', snap => {
         if (!popup.classList.contains('active')) {
             document.getElementById('chat-badge').classList.add('active'); 
             setAppBadge(unreadChatKeys.size); 
+            // 서비스 워커 알림 요청 (로컬 알림)
             if (document.hidden && Notification.permission === "granted" && 'serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then(function(registration) {
                     registration.showNotification("새로운 기도/채팅 메시지", {
