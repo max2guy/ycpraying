@@ -1,5 +1,5 @@
 // ==========================================
-// 연천장로교회 청년부 기도 네트워크 (Final Fix + Pin)
+// 연천장로교회 청년부 기도 네트워크 (Final Fix + Pin + Skeleton)
 // ==========================================
 
 // 1. 서비스 워커 등록
@@ -16,23 +16,18 @@ if ('serviceWorker' in navigator) {
     }, function(err) { console.log('SW Fail: ', err); });
 }
 
-// =========================================================
 // [1-b] PWA 설치 버튼 로직 (세련된 바텀 시트)
-// =========================================================
 let deferredPrompt;
 const installBanner = document.getElementById('install-banner');
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    
-    // 앱 접속 후 5초 뒤에 자연스럽게 설치 유도 배너 노출
     setTimeout(() => {
         if(installBanner) installBanner.classList.add('show');
     }, 5000);
 });
 
-// 설치 버튼 클릭
 if(document.getElementById('btn-install-app')) {
     document.getElementById('btn-install-app').addEventListener('click', () => {
         if (installBanner) installBanner.classList.remove('show');
@@ -45,13 +40,11 @@ if(document.getElementById('btn-install-app')) {
     });
 }
 
-// 닫기(X) 버튼 클릭
 if(document.getElementById('btn-close-install')) {
     document.getElementById('btn-close-install').addEventListener('click', () => {
         if (installBanner) installBanner.classList.remove('show');
     });
 }
-
 
 // UI 핸들러
 let isFabOpen = false;
@@ -232,7 +225,6 @@ let centerNode = { id: "center", name: "연천장로교회\n청년부\n함께 �
 let members = [];
 let isDataLoaded = false;
 
-// [성능 최적화] 3초 딜레이 없이 데이터 로드 즉시 실행
 function loadData() {
     Promise.all([membersRef.once('value'), centerNodeRef.once('value')])
     .then(([mSnap, cSnap]) => {
@@ -247,7 +239,6 @@ function loadData() {
         });
 
         isDataLoaded = true;
-        // 데이터 준비 즉시 로딩 종료
         document.getElementById('loading').classList.add('hide');
         updateGraph(); 
         fetchWeather();
@@ -509,16 +500,40 @@ function toggleChatPopup() {
     }
 }
 
+// [3] Skeleton UI 적용: 데이터가 로딩되기 전 잠깐 스켈레톤을 보여줌
 function openPrayerPopup(data) {
     currentMemberData = data;
     newMemberIds.delete(data.id);
     readStatus[data.id] = getTotalPrayerCount(data); 
     updateNodeVisuals(); 
+    
     document.getElementById("panel-name").innerText = data.name;
     document.getElementById("current-color-display").style.backgroundColor = data.color;
     document.getElementById("prayer-popup").classList.add('active'); 
-    renderPrayers();
+    
+    // [Skeleton] 먼저 빈 껍데기(스켈레톤)를 그림
+    const list = document.getElementById("prayer-list");
+    list.innerHTML = `
+        <div class="skeleton-card">
+            <div class="skeleton sk-text-sm"></div>
+            <div class="skeleton sk-text"></div>
+            <div class="skeleton sk-text" style="width: 60%"></div>
+            <div class="skeleton sk-block"></div>
+        </div>
+        <div class="skeleton-card">
+            <div class="skeleton sk-text-sm"></div>
+            <div class="skeleton sk-block"></div>
+        </div>
+    `;
+
+    // [Skeleton] 애니메이션 프레임 확보 후 실제 데이터 렌더링 (아주 짧은 딜레이로 부드러운 전환)
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            renderPrayers();
+        }, 150); // 0.15초 정도 스켈레톤을 보여줘서 '로딩 중'이라는 느낌을 줌
+    });
 }
+
 function closePrayerPopup() { document.getElementById("prayer-popup").classList.remove('active'); currentMemberData = null; }
 
 function openColorModal() {
