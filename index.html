@@ -10,7 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
     
-    <link rel="stylesheet" href="style.css?v=14">
+    <link rel="stylesheet" href="style.css?v=15">
     
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -18,6 +18,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 </head>
 <body id="body">
+
     <div id="loading">
         <div class="spinner"></div>
         <div class="loading-text">기도 네트워크 연결 중...</div>
@@ -57,6 +58,110 @@
         <div id="chat-badge" class="chat-badge"></div>
     </button>
     
+    <div id="admin-modal" onclick="closeAdminModal(event)">
+        <div class="admin-box" onclick="event.stopPropagation()">
+            <h3 style="margin-top:0; color:#5D4037;">관리자 인증</h3>
+            <input type="password" id="admin-pw" placeholder="비밀번호 입력">
+            <button class="submit-btn" style="width:100%; margin-top:10px;" onclick="checkAdmin()">확인</button>
+        </div>
+    </div>
+    
+    <div id="color-modal" onclick="closeColorModal()">
+        <div class="color-box" onclick="event.stopPropagation()">
+            <h3 style="margin:0; color:#5D4037;">색상 선택</h3>
+            <div class="color-grid" id="color-grid"></div>
+            <button class="submit-btn" style="margin-top:20px; background:#eee; color:#333;" onclick="closeColorModal()">닫기</button>
+        </div>
+    </div>
+
+    <div id="camp-popup" class="popup-overlay" onclick="toggleCampPopup()">
+        <div class="popup-content" onclick="event.stopPropagation()">
+            <div class="popup-header">
+                <h2>2026 부흥세대 캠프</h2>
+                <button class="close-btn" onclick="toggleCampPopup()">&times;</button>
+            </div>
+            <div style="overflow-y: auto; flex-grow: 1;">
+                <div class="camp-img-container">
+                    <span class="camp-img-title">메인 포스터</span>
+                    <img src="https://images.weserv.nl/?url=revival.slim153.com/main/data/editor/2512/b301d4d1631a2282d790dfa909122db3_1764730167_2768.jpg" class="camp-image" alt="캠프 포스터" onclick="openLightbox(this.src)">
+                </div>
+                <div class="camp-img-container">
+                    <span class="camp-img-title">캠프 일정표</span>
+                    <img src="https://images.weserv.nl/?url=revival.slim153.com/main/data/editor/2512/b301d4d1631a2282d790dfa909122db3_1764730167_3925.png" class="camp-image" alt="일정표" onclick="openLightbox(this.src)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-popup" class="popup-overlay" onclick="toggleChatPopup()">
+        <div class="popup-content" onclick="event.stopPropagation()">
+            <div class="popup-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <h2 style="margin:0;">소통방</h2>
+                    <button id="noti-btn" onclick="toggleNotification()" style="border:1px solid #FF9800; background:#FFF3E0; border-radius:15px; padding:4px 8px; font-size:0.8rem; cursor:pointer; font-weight:bold;">🔔 알림 켜기</button>
+                </div>
+                <button class="close-btn" onclick="toggleChatPopup()">&times;</button>
+            </div>
+            <div id="chat-messages" class="chat-messages">
+                <div style="text-align:center; color:#888; font-size:0.8rem; padding:10px;">
+                    이 소통방은 익명이며,<br>서로 사랑과 격려의 말을 나눠주세요.
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-msg" placeholder="메시지를 입력하세요..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button class="chat-send-btn" onclick="sendChatMessage()">전송</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="prayer-popup" class="popup-overlay" onclick="closePrayerPopup()">
+        <div class="popup-content" onclick="event.stopPropagation()">
+            <div class="popup-header">
+                <div class="name-container">
+                    <h2 id="panel-name">이름</h2>
+                    <button class="edit-name-btn" onclick="editProfile()">편집</button>
+                    <div id="current-color-display" class="color-trigger-btn" onclick="openColorModal()"></div>
+                </div>
+                <button class="close-btn" onclick="closePrayerPopup()">&times;</button>
+            </div>
+            <div id="prayer-list"></div>
+            <div class="prayer-input-area">
+                <div class="prayer-verse">"두세 사람이 내 이름으로 모인 곳에는<br>나도 그들 중에 있느니라" (마 18:20)</div>
+                <div class="prayer-input-row">
+                    <input type="text" id="new-prayer" placeholder="기도 제목을 입력하세요...">
+                    <button class="prayer-send-btn" onclick="addPrayer()">
+                        <span style="font-size: 1.3rem;">🙏</span>
+                    </button>
+                </div>
+                <div style="text-align: right;">
+                    <button class="delete-member-btn" onclick="deleteMember()">삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="profile-edit-modal" class="popup-overlay" onclick="closeProfileEditModal()">
+        <div class="popup-content" style="height: auto; max-width: 320px; padding: 25px; text-align: center;" onclick="event.stopPropagation()">
+            <h3 style="margin-top:0; color:#5D4037;">프로필 편집</h3>
+            <div class="profile-upload-container">
+                <div class="profile-wrapper">
+                    <img id="edit-profile-preview" src="" alt="프로필 미리보기">
+                    <label for="profile-file-input" class="upload-btn">📷</label>
+                    <input type="file" id="profile-file-input" accept="image/*" style="display: none;" onchange="handleProfileFileSelect(event)">
+                </div>
+                <p class="upload-guide">터치하여 사진 변경</p>
+            </div>
+            <div style="margin-top: 20px; text-align: left;">
+                <label style="font-size: 0.85rem; font-weight: bold; color: #8D6E63; display:block; margin-bottom:5px;">이름</label>
+                <input type="text" id="edit-profile-name" class="profile-name-input" placeholder="이름을 입력하세요">
+            </div>
+            <div style="margin-top: 25px; display: flex; gap: 10px;">
+                <button class="btn-reset" onclick="closeProfileEditModal()" style="flex:1; padding: 12px;">취소</button>
+                <button class="btn-save" onclick="saveProfileChanges()" style="flex:1; padding: 12px;">저장</button>
+            </div>
+        </div>
+    </div>
+
     <div id="settings-modal" class="popup-overlay" onclick="closeSettingsModal()">
         <div class="popup-content" style="height: auto; max-width: 320px; padding: 20px;" onclick="event.stopPropagation()">
             <div class="popup-header" style="background:transparent; border:none; padding: 0 0 15px 0;">
@@ -83,10 +188,10 @@
                     </label>
                 </div>
             </div>
-            <div style="text-align:center; margin-top:20px; color:#aaa; font-size:0.8rem;">버전 1.4 (PWA)</div>
+            <div style="text-align:center; margin-top:20px; color:#aaa; font-size:0.8rem;">버전 1.5 (PWA)</div>
         </div>
     </div>
 
-    <script src="script.js?v=14"></script>
+    <script src="script.js?v=15"></script>
 </body>
 </html>
