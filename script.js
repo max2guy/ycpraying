@@ -1,5 +1,5 @@
 // ==========================================
-// 연천장로교회 청년부 기도 네트워크 (Final Fix + Pin)
+// 연천장로교회 청년부 기도 네트워크 (Final Fix v5)
 // ==========================================
 
 // 1. 서비스 워커 등록
@@ -109,14 +109,44 @@ const brightColors = ["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#B
 // 마지막 채팅 읽은 시간
 let lastChatReadTime = Number(localStorage.getItem('lastChatReadTime')) || Date.now();
 
-// 알림 권한 요청 (앱 실행 시)
-function checkNotificationPermission() {
-    if (!("Notification" in window)) return;
-    if (Notification.permission !== "denied" && Notification.permission !== "granted") {
-        Notification.requestPermission();
+// ★ [수정] 알림 권한 수동 요청 함수 (버튼 클릭 시 실행)
+function requestNotificationPermission() {
+    if (!("Notification" in window)) {
+        alert("이 기기는 알림을 지원하지 않습니다.");
+        return;
+    }
+    
+    Notification.requestPermission().then((permission) => {
+        if (permission === "granted") {
+            // 버튼 숨기기
+            const btn = document.getElementById('noti-btn');
+            if(btn) btn.style.display = 'none';
+            
+            // 테스트 알림 발송
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(function(registration) {
+                    registration.showNotification("알림이 설정되었습니다!", {
+                        body: "이제 새로운 메시지가 오면 알려드릴게요.",
+                        icon: 'icon-192.png',
+                        vibrate: [200]
+                    });
+                });
+            }
+        } else {
+            alert("알림 권한이 거부되었습니다. 휴대폰 설정에서 권한을 켜주세요.");
+        }
+    });
+}
+
+// 초기 로딩 시 권한 확인하여 버튼 표시 여부 결정
+function checkInitialPermission() {
+    if (Notification.permission === "granted") {
+        const btn = document.getElementById('noti-btn');
+        if(btn) btn.style.display = 'none';
     }
 }
-checkNotificationPermission();
+setTimeout(checkInitialPermission, 1000);
+
 
 // 앱 아이콘 배지 설정
 function setAppBadge(count) {
@@ -487,7 +517,11 @@ function toggleChatPopup() {
         lastChatReadTime = Date.now();
         localStorage.setItem('lastChatReadTime', lastChatReadTime);
         
-        checkNotificationPermission();
+        // ★ 팝업 열 때, 이미 권한이 있으면 버튼 숨김 확인
+        if (Notification.permission === "granted") {
+            const btn = document.getElementById('noti-btn');
+            if(btn) btn.style.display = 'none';
+        }
 
         setTimeout(() => document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight, 100);
     }
