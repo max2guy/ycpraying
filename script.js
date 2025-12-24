@@ -1,10 +1,11 @@
 // ==========================================
-// 연천장로교회 청년부 기도 네트워크 (Final + Notification)
+// 연천장로교회 청년부 기도 네트워크 (Notification Fix)
 // ==========================================
 
 // 1. 기본 설정 및 서비스 워커
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(function(registration) {
+        console.log('Service Worker Registered');
         registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
             newWorker.addEventListener('statechange', () => {
@@ -13,7 +14,7 @@ if ('serviceWorker' in navigator) {
                 }
             });
         });
-    }, function(err) { console.log('SW Fail: ', err); });
+    });
 }
 
 // PWA 설치 프롬프트
@@ -109,28 +110,23 @@ const brightColors = ["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#B
 // 마지막 채팅 읽은 시간
 let lastChatReadTime = Number(localStorage.getItem('lastChatReadTime')) || Date.now();
 
-// ==========================================
-// ★ [핵심] 알림 권한 및 배지 관리 (갤럭시 대응)
-// ==========================================
+// 권한 확인
 function checkNotificationPermission() {
     if (!("Notification" in window)) return;
     if (Notification.permission !== "denied" && Notification.permission !== "granted") {
         Notification.requestPermission();
     }
 }
-
-// 앱 실행 시 권한 확인
 checkNotificationPermission();
 
 function setAppBadge(count) {
-    // 1. Badging API (지원하는 경우)
     if ('setAppBadge' in navigator) {
         if (count > 0) navigator.setAppBadge(count).catch(e=>console.log(e));
         else navigator.clearAppBadge().catch(e=>console.log(e));
     }
 }
 
-// IP 추적 및 강제 퇴장(Kick) 시스템
+// IP 추적 및 강제 퇴장
 async function getMyIp() {
     try {
         const response = await fetch('https://api.ipify.org?format=json');
@@ -229,12 +225,10 @@ function loadData() {
         const cData = cSnap.val();
         if (mData) members = Object.keys(mData).map(key => ({ firebaseKey: key, ...mData[key] }));
         if(cData && cData.icon) centerNode.icon = cData.icon;
-        
         members.forEach(m => {
             if(!m.rotationDirection) m.rotationDirection = Math.random() < 0.5 ? 1 : -1;
             if(m.rotation === undefined) m.rotation = 0;
         });
-
         isDataLoaded = true;
         document.getElementById('loading').classList.add('hide');
         updateGraph(); 
@@ -315,7 +309,6 @@ function updateGraph() {
     globalNodes = [centerNode, ...members];
     const links = members.map(m => ({ source: centerNode.id, target: m.id }));
 
-    // 패턴
     const patterns = defs.selectAll("pattern").data(members, d => d.id);
     patterns.enter().append("pattern")
         .attr("id", d => "img-" + d.id).attr("width", 1).attr("height", 1).attr("patternContentUnits", "objectBoundingBox")
@@ -323,7 +316,6 @@ function updateGraph() {
     patterns.select("image").attr("xlink:href", d => d.photoUrl);
     patterns.exit().remove();
 
-    // 선
     link = linkGroup.selectAll("line").data(links, d => d.target.id || d.target);
     link.exit().remove();
     
@@ -336,7 +328,6 @@ function updateGraph() {
     linkEnter.transition().delay(800).duration(1500).style("opacity", 0.5);
     link = linkEnter.merge(link);
 
-    // 노드
     node = nodeGroup.selectAll("g").data(globalNodes, d => d.id);
     node.exit().remove();
 
@@ -483,19 +474,17 @@ window.addEventListener("resize", () => { const w = window.innerWidth; const h =
 let currentMemberData = null;
 function toggleCampPopup() { document.getElementById('camp-popup').classList.toggle('active'); }
 
-// ★ [수정] 채팅창 열 때 배지 초기화 + 알림 권한 재확인
 function toggleChatPopup() { 
     const el = document.getElementById('chat-popup'); 
     el.classList.toggle('active'); 
     if(el.classList.contains('active')) {
         document.getElementById('chat-badge').classList.remove('active');
         unreadChatKeys.clear(); 
-        setAppBadge(0); // 앱 아이콘 뱃지 제거
+        setAppBadge(0);
 
         lastChatReadTime = Date.now();
         localStorage.setItem('lastChatReadTime', lastChatReadTime);
         
-        // 채팅방 들어올 때 권한 한 번 더 체크
         checkNotificationPermission();
 
         setTimeout(() => document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight, 100);
@@ -629,7 +618,7 @@ function sendChatMessage() { const t = document.getElementById("chat-msg").value
 function deleteChatMessage(k) { if(confirm("관리자 삭제?")) messagesRef.child(k).remove(); }
 
 // ==========================================
-// ★ [수정] 메시지 수신 시 알림+배지 띄우기
+// ★ [수정] 메시지 수신 시 서비스 워커로 알림 요청
 // ==========================================
 messagesRef.limitToLast(50).on('child_added', snap => {
     const d = snap.val();
@@ -646,12 +635,15 @@ messagesRef.limitToLast(50).on('child_added', snap => {
             // 2. 앱 아이콘 숫자
             setAppBadge(unreadChatKeys.size); 
             
-            // 3. ★ [핵심] 상단바 알림 띄우기 (갤럭시 배지 트리거)
+            // 3. ★ [핵심] 서비스 워커에게 알림 요청 (갤럭시 배지 트리거)
             if (document.hidden && Notification.permission === "granted") {
-                new Notification("새로운 기도/채팅 메시지", {
-                    body: d.text,
-                    icon: 'icon-192.png',
-                    tag: 'prayer-chat' // 덮어쓰기 방지용 태그
+                navigator.serviceWorker.ready.then(function(registration) {
+                    registration.showNotification("새로운 기도/채팅 메시지", {
+                        body: d.text,
+                        icon: 'icon-192.png',
+                        tag: 'prayer-chat',
+                        vibrate: [200, 100, 200]
+                    });
                 });
             }
         }
