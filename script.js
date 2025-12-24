@@ -1,5 +1,5 @@
 // ==========================================
-// 연천장로교회 청년부 기도 네트워크 (Final v8 - Reply Delete)
+// 연천장로교회 청년부 기도 네트워크 (Final v9 - Settings Menu)
 // ==========================================
 
 // 1. 서비스 워커 등록
@@ -93,7 +93,7 @@ let isAdmin = false;
 let isFirstRender = true;
 let readStatus = JSON.parse(localStorage.getItem('readStatus')) || {};
 
-// 알림 설정 상태 (기본값: 켜짐 true) - 아까 만드신 토글 기능 유지
+// 알림 설정 상태 (기본값: 켜짐 true)
 let isNotiEnabled = localStorage.getItem('isNotiEnabled') !== 'false'; 
 
 let newMemberIds = new Set();
@@ -112,7 +112,7 @@ const brightColors = ["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#B
 
 let lastChatReadTime = Number(localStorage.getItem('lastChatReadTime')) || Date.now();
 
-// 알림 토글 기능
+// 알림 토글 기능 (채팅창 버튼용)
 function toggleNotification() {
     if (isNotiEnabled) {
         isNotiEnabled = false;
@@ -140,6 +140,11 @@ function enableNotification() {
     isNotiEnabled = true;
     localStorage.setItem('isNotiEnabled', 'true');
     updateNotiButtonUI();
+    
+    // 설정창 스위치도 동기화
+    const toggle = document.getElementById('setting-noti-toggle');
+    if(toggle) toggle.checked = true;
+
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(reg => {
             reg.showNotification("알림 설정 완료!", {
@@ -153,16 +158,22 @@ function enableNotification() {
 
 function updateNotiButtonUI() {
     const btn = document.getElementById('noti-btn');
-    if (!btn) return;
-    if (isNotiEnabled) {
-        btn.innerText = "🔕 알림 끄기";
-        btn.style.backgroundColor = "#FFCDD2";
-        btn.style.borderColor = "#EF9A9A";
-    } else {
-        btn.innerText = "🔔 알림 켜기";
-        btn.style.backgroundColor = "#FFF3E0";
-        btn.style.borderColor = "#FF9800";
+    const toggle = document.getElementById('setting-noti-toggle');
+    
+    if (btn) {
+        if (isNotiEnabled) {
+            btn.innerText = "🔕 알림 끄기";
+            btn.style.backgroundColor = "#FFCDD2";
+            btn.style.borderColor = "#EF9A9A";
+        } else {
+            btn.innerText = "🔔 알림 켜기";
+            btn.style.backgroundColor = "#FFF3E0";
+            btn.style.borderColor = "#FF9800";
+        }
     }
+    
+    // 설정창 스위치 동기화
+    if(toggle) toggle.checked = isNotiEnabled;
 }
 setTimeout(updateNotiButtonUI, 500);
 
@@ -247,11 +258,10 @@ firebase.auth().onAuthStateChanged((user) => {
     if (user) {
         isAdmin = true;
         document.getElementById('body').classList.add('admin-mode');
-        document.getElementById('admin-trigger').classList.add('active');
+        // [수정] admin 버튼이 사라졌으므로 트리거 처리 제외
     } else {
         isAdmin = false;
         document.getElementById('body').classList.remove('admin-mode');
-        document.getElementById('admin-trigger').classList.remove('active');
     }
 });
 
@@ -597,6 +607,80 @@ function toggleAdminMode() { if(isAdmin) { firebase.auth().signOut().then(() => 
 function openAdminModal() { document.getElementById('admin-modal').classList.add('active'); document.getElementById('admin-pw').focus(); }
 function closeAdminModal(e) { if(e.target.id === 'admin-modal') document.getElementById('admin-modal').classList.remove('active'); }
 
+// ==========================================
+// ★ [신규] 설정창 및 스위치 로직
+// ==========================================
+
+function openSettingsModal() {
+    // 1. 알림 스위치 상태 동기화
+    const notiToggle = document.getElementById('setting-noti-toggle');
+    // 사용자가 켰다고 저장했고 & 실제 브라우저 권한도 있을 때만 ON
+    if (isNotiEnabled && Notification.permission === "granted") {
+        notiToggle.checked = true;
+    } else {
+        notiToggle.checked = false;
+    }
+
+    // 2. 관리자 스위치 상태 동기화
+    const adminToggle = document.getElementById('setting-admin-toggle');
+    adminToggle.checked = isAdmin;
+
+    document.getElementById('settings-modal').classList.add('active');
+    // 메뉴 닫기
+    if(isFabOpen) toggleFabMenu();
+}
+
+function closeSettingsModal() {
+    document.getElementById('settings-modal').classList.remove('active');
+}
+
+// 알림 스위치 조작 시
+function handleNotiToggle(checkbox) {
+    if (checkbox.checked) {
+        // 켜려고 할 때 -> 권한 요청 로직 실행
+        if (!("Notification" in window)) {
+            alert("알림을 지원하지 않는 기기입니다.");
+            checkbox.checked = false;
+            return;
+        }
+        
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                enableNotification(); // 기존 함수 호출
+            } else {
+                alert("알림 권한이 거부되었습니다.");
+                checkbox.checked = false; // 스위치 끄기
+            }
+        });
+    } else {
+        // 끄려고 할 때
+        isNotiEnabled = false;
+        localStorage.setItem('isNotiEnabled', 'false');
+        updateNotiButtonUI(); // 채팅방 버튼 동기화
+        alert("알림이 해제되었습니다.");
+    }
+}
+
+// 관리자 스위치 조작 시
+function handleAdminToggle(checkbox) {
+    if (checkbox.checked) {
+        // 켜려고 할 때 -> 비밀번호 입력창 띄우기
+        checkbox.checked = false; 
+        openAdminModal(); 
+    } else {
+        // 끄려고 할 때 -> 로그아웃
+        if (confirm("관리자 모드를 해제하시겠습니까?")) {
+            firebase.auth().signOut().then(() => {
+                isAdmin = false;
+                alert("관리자 모드가 해제되었습니다.");
+            });
+        } else {
+            checkbox.checked = true; // 취소하면 다시 켜둠
+        }
+    }
+}
+
+// 관리자 인증 함수 수정 (성공 시 스위치 ON)
 function checkAdmin() { 
     const inputPw = document.getElementById('admin-pw').value;
     const adminEmail = "admin@church.com"; 
@@ -605,9 +689,17 @@ function checkAdmin() {
         document.getElementById('admin-modal').classList.remove('active');
         alert("관리자 모드 활성! 환영합니다.");
         document.getElementById('admin-pw').value=""; 
+        
+        // [추가된 부분] 설정창이 열려있다면 스위치 켜기
+        const adminToggle = document.getElementById('setting-admin-toggle');
+        if(adminToggle) adminToggle.checked = true;
+        
         if(currentMemberData) renderPrayers();
     })
-    .catch((error) => { alert("비밀번호가 틀렸습니다."); console.error(error); });
+    .catch((error) => { 
+        alert("비밀번호가 틀렸습니다."); 
+        console.error(error); 
+    });
 }
 
 function addNewMember() { const n = prompt("이름:"); if(n && n.trim()) { if(containsBannedWords(n)) return alert("부적절한 이름"); membersRef.push({id:`member_${Date.now()}`, name:n.trim(), type:"member", color:getRandomColor(), prayers:[], rotation:0, rotationDirection:1}); } }
@@ -662,7 +754,7 @@ function saveProfileChanges() {
 function createSafeElement(tag, className, text) { const el = document.createElement(tag); if (className) el.className = className; if (text) el.textContent = text; return el; }
 
 // ==========================================
-// [수정] 기도제목 렌더링 함수 (답글 삭제 기능 추가)
+// [수정] 기도제목 렌더링 함수 (답글 삭제 기능 포함)
 // ==========================================
 function renderPrayers() {
     const list = document.getElementById("prayer-list"); 
@@ -725,7 +817,6 @@ function renderPrayers() {
         div.appendChild(content); 
         div.appendChild(actionGroup);
 
-        // ★ [수정됨] 답글 렌더링 + 삭제 버튼 추가
         if (p.replies) {
             const replySection = createSafeElement("div", "reply-section");
             p.replies.forEach((r, rIdx) => { 
@@ -757,9 +848,7 @@ function renderPrayers() {
     });
 }
 
-// ==========================================
-// [신규] 답글 삭제 함수
-// ==========================================
+// 답글 삭제 함수
 function deleteReply(prayerIdx, replyIdx) {
     if(confirm("이 답글을 삭제하시겠습니까?")) {
         currentMemberData.prayers[prayerIdx].replies.splice(replyIdx, 1);
