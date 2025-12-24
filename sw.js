@@ -1,6 +1,6 @@
 // 파일명: sw.js
-// 버전: v3-final-fix (이 버전을 바꿔야 폰에서 새 파일로 인식합니다)
-const CACHE_NAME = 'yc-prayer-v3-final-fix';
+// 버전: v4-final-real (버전을 바꿔야 폰에서 새 파일로 인식합니다)
+const CACHE_NAME = 'yc-prayer-v4-final-real';
 
 // 캐시할 파일 목록
 const ASSETS_TO_CACHE = [
@@ -73,3 +73,4 @@ self.addEventListener('notificationclick', (event) => {
         })
     );
 });
+
