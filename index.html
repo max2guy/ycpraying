@@ -12,10 +12,11 @@
     
     <link rel="stylesheet" href="style.css?v=4">
     
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js" defer></script>
+    <script src="script.js?v=4" defer></script>
 </head>
 <body id="body">
 
@@ -84,11 +85,11 @@
             <div style="overflow-y: auto; flex-grow: 1;">
                 <div class="camp-img-container">
                     <span class="camp-img-title">메인 포스터</span>
-                    <img src="https://images.weserv.nl/?url=revival.slim153.com/main/data/editor/2512/b301d4d1631a2282d790dfa909122db3_1764730167_2768.jpg" class="camp-image" alt="캠프 포스터" onclick="openLightbox(this.src)">
+                    <img src="https://images.weserv.nl/?url=revival.slim153.com/main/data/editor/2512/b301d4d1631a2282d790dfa909122db3_1764730167_2768.jpg" class="camp-image" alt="캠프 포스터" onclick="openLightbox(this.src)" loading="lazy">
                 </div>
                 <div class="camp-img-container">
                     <span class="camp-img-title">캠프 일정표</span>
-                    <img src="https://images.weserv.nl/?url=revival.slim153.com/main/data/editor/2512/b301d4d1631a2282d790dfa909122db3_1764730167_3925.png" class="camp-image" alt="일정표" onclick="openLightbox(this.src)">
+                    <img src="https://images.weserv.nl/?url=revival.slim153.com/main/data/editor/2512/b301d4d1631a2282d790dfa909122db3_1764730167_3925.png" class="camp-image" alt="일정표" onclick="openLightbox(this.src)" loading="lazy">
                 </div>
             </div>
         </div>
@@ -162,8 +163,5 @@
             </div>
         </div>
     </div>
-
-    <script src="script.js?v=4"></script>
 </body>
 </html>
-
