@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// (기능: UI 최적화 + 스켈레톤 + 푸시알림 + 핀 고정 + 답글 삭제)
+// (기능: UI 최적화 + 스켈레톤 + 푸시알림 + 아멘 버튼)
 // ==========================================
 
 // 1. 서비스 워커 등록
@@ -24,7 +24,6 @@ const installBanner = document.getElementById('install-banner');
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    // 앱 접속 5초 후 설치 배너 노출
     setTimeout(() => {
         if(installBanner) installBanner.classList.add('show');
     }, 5000);
@@ -48,7 +47,7 @@ if(document.getElementById('btn-close-install')) {
     });
 }
 
-// UI 핸들러 (플로팅 메뉴)
+// UI 핸들러
 let isFabOpen = false;
 function toggleFabMenu() {
     isFabOpen = !isFabOpen;
@@ -96,32 +95,21 @@ const onlineRef = database.ref('.info/connected');
 const presenceRef = database.ref('presence');
 const messagesRef = database.ref('messages');
 
-// ==========================================
-// [푸시 알림 설정] VAPID 키 입력 필요
-// ==========================================
 const messaging = firebase.messaging();
-
-// TODO: Firebase 콘솔 > 프로젝트 설정 > 클라우드 메시징 > 웹 구성 > "키 쌍 생성" 후 아래에 붙여넣기
-const VAPID_KEY = "BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U"; 
+// TODO: VAPID 키 설정 (없으면 푸시 알림 작동 안 함)
+const VAPID_KEY = "YOUR_VAPID_KEY_HERE"; 
 
 async function requestPushPermission() {
     try {
-        if (!VAPID_KEY || VAPID_KEY.includes("여기에")) {
-            console.log("VAPID 키가 설정되지 않았습니다.");
-            return;
-        }
+        if (!VAPID_KEY || VAPID_KEY.includes("YOUR")) return;
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
-            console.log('알림 권한 허용됨');
             const registration = await navigator.serviceWorker.ready;
             const token = await messaging.getToken({ 
                 vapidKey: VAPID_KEY,
                 serviceWorkerRegistration: registration 
             });
-
             if (token && currentMemberData) {
-                console.log('FCM Token:', token);
-                // 내 프로필에 토큰 저장
                 membersRef.child(currentMemberData.firebaseKey).update({ fcmToken: token });
             }
         }
@@ -153,10 +141,8 @@ let dragStartY = 0;
 let isDragAction = false;
 const brightColors = ["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#BBDEFB", "#B3E5FC", "#B2EBF2", "#B2DFDB", "#C8E6C9", "#DCEDC8", "#F0F4C3", "#FFF9C4", "#FFECB3", "#FFE0B2", "#FFCCBC", "#D7CCC8", "#F5F5F5", "#CFD8DC"];
 
-// 마지막 채팅 읽은 시간
 let lastChatReadTime = Number(localStorage.getItem('lastChatReadTime')) || Date.now();
 
-// 로컬 알림 권한 요청 (앱 실행 시)
 function checkNotificationPermission() {
     if (!("Notification" in window)) return;
     if (Notification.permission !== "denied" && Notification.permission !== "granted") {
@@ -258,7 +244,6 @@ let centerNode = { id: "center", name: "연천장로교회\n청년부\n함께 �
 let members = [];
 let isDataLoaded = false;
 
-// 데이터 로딩 (3초 딜레이 제거됨)
 function loadData() {
     Promise.all([membersRef.once('value'), centerNodeRef.once('value')])
     .then(([mSnap, cSnap]) => {
@@ -313,7 +298,6 @@ membersRef.on('child_changed', (snap) => {
         updateNodeVisuals(); 
         if(currentMemberData && currentMemberData.firebaseKey === snap.key) {
             currentMemberData = members[idx];
-            // 데이터 변경 시 기도카드 다시 렌더링
             renderPrayers();
         }
     }
@@ -535,7 +519,7 @@ function toggleChatPopup() {
     }
 }
 
-// [UI 최적화] 스켈레톤 로딩 + 아이콘 UI + 말풍선 댓글
+// [UI 최적화] 스켈레톤 로딩 + 아이콘 UI + 말풍선 댓글 + 아멘 버튼
 function openPrayerPopup(data) {
     currentMemberData = data;
     newMemberIds.delete(data.id);
@@ -657,7 +641,7 @@ function saveProfileChanges() {
 function createSafeElement(tag, className, text) { const el = document.createElement(tag); if (className) el.className = className; if (text) el.textContent = text; return el; }
 
 // ==========================================
-// [UI 최적화 핵심] 아이콘 버튼 + 카드 UI + 말풍선 댓글 + 댓글 삭제
+// [수정됨] renderPrayers: 아멘 버튼 포함
 // ==========================================
 function renderPrayers() {
     const list = document.getElementById("prayer-list"); 
@@ -692,9 +676,12 @@ function renderPrayers() {
         // (2) 본문 영역
         const content = createSafeElement("div", "prayer-content", p.content);
         
-        // (3) 액션 버튼 (SVG 아이콘)
+        // (3) 액션 버튼 (아멘 버튼 + 아이콘)
         const actionGroup = createSafeElement("div", "action-group");
         
+        const amens = p.amens ? Object.keys(p.amens).length : 0;
+        const iAmened = p.amens && p.amens[mySessionId];
+
         const icons = {
             pin: '<svg viewBox="0 0 24 24"><path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg>',
             edit: '<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
@@ -706,6 +693,11 @@ function renderPrayers() {
         if(isAdmin) delBtnHtml = `<button class="icon-btn" style="color:#ef5350;" onclick="adminDeletePrayer(${i})" title="관리자 삭제">${icons.trash}</button>`;
 
         actionGroup.innerHTML = `
+            <button class="amen-btn ${iAmened ? 'active' : ''}" onclick="toggleAmen(${i})">
+                <span>🙏</span>
+                <span>아멘 ${amens > 0 ? amens : ''}</span>
+            </button>
+
             <button class="icon-btn ${p.isPinned ? 'active' : ''}" onclick="togglePin(${i})" title="고정">${icons.pin}</button>
             <button class="icon-btn" onclick="editPrayer(${i})" title="수정">${icons.edit}</button>
             <button class="icon-btn" onclick="addReply(${i})" title="답글">${icons.reply}</button>
@@ -736,6 +728,21 @@ function renderPrayers() {
     });
 }
 
+// [신규] 아멘 버튼 클릭 처리
+function toggleAmen(index) {
+    if (!currentMemberData) return;
+    const path = `members/${currentMemberData.firebaseKey}/prayers/${index}/amens`;
+    const ref = firebase.database().ref(path);
+    const p = currentMemberData.prayers[index];
+
+    if (p.amens && p.amens[mySessionId]) {
+        ref.child(mySessionId).remove(); // 취소
+    } else {
+        ref.child(mySessionId).set(true); // 추가
+        if(navigator.vibrate) navigator.vibrate(50); // 진동 피드백
+    }
+}
+
 function togglePin(index) {
     if (!currentMemberData) return;
     const currentState = currentMemberData.prayers[index].isPinned || false;
@@ -748,7 +755,6 @@ function togglePin(index) {
     });
 }
 
-// [답글 삭제 함수]
 function deleteReply(prayerIndex, replyIndex) {
     if(!confirm("이 답글을 삭제하시겠습니까?")) return;
 
@@ -771,31 +777,20 @@ function addReply(i) { const v = prompt("답글:"); if(v) { if(containsBannedWor
 function sendChatMessage() { const t = document.getElementById("chat-msg").value; if(t) { messagesRef.push({name:"익명", text:t, senderId:mySessionId, timestamp: firebase.database.ServerValue.TIMESTAMP}); document.getElementById("chat-msg").value=""; }}
 function deleteChatMessage(k) { if(confirm("관리자 삭제?")) messagesRef.child(k).remove(); }
 
-// ==========================================
-// [수정됨] script.js 하단 채팅 수신 및 알림 로직
-// ==========================================
 messagesRef.limitToLast(50).on('child_added', snap => {
     const d = snap.val();
-    
-    // 메시지가 내가 보낸 게 아니고, 접속 이후에 온 것이라면
     if (d.timestamp > lastChatReadTime && d.senderId !== mySessionId) {
         unreadChatKeys.add(snap.key);
         const popup = document.getElementById('chat-popup');
         
-        // 팝업이 닫혀있을 때만 알림
         if (!popup.classList.contains('active')) {
-            // 1. 내부 빨간 점 배지
             document.getElementById('chat-badge').classList.add('active'); 
-            // 2. 앱 아이콘 숫자 배지
             setAppBadge(unreadChatKeys.size); 
-            
-            // 3. [핵심 수정] 서비스 워커 알림 요청 (고유 태그 사용)
             if (document.hidden && Notification.permission === "granted" && 'serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then(function(registration) {
                     registration.showNotification("새로운 기도/채팅 메시지", {
                         body: d.text,
                         icon: 'icon-192.png',
-                        // [중요] 태그에 메시지 고유 키(snap.key)를 붙여서 매번 다른 알림으로 인식시킴
                         tag: 'msg-' + snap.key, 
                         vibrate: [200, 100, 200]
                     });
@@ -850,6 +845,3 @@ function gameLoop(timestamp) {
 }
 resizeWeatherCanvas();
 requestAnimationFrame(gameLoop);
-
-
-
