@@ -1,5 +1,5 @@
 // ==========================================
-// 연천장로교회 청년부 기도 네트워크 (v18 최종 수정본)
+// 연천장로교회 청년부 기도 네트워크 (v19 Pro 복구판)
 // Part 1: 초기 설정 및 알림/설정 로직
 // ==========================================
 
@@ -90,6 +90,7 @@ function openSettingsModal() {
     const notiToggle = document.getElementById('setting-noti-toggle');
     const adminToggle = document.getElementById('setting-admin-toggle');
     
+    // 현재 상태를 스위치에 반영
     if (notiToggle) {
         notiToggle.checked = (isNotiEnabled && Notification.permission === "granted");
     }
@@ -131,7 +132,7 @@ function handleNotiToggle(checkbox) {
 // 관리자 모드 스위치 핸들러
 function handleAdminToggle(checkbox) {
     if (checkbox.checked) {
-        checkbox.checked = false; // 인증창 열기 전 스위치 일단 복구
+        checkbox.checked = false; // 인증창 열기 전 스위치 일단 복구 (인증 성공 시 켜짐)
         openAdminModal(); 
     } else {
         if (confirm("관리자 모드를 해제하시겠습니까?")) {
@@ -141,7 +142,7 @@ function handleAdminToggle(checkbox) {
                 alert("관리자 모드가 해제되었습니다.");
             });
         } else {
-            checkbox.checked = true;
+            checkbox.checked = true; // 취소 시 스위치 켜진 상태 유지
         }
     }
 }
@@ -180,7 +181,7 @@ function forceRefresh() {
     }
 }
 // ==========================================
-// Part 2: 기도제목 렌더링 및 기능 로직 (v18)
+// Part 2: 기도제목 렌더링 및 기능 로직 (v19 Pro 복구판)
 // ==========================================
 
 // 5. 기도제목 리스트 출력 (더보기 메뉴 통합 및 겹침 오류 해결)
@@ -225,24 +226,25 @@ function renderPrayers() {
         const dateSpan = createSafeElement("span", "", p.date);
         headerLeft.appendChild(dateSpan);
 
-        // [핵심] 더보기(···) 메뉴 영역 - 기존의 '수정' 글씨나 'X' 아이콘은 생성하지 않습니다.
+        // [핵심 수정] 더보기(···) 메뉴 영역
+        // 기존의 [수정] 텍스트나 'X' 아이콘을 카드 헤더에 직접 만들지 않고 메뉴 안에 숨깁니다.
         const moreWrapper = document.createElement("div");
-        moreWrapper.style.position = "relative";
+        moreWrapper.className = "more-wrapper"; // CSS 위치 제어용 클래스
         
         const moreBtn = createSafeElement("button", "more-btn", "···");
         
         const optionsMenu = createSafeElement("div", "more-options");
         optionsMenu.id = `opt-${i}`;
 
-        // 메뉴 항목: 고정/해제
+        // 메뉴 항목 1: 고정/해제
         const optPin = createSafeElement("button", "opt-btn", p.isPinned ? "📍 고정 해제" : "📌 상단 고정");
         optPin.onclick = (e) => { e.stopPropagation(); togglePin(i); optionsMenu.classList.remove('active'); };
 
-        // 메뉴 항목: 수정
+        // 메뉴 항목 2: 수정
         const optEdit = createSafeElement("button", "opt-btn", "📝 수정하기");
         optEdit.onclick = (e) => { e.stopPropagation(); editPrayer(i); optionsMenu.classList.remove('active'); };
 
-        // 메뉴 항목: 삭제 (관리자일 경우 문구 변경)
+        // 메뉴 항목 3: 삭제 (관리자일 경우 문구 변경)
         const optDelLabel = isAdmin ? "🗑️ 강제 삭제" : "🗑️ 삭제하기";
         const optDel = createSafeElement("button", "opt-btn del-opt", optDelLabel);
         optDel.onclick = (e) => { e.stopPropagation(); deletePrayer(i); optionsMenu.classList.remove('active'); };
@@ -251,9 +253,10 @@ function renderPrayers() {
         optionsMenu.appendChild(optEdit);
         optionsMenu.appendChild(optDel);
         
+        // 더보기 버튼 클릭 이벤트
         moreBtn.onclick = (e) => {
             e.stopPropagation();
-            // 클릭한 것 외에 다른 모든 더보기 메뉴 닫기
+            // 현재 클릭한 메뉴 외에 열려있는 다른 메뉴들은 모두 닫기
             document.querySelectorAll('.more-options').forEach(el => {
                 if(el.id !== `opt-${i}`) el.classList.remove('active');
             });
@@ -287,9 +290,9 @@ function renderPrayers() {
                 const rItem = createSafeElement("div", "reply-item");
                 
                 const rText = createSafeElement("span", "", "💬 " + r.content);
-                rText.style.flex = "1";
+                rText.style.flex = "1"; // 텍스트가 공간을 차지하도록
                 
-                // 답글 삭제 버튼 (디자인 개선된 r-del-btn)
+                // 답글 삭제 버튼 (X)
                 const rDelBtn = createSafeElement("button", "r-del-btn", "&times;");
                 rDelBtn.onclick = () => deleteReply(i, rIdx);
                 
@@ -304,13 +307,13 @@ function renderPrayers() {
     });
 }
 
-// 6. 데이터 조작 및 Firebase 동기화 함수
+// 6. 데이터 조작 및 Firebase 동기화 함수들
 function syncPrayers() {
     if (!currentMemberData) return;
     membersRef.child(currentMemberData.firebaseKey).update({
         prayers: currentMemberData.prayers || []
     }).then(() => {
-        renderPrayers(); // 화면 갱신
+        renderPrayers(); // 데이터 업데이트 후 화면 즉시 갱신
     });
 }
 
@@ -321,7 +324,7 @@ function addPrayer() {
     if(containsBannedWords(v)) return alert("부적절한 단어가 포함되어 있습니다.");
     
     const p = currentMemberData.prayers || [];
-    // 새로운 기도는 목록 맨 앞에 추가
+    // 새로운 기도는 목록의 맨 앞에 추가 (unshift)
     p.unshift({
         content: v, 
         date: new Date().toISOString().split('T')[0],
@@ -333,7 +336,7 @@ function addPrayer() {
 }
 
 function editPrayer(i) {
-    const v = prompt("기도 제목 수정:", currentMemberData.prayers[i].content);
+    const v = prompt("기도 제목을 수정해 주세요:", currentMemberData.prayers[i].content);
     if(v && v.trim()) {
         if(containsBannedWords(v)) return alert("부적절한 단어 포함");
         currentMemberData.prayers[i].content = v.trim();
@@ -342,7 +345,7 @@ function editPrayer(i) {
 }
 
 function deletePrayer(i) {
-    const msg = isAdmin ? "[관리자] 이 게시물을 강제로 삭제하시겠습니까?" : "기도제목을 삭제하시겠습니까?";
+    const msg = isAdmin ? "[관리자] 이 게시물을 강제로 삭제하시겠습니까?" : "정말 삭제하시겠습니까?";
     if(confirm(msg)) {
         currentMemberData.prayers.splice(i, 1);
         syncPrayers();
@@ -376,13 +379,13 @@ function createSafeElement(tag, className, text) {
     const el = document.createElement(tag);
     if (className) el.className = className;
     if (text) {
-        if (text.includes("&times;")) el.innerHTML = text; // X 기호 등 HTML 허용
+        if (text.includes("&times;")) el.innerHTML = text; // X 기호 등 HTML 엔티티 허용
         else el.textContent = text;
     }
     return el;
 }
 // ==========================================
-// Part 3: 시각화 엔진 및 실시간 소통 로직 (v18)
+// Part 3: 시각화 엔진 및 실시간 소통 로직 (v19 Pro 복구판)
 // ==========================================
 
 // 7. D3.js 시각화 엔진 및 인터랙션 엔진
@@ -394,20 +397,30 @@ function initSimulation() {
         .force("collide", d3.forceCollide().radius(d => (d.type === 'root' ? 85 : 45) + 25));
 }
 
+// 화면 그리기 함수 (데이터 변경 시 호출)
 function updateGraph() {
     if (!isDataLoaded) return;
+    
+    // 중앙 노드와 멤버 노드 합치기
     globalNodes = [centerNode, ...members];
     const links = members.map(m => ({ source: "center", target: m.id }));
 
-    // 사진 패턴 업데이트 (노드 안에 사진 넣기)
+    // 1. 사진 패턴 업데이트 (노드 안에 들어갈 이미지 정의)
     const patterns = svg.select("defs").selectAll("pattern").data(members, d => d.id);
     const pEnter = patterns.enter().append("pattern")
-        .attr("id", d => "img-" + d.id).attr("width", 1).attr("height", 1).attr("patternContentUnits", "objectBoundingBox");
-    pEnter.append("image").attr("x", 0).attr("y", 0).attr("width", 1).attr("height", 1).attr("preserveAspectRatio", "xMidYMid slice");
+        .attr("id", d => "img-" + d.id)
+        .attr("width", 1).attr("height", 1)
+        .attr("patternContentUnits", "objectBoundingBox");
+        
+    pEnter.append("image")
+        .attr("x", 0).attr("y", 0)
+        .attr("width", 1).attr("height", 1)
+        .attr("preserveAspectRatio", "xMidYMid slice");
+        
     patterns.merge(pEnter).select("image").attr("xlink:href", d => d.photoUrl || "");
     patterns.exit().remove();
 
-    // 선(Link) 업데이트
+    // 2. 선(Link) 업데이트
     let link = linkGroup.selectAll("line").data(links, d => d.target.id || d.target);
     link.exit().remove();
     link = link.enter().append("line")
@@ -416,44 +429,56 @@ function updateGraph() {
         .style("opacity", 0.6)
         .merge(link);
 
-    // 노드(Node) 업데이트
+    // 3. 노드(Node) 업데이트
     let node = nodeGroup.selectAll("g").data(globalNodes, d => d.id);
     node.exit().remove();
 
     const nodeEnter = node.enter().append("g")
         .attr("cursor", "pointer")
         .on("click", (event, d) => { 
-            event.stopPropagation();
+            event.stopPropagation(); // 배경 클릭 이벤트 방지
             if (d.type !== 'root') openPrayerPopup(d); 
         });
 
+    // 노드 원형 그리기
     nodeEnter.append("circle")
         .attr("r", d => d.type === 'root' ? 75 : 40)
         .attr("stroke", "#fff")
         .attr("stroke-width", 2.5)
         .style("filter", "drop-shadow(0 2px 5px rgba(0,0,0,0.1))");
 
+    // 노드 텍스트(이름)
     nodeEnter.append("text")
         .attr("text-anchor", "middle")
         .attr("dy", ".35em")
         .style("font-weight", "bold")
         .style("fill", "#5D4037")
-        .style("pointer-events", "none")
+        .style("pointer-events", "none") // 텍스트 클릭 시에도 노드 클릭으로 인식되도록
         .style("font-size", "12px");
 
     node = nodeEnter.merge(node);
+    
+    // 노드 색상 또는 이미지 적용
     node.select("circle").attr("fill", d => {
         if (d.type === 'root') return "#FFF8E1";
         return d.photoUrl ? `url(#img-${d.id})` : (d.color || "#ccc");
     });
+    
     node.select("text").text(d => d.name.split('\n')[0]);
 
+    // 시뮬레이션 재시작
     if (!simulation) initSimulation();
+    
     simulation.nodes(globalNodes).on("tick", () => {
+        // 매 프레임마다 위치 계산하여 이동
         node.attr("transform", d => `translate(${d.x},${d.y})`);
-        link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
-            .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+        
+        link.attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
     });
+    
     simulation.force("link").links(links);
     simulation.alpha(1).restart();
 }
@@ -474,87 +499,137 @@ function sendChatMessage() {
     msgInput.value = "";
 }
 
+// 메시지 수신 리스너
 messagesRef.limitToLast(50).on('child_added', snap => {
     const d = snap.val();
     const chatBox = document.getElementById("chat-messages");
     if (!chatBox) return;
 
     const isMine = d.senderId === mySessionId;
+    
+    // 메시지 래퍼 (정렬용)
     const wrapper = document.createElement("div");
     wrapper.style.cssText = `display: flex; flex-direction: column; align-items: ${isMine ? "flex-end" : "flex-start"}; margin-bottom: 10px;`;
 
+    // 말풍선 스타일
     const bubble = document.createElement("div");
     bubble.innerText = d.text;
     bubble.style.cssText = `max-width: 80%; padding: 10px 14px; border-radius: 15px; font-size: 0.95rem; line-height:1.4; position: relative;`;
+    
+    // 내 메시지는 주황색, 상대방은 회색
     bubble.style.backgroundColor = isMine ? "#FFCC80" : "#f1f1f1";
     bubble.style.color = isMine ? "#3E2723" : "#333";
+    
+    // 말풍선 꼬리 모양
     bubble.style.borderTopRightRadius = isMine ? "2px" : "15px";
     bubble.style.borderTopLeftRadius = isMine ? "15px" : "2px";
 
+    // 관리자 기능: 메시지 클릭 시 삭제
     if (isAdmin) {
-        bubble.title = "삭제하려면 클릭";
-        bubble.onclick = () => confirm("이 메시지를 삭제하시겠습니까?") && messagesRef.child(snap.key).remove();
+        bubble.title = "클릭하여 삭제";
+        bubble.onclick = () => confirm("관리자 권한으로 이 메시지를 삭제하시겠습니까?") && messagesRef.child(snap.key).remove();
     }
 
     wrapper.appendChild(bubble);
     chatBox.appendChild(wrapper);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    chatBox.scrollTop = chatBox.scrollHeight; // 스크롤 하단 고정
 
     // 푸시 알림 (앱이 백그라운드일 때만)
     if (!isFirstRender && !isMine && isNotiEnabled && document.hidden) {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.ready.then(reg => {
-                reg.showNotification("💭 소통방 새 메시지", { body: d.text, icon: 'icon-192.png', tag: 'chat' });
+                reg.showNotification("💭 소통방 새 메시지", { 
+                    body: d.text, 
+                    icon: 'icon-192.png', 
+                    tag: 'chat' 
+                });
             });
         }
     }
 });
 
+// 메시지 삭제 감지
 messagesRef.on('child_removed', () => {
     const chatBox = document.getElementById("chat-messages");
-    if(chatBox) chatBox.innerHTML = ""; // 관리자가 지우면 화면 초기화 후 다시 로드 유도
+    if(chatBox) chatBox.innerHTML = ""; // 화면 초기화 후 리로드 유도 (간단 구현)
 });
 
-// 9. 날씨 애니메이션 로직 (복구됨)
+// 9. 날씨 애니메이션 로직 (생략 없이 복구됨)
 const wc = document.getElementById('weather-canvas');
 const wctx = wc ? wc.getContext('2d') : null;
-let wParts = [];
+let wParts = []; // 눈/비 입자 배열
 
 async function fetchWeather() {
     try {
+        // 연천군 좌표 (38.09, 127.07)
         const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=38.09&longitude=127.07&current_weather=true");
         const d = await res.json();
         const temp = d.current_weather.temperature;
         const code = d.current_weather.weathercode;
         
         document.getElementById('weather-text').innerHTML = `📍 연천군<br>현재 기온: ${temp}°C`;
-        const toast = document.getElementById('weather-toast');
-        if(toast) { toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 4000); }
         
-        // 날씨 코드에 따른 입자 생성 (비: 51~67, 눈: 71~86)
+        const toast = document.getElementById('weather-toast');
+        if(toast) { 
+            toast.classList.add('show'); 
+            setTimeout(() => toast.classList.remove('show'), 4000); 
+        }
+        
+        // 날씨 코드에 따른 애니메이션 입자 생성
+        // 비: 코드 51~67, 눈: 71~86
         if (code >= 51 && code <= 67) createRain();
         else if (code >= 71 && code <= 86) createSnow();
+        
     } catch(e) { console.log("날씨 정보를 가져오지 못했습니다."); }
 }
 
 function createRain() {
     wParts = [];
-    for(let i=0; i<40; i++) wParts.push({ x: Math.random()*wc.width, y: Math.random()*wc.height, s: 4+Math.random()*4, l: 8+Math.random()*10 });
-}
-function createSnow() {
-    wParts = [];
-    for(let i=0; i<40; i++) wParts.push({ x: Math.random()*wc.width, y: Math.random()*wc.height, s: 1+Math.random()*2, r: 2+Math.random()*3 });
+    for(let i=0; i<50; i++) {
+        wParts.push({ 
+            x: Math.random() * wc.width, 
+            y: Math.random() * wc.height, 
+            s: 5 + Math.random() * 5, // 속도
+            l: 10 + Math.random() * 10 // 길이
+        });
+    }
 }
 
+function createSnow() {
+    wParts = [];
+    for(let i=0; i<40; i++) {
+        wParts.push({ 
+            x: Math.random() * wc.width, 
+            y: Math.random() * wc.height, 
+            s: 1 + Math.random() * 1.5, // 속도
+            r: 2 + Math.random() * 3 // 반지름
+        });
+    }
+}
+
+// 애니메이션 루프 (물리 연산)
 function gameLoop() {
     if (wctx && wParts.length > 0) {
         wctx.clearRect(0, 0, wc.width, wc.height);
-        wctx.strokeStyle = "rgba(174,194,224,0.6)"; wctx.fillStyle = "rgba(255,255,255,0.8)"; wctx.lineWidth = 1.5;
+        
+        wctx.strokeStyle = "rgba(174,194,224,0.6)"; 
+        wctx.fillStyle = "rgba(255,255,255,0.8)"; 
+        wctx.lineWidth = 1.5;
+
         wParts.forEach(p => {
-            if (p.l) { // 비
-                wctx.beginPath(); wctx.moveTo(p.x, p.y); wctx.lineTo(p.x, p.y+p.l); wctx.stroke(); p.y += p.s; if(p.y > wc.height) p.y = -p.l;
-            } else { // 눈
-                wctx.beginPath(); wctx.arc(p.x, p.y, p.r, 0, Math.PI*2); wctx.fill(); p.y += p.s; if(p.y > wc.height) p.y = -5;
+            if (p.l) { // 비 (Rain) - 선 그리기
+                wctx.beginPath(); 
+                wctx.moveTo(p.x, p.y); 
+                wctx.lineTo(p.x, p.y + p.l); 
+                wctx.stroke(); 
+                p.y += p.s; 
+                if(p.y > wc.height) p.y = -p.l; // 화면 아래로 가면 위로 리셋
+            } else { // 눈 (Snow) - 원 그리기
+                wctx.beginPath(); 
+                wctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); 
+                wctx.fill(); 
+                p.y += p.s; 
+                if(p.y > wc.height) p.y = -5;
             }
         });
     }
@@ -565,14 +640,18 @@ function gameLoop() {
 function editProfile() {
     if (!currentMemberData) return;
     document.getElementById('edit-profile-name').value = currentMemberData.name;
-    document.getElementById('edit-profile-preview').src = currentMemberData.photoUrl || "https://via.placeholder.com/150?text=No+Image";
+    document.getElementById('edit-profile-preview').src = currentMemberData.photoUrl || ""; // 기본 이미지 처리
     document.getElementById('profile-edit-modal').classList.add('active');
 }
-function closeProfileEditModal() { document.getElementById('profile-edit-modal').classList.remove('active'); }
+
+function closeProfileEditModal() { 
+    document.getElementById('profile-edit-modal').classList.remove('active'); 
+}
 
 function saveProfileChanges() {
     const newName = document.getElementById('edit-profile-name').value.trim();
     if(!newName) return alert("이름을 입력하세요.");
+    
     membersRef.child(currentMemberData.firebaseKey).update({
         name: newName,
         photoUrl: document.getElementById('edit-profile-preview').src
@@ -581,7 +660,10 @@ function saveProfileChanges() {
 
 function handleProfileFileSelect(event) {
     const file = event.target.files[0];
-    if (!file || file.size > 1024 * 1024) return alert("이미지가 너무 큽니다. (1MB 이하 권장)");
+    if (!file) return;
+    // 이미지 크기 제한 (간단한 체크)
+    if (file.size > 2 * 1024 * 1024) return alert("이미지가 너무 큽니다. (2MB 이하 권장)");
+
     const reader = new FileReader();
     reader.onload = e => document.getElementById('edit-profile-preview').src = e.target.result;
     reader.readAsDataURL(file);
@@ -594,7 +676,11 @@ function openPrayerPopup(d) {
     document.getElementById("prayer-popup").classList.add("active");
     renderPrayers();
 }
-function closePrayerPopup() { document.getElementById("prayer-popup").classList.remove("active"); currentMemberData = null; }
+
+function closePrayerPopup() { 
+    document.getElementById("prayer-popup").classList.remove("active"); 
+    currentMemberData = null; 
+}
 
 function toggleChatPopup() {
     const el = document.getElementById('chat-popup');
@@ -607,14 +693,20 @@ function toggleChatPopup() {
 
 function checkAdmin() {
     const pw = document.getElementById('admin-pw').value;
-    const adminEmail = "admin@church.com"; // 기본 설정 이메일
+    const adminEmail = "admin@church.com"; 
+    
+    // 단순 비밀번호 체크 (실제 운영 시 Firebase Auth 계정 사용 권장)
     firebase.auth().signInWithEmailAndPassword(adminEmail, pw).then(() => {
         isAdmin = true;
         document.getElementById('body').classList.add('admin-mode');
         document.getElementById('admin-modal').classList.remove('active');
         alert("관리자 인증 성공!");
+        
+        // 설정창 스위치 켜기
         const adminToggle = document.getElementById('setting-admin-toggle');
         if(adminToggle) adminToggle.checked = true;
+        
+        // 현재 열려있는 팝업이 있다면 새로고침
         if(currentMemberData) renderPrayers();
     }).catch(() => alert("비밀번호가 틀렸습니다."));
 }
@@ -631,6 +723,9 @@ function addNewMember() {
             type: "member",
             color: brightColors[Math.floor(Math.random()*brightColors.length)],
             prayers: []
+        }).then(() => {
+             // 추가 후 리로드하여 노드 반영
+             window.location.reload();
         });
     }
 }
@@ -643,7 +738,7 @@ function deleteMember() {
 }
 
 function containsBannedWords(t) {
-    const list = ["욕설1", "비속어2"]; // 실제 운영시 리스트 확장
+    const list = ["바보", "멍청이"]; // 금지어 리스트
     return list.some(w => t.includes(w));
 }
 
@@ -661,11 +756,13 @@ presenceRef.on('value', s => {
     if(el) el.innerText = `${count}명 접속 중`;
 });
 
+// 리사이즈 대응
 window.addEventListener('resize', () => {
     if(wc) { wc.width = window.innerWidth; wc.height = window.innerHeight; }
 });
 if(wc) { wc.width = window.innerWidth; wc.height = window.innerHeight; }
 
+// 루프 시작
 requestAnimationFrame(gameLoop);
 updateNotiButtonUI();
-// --- v18 script.js 끝 ---
+// --- v19 script.js 끝 ---
