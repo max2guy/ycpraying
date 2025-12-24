@@ -1,5 +1,5 @@
 // ==========================================
-// 연천장로교회 청년부 기도 네트워크 (Final Fix + Pin + Skeleton)
+// 연천장로교회 청년부 기도 네트워크 (Final Fix + Pin + Skeleton + UI Renew)
 // ==========================================
 
 // 1. 서비스 워커 등록
@@ -16,7 +16,7 @@ if ('serviceWorker' in navigator) {
     }, function(err) { console.log('SW Fail: ', err); });
 }
 
-// [1-b] PWA 설치 버튼 로직 (세련된 바텀 시트)
+// [PWA 설치 버튼 로직]
 let deferredPrompt;
 const installBanner = document.getElementById('install-banner');
 
@@ -93,6 +93,12 @@ const centerNodeRef = database.ref('centerNode');
 const onlineRef = database.ref('.info/connected');
 const presenceRef = database.ref('presence');
 const messagesRef = database.ref('messages');
+
+// [푸시 알림] 메시징 설정 (필요시 키 입력)
+const messaging = firebase.messaging();
+// const VAPID_KEY = "여기에_키를_넣으세요"; 
+// async function requestPushPermission() { ... } 
+// requestPushPermission();
 
 let mySessionId = localStorage.getItem('mySessionId');
 if (!mySessionId) {
@@ -500,7 +506,7 @@ function toggleChatPopup() {
     }
 }
 
-// [3] Skeleton UI 적용: 데이터가 로딩되기 전 잠깐 스켈레톤을 보여줌
+// [3] Skeleton UI 적용 + [UI Renew] 아이콘 UI
 function openPrayerPopup(data) {
     currentMemberData = data;
     newMemberIds.delete(data.id);
@@ -526,11 +532,11 @@ function openPrayerPopup(data) {
         </div>
     `;
 
-    // [Skeleton] 애니메이션 프레임 확보 후 실제 데이터 렌더링 (아주 짧은 딜레이로 부드러운 전환)
+    // [Skeleton] 애니메이션 프레임 확보 후 실제 데이터 렌더링
     requestAnimationFrame(() => {
         setTimeout(() => {
             renderPrayers();
-        }, 150); // 0.15초 정도 스켈레톤을 보여줘서 '로딩 중'이라는 느낌을 줌
+        }, 150); 
     });
 }
 
@@ -619,88 +625,83 @@ function saveProfileChanges() {
 function createSafeElement(tag, className, text) { const el = document.createElement(tag); if (className) el.className = className; if (text) el.textContent = text; return el; }
 
 // ==========================================
-// [수정] 기도제목 렌더링 함수 (고정 기능 + 아이콘)
+// [UI 최적화] 아이콘 기반의 기도카드 렌더링
 // ==========================================
 function renderPrayers() {
     const list = document.getElementById("prayer-list"); 
     list.innerHTML = "";
     
-    if(!currentMemberData || !currentMemberData.prayers) { 
-        list.innerHTML = "<p style='text-align:center; margin-top:20px;'>기도제목을 나눠주세요!</p>"; 
+    if(!currentMemberData || !currentMemberData.prayers || currentMemberData.prayers.length === 0) { 
+        list.innerHTML = `
+            <div style="text-align:center; padding: 40px 20px; color:#aaa;">
+                <div style="font-size:3rem; margin-bottom:10px; opacity:0.5;">🙏</div>
+                <p>아직 기도제목이 없습니다.<br>가장 먼저 기도를 나눠주세요!</p>
+            </div>`; 
         return; 
     }
 
-    // 1. 원본 인덱스 기억 & 배열 복사
-    const displayList = currentMemberData.prayers.map((p, index) => ({
-        ...p,
-        originalIndex: index
-    }));
+    // 1. 인덱스 보존 및 정렬 (고정된 글 위로)
+    const displayList = currentMemberData.prayers.map((p, index) => ({ ...p, originalIndex: index }));
+    displayList.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
 
-    // 2. 고정된 글(isPinned) 맨 위로 정렬
-    displayList.sort((a, b) => {
-        return (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0);
-    });
-
-    // 3. 화면에 그리기
+    // 2. 카드 생성
     displayList.forEach((p) => {
         const i = p.originalIndex;
         const div = createSafeElement("div", "prayer-card");
-        if (p.isPinned) div.classList.add("pinned"); // 스타일용 클래스 추가
+        if (p.isPinned) div.classList.add("pinned");
 
+        // (1) 헤더: 날짜 & 핀 표시
         const header = createSafeElement("div", "prayer-header");
+        const dateDiv = createSafeElement("div", "prayer-date");
+        if(p.isPinned) dateDiv.innerHTML += `<span class="pinned-mark">📌</span>`;
+        dateDiv.innerHTML += `<span>${p.date}</span>`;
+        header.appendChild(dateDiv);
         
-        // [핵심 수정] 날짜와 아이콘을 담을 래퍼(Wrapper) 생성
-        const dateWrapper = createSafeElement("div");
-        dateWrapper.style.display = "flex";
-        dateWrapper.style.alignItems = "center";
-
-        // 고정된 글이면 아이콘 span 추가
-        if (p.isPinned) {
-            const pinIcon = createSafeElement("span", "pinned-icon", "📌");
-            dateWrapper.appendChild(pinIcon);
-        }
-
-        // 날짜 span 추가
-        const dateSpan = createSafeElement("span", "", p.date);
-        dateWrapper.appendChild(dateSpan);
-        
-        header.appendChild(dateWrapper);
-
+        // (2) 본문
         const content = createSafeElement("div", "prayer-content", p.content);
+        
+        // (3) 액션 버튼 (아이콘)
         const actionGroup = createSafeElement("div", "action-group");
         
-        let delBtnHtml = `<button class="text-btn" onclick="deletePrayer(${i})">삭제</button>`;
-        if(isAdmin) delBtnHtml = `<button class="text-btn admin-delete-btn" onclick="adminDeletePrayer(${i})">강제삭제</button>`;
-        
-        // 고정/해제 버튼 라벨
-        const pinLabel = p.isPinned ? "해제" : "고정";
-        
+        // 아이콘 SVG 데이터
+        const icons = {
+            pin: '<svg viewBox="0 0 24 24"><path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg>',
+            edit: '<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
+            trash: '<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>',
+            reply: '<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>'
+        };
+
+        // 관리자 삭제 버튼 처리
+        let delBtnHtml = `<button class="icon-btn" onclick="deletePrayer(${i})" title="삭제">${icons.trash}</button>`;
+        if(isAdmin) delBtnHtml = `<button class="icon-btn" style="color:#ef5350;" onclick="adminDeletePrayer(${i})" title="관리자 삭제">${icons.trash}</button>`;
+
         actionGroup.innerHTML = `
-            <button class="text-btn" onclick="togglePin(${i})" style="color:#FF9800; font-weight:bold;">${pinLabel}</button>
-            <button class="text-btn" onclick="editPrayer(${i})">수정</button>
+            <button class="icon-btn ${p.isPinned ? 'active' : ''}" onclick="togglePin(${i})" title="고정">${icons.pin}</button>
+            <button class="icon-btn" onclick="editPrayer(${i})" title="수정">${icons.edit}</button>
+            <button class="icon-btn" onclick="addReply(${i})" title="답글">${icons.reply}</button>
             ${delBtnHtml}
-            <button class="text-btn" onclick="addReply(${i})">답글</button>
         `;
-        
-        div.appendChild(header); 
-        div.appendChild(content); 
+
+        div.appendChild(header);
+        div.appendChild(content);
         div.appendChild(actionGroup);
 
-        if (p.replies) {
+        // (4) 답글 섹션 (말풍선 스타일)
+        if (p.replies && p.replies.length > 0) {
             const replySection = createSafeElement("div", "reply-section");
             p.replies.forEach(r => { 
-                const rItem = createSafeElement("div", "reply-item", "💬 " + r.content); 
+                const rItem = document.createElement("div");
+                rItem.className = "reply-item";
+                rItem.innerHTML = `<span class="reply-icon">↳</span> <span>${r.content}</span>`;
                 replySection.appendChild(rItem); 
             });
             div.appendChild(replySection);
         }
+
         list.appendChild(div);
     });
 }
 
-// ==========================================
-// [신규] 게시글 고정/해제 토글 함수
-// ==========================================
 function togglePin(index) {
     if (!currentMemberData) return;
     
@@ -712,7 +713,6 @@ function togglePin(index) {
     membersRef.child(currentMemberData.firebaseKey).update({
         prayers: currentMemberData.prayers
     }).then(() => {
-        // 화면 즉시 갱신
         renderPrayers();
     });
 }
@@ -726,24 +726,15 @@ function addReply(i) { const v = prompt("답글:"); if(v) { if(containsBannedWor
 function sendChatMessage() { const t = document.getElementById("chat-msg").value; if(t) { messagesRef.push({name:"익명", text:t, senderId:mySessionId, timestamp: firebase.database.ServerValue.TIMESTAMP}); document.getElementById("chat-msg").value=""; }}
 function deleteChatMessage(k) { if(confirm("관리자 삭제?")) messagesRef.child(k).remove(); }
 
-// ==========================================
-// ★ [수정됨] 갤럭시/안드로이드 앱 알림 로직
-// ==========================================
 messagesRef.limitToLast(50).on('child_added', snap => {
     const d = snap.val();
-    
-    // 메시지가 내가 보낸 게 아니고, 접속 이후에 온 것이라면
     if (d.timestamp > lastChatReadTime && d.senderId !== mySessionId) {
         unreadChatKeys.add(snap.key);
         const popup = document.getElementById('chat-popup');
         
         if (!popup.classList.contains('active')) {
-            // 1. 내부 빨간 점 배지
             document.getElementById('chat-badge').classList.add('active'); 
-            // 2. 앱 아이콘 숫자 배지
             setAppBadge(unreadChatKeys.size); 
-            
-            // 3. ★ [핵심] 서비스 워커에게 '알림 보여줘!' 요청하기
             if (document.hidden && Notification.permission === "granted" && 'serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then(function(registration) {
                     registration.showNotification("새로운 기도/채팅 메시지", {
