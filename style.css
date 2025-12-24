@@ -47,9 +47,11 @@ body {
 .online-counter { top: 30px; right: 30px; }
 .online-dot { width: 8px; height: 8px; background: #4CAF50; border-radius: 50%; animation: pulse 2s infinite; }
 
-@media (max-width: 768px) { .camp-btn { top: 20px; left: 20px; } .online-counter { top: 20px; right: 20px; } }
-
 /* --- Floating Buttons --- */
+#menu-container {
+    position: fixed; bottom: 30px; left: 30px; z-index: 100;
+    display: flex; flex-direction: column-reverse; gap: 15px; align-items: center;
+}
 .float-btn {
     cursor: pointer; transition: transform 0.2s;
     box-shadow: 0 4px 10px rgba(141, 110, 99, 0.2); border: none;
@@ -57,105 +59,57 @@ body {
     display: flex !important; align-items: center !important; justify-content: center !important;
     -webkit-appearance: none; appearance: none;
 }
-.float-btn:hover { transform: scale(1.05); }
-.float-btn:active { transform: scale(0.95); }
-
-#menu-container {
-    position: fixed; bottom: 30px; left: 30px; z-index: 100;
-    display: flex; flex-direction: column-reverse; gap: 15px; align-items: center;
-}
 .menu-main-btn { background: #3E2723; color: white; font-size: 1.5rem; z-index: 101; transition: transform 0.3s ease; }
 .menu-open .menu-main-btn { transform: rotate(90deg); background: #5D4037; }
 .sub-btn { opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; }
 .menu-open .sub-btn { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
 .add-member-btn { background: white; color: var(--theme-orange); border: 2px solid var(--theme-orange); }
 .add-member-btn svg { fill: var(--theme-orange); width: 24px; height: 24px; }
+.settings-btn { background: white; color: #455A64; border: 2px solid #455A64; font-size: 1.8rem; }
 
-/* Chat Button */
+/* --- Chat Button --- */
 .chat-btn { position: fixed; bottom: 30px; right: 30px; background: #FFECB3; color: #5D4037; border: 2px solid #FFCA28; font-size: 1.4rem; z-index: 100;}
 .chat-badge { position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; background: #FF5252; border-radius: 50%; border: 2px solid white; display: none; animation: pulse-red 1.5s infinite; z-index: 101; }
 .chat-badge.active { display: block; }
 
-@media (max-width: 768px) { #menu-container { bottom: calc(20px + env(safe-area-inset-bottom)); left: 20px; } .chat-btn { bottom: calc(20px + env(safe-area-inset-bottom)); right: 20px; } }
-
-/* --- Popup & Modal --- */
-.popup-overlay {
-    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 2000;
-    display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease;
-}
+/* --- Popup & Card Style --- */
+.popup-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 2000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
 .popup-overlay.active { display: flex; opacity: 1; }
-.popup-content {
-    background: #FFF8E1; width: 90%; max-width: 500px; height: 85vh; max-height: 700px;
-    border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    display: flex; flex-direction: column; overflow: hidden; transform: scale(0.9); transition: transform 0.3s ease; position: relative;
-}
+.popup-content { background: #FFF8E1; width: 90%; max-width: 500px; height: 85vh; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; overflow: hidden; transform: scale(0.9); transition: transform 0.3s ease; position: relative; }
 .popup-overlay.active .popup-content { transform: scale(1); }
-.popup-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #FFE0B2; padding: 15px; flex-shrink: 0; background: rgba(255, 255, 255, 0.5); }
-.popup-header h2 { margin: 0; font-size: 1.2rem; color: #8D6E63; }
-.close-btn { cursor: pointer; font-size: 2rem; border: none; background: none; color: #888; padding: 0 10px; }
+.popup-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #FFE0B2; padding: 15px; background: rgba(255, 255, 255, 0.5); }
+.close-btn { cursor: pointer; font-size: 2rem; border: none; background: none; color: #888; }
 
-/* 기도 카드 스타일 */
-#prayer-list { flex-grow: 1; overflow-y: auto; padding: 12px; background: #fff; -webkit-overflow-scrolling: touch; }
 .prayer-card { background: #FFF; border-radius: 12px; padding: 14px; margin-bottom: 12px; border-left: 4px solid #FFCC80; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); position: relative; animation: slideIn 0.3s ease; }
-@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
 .prayer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.75rem; color: #8D6E63; }
 .prayer-content { font-size: 0.95rem; line-height: 1.5; color: #3E2723; word-wrap: break-word; margin-bottom: 10px; }
-.action-group { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; margin-top: 5px; border-top: 1px solid #FFF3E0; }
+.action-group { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #FFF3E0; }
 
-/* 더보기 메뉴(···) 스타일 */
-.more-btn { border: none; background: none; color: #8D6E63; font-size: 1.5rem; font-weight: bold; cursor: pointer; padding: 0 5px; line-height: 1; }
-.more-options {
-    position: absolute; right: 10px; top: 35px; background: white; border: 1px solid #FFE0B2; border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 500; overflow: hidden; min-width: 100px;
-}
+/* --- 더보기 메뉴 스타일 --- */
+.more-btn { border: none; background: none; color: #8D6E63; font-size: 1.5rem; font-weight: bold; cursor: pointer; padding: 0 5px; }
+.more-options { position: absolute; right: 10px; top: 35px; background: white; border: 1px solid #FFE0B2; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 500; overflow: hidden; min-width: 100px; }
 .more-options.active { display: flex; }
-.opt-btn { border: none; background: none; padding: 12px 15px; font-size: 0.9rem; color: #5D4037; cursor: pointer; text-align: left; transition: background 0.2s; }
+.opt-btn { border: none; background: none; padding: 12px 15px; font-size: 0.9rem; color: #5D4037; cursor: pointer; text-align: left; }
 .opt-btn:hover { background-color: #FFF3E0; }
 .opt-btn.del-opt { color: #ef5350; border-top: 1px solid #FFF3E0; }
 
-.text-btn { font-size: 0.85rem; background: none; border: none; cursor: pointer; color: #FF7043; font-weight: bold; padding: 4px 8px; transition: opacity 0.2s; }
+/* --- 프로필 및 기타 스타일 --- */
+.profile-wrapper { position: relative; width: 120px; height: 120px; margin: 0 auto; }
+#edit-profile-preview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #FFE0B2; }
+.upload-btn { position: absolute; bottom: 5px; right: 5px; background-color: #8D6E63; color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid white; }
 
-/* 답글 섹션 */
-.reply-section { margin-top: 10px; background-color: #FFF8E1; border-radius: 8px; padding: 10px; }
-.reply-item { font-size: 0.85rem; border-bottom: 1px dashed #FFE0B2; padding: 5px 0; color: #E65100; display: flex; justify-content: space-between; align-items: center; }
-
-/* 입력창 구역 */
-.prayer-input-area { padding: 12px; background: #fff; border-top: 2px solid #FFE0B2; flex-shrink: 0; }
-.prayer-verse { background: #FFF8E1; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.8rem; color: #5D4037; text-align: center; line-height: 1.4; }
-.prayer-input-row { display: flex; gap: 8px; align-items: center; }
-#new-prayer { flex: 1; padding: 10px 15px; border: 2px solid #FFE0B2; border-radius: 20px; font-size: 0.9rem; outline: none; }
-.prayer-send-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background: linear-gradient(135deg, #8D6E63, #6D4C41); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(141, 110, 99, 0.3); }
-
-/* 프로필 업로드 관련 */
-.profile-upload-container { display: flex; flex-direction: column; align-items: center; margin: 10px 0; }
-.profile-wrapper { position: relative; width: 120px; height: 120px; }
-#edit-profile-preview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #FFE0B2; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #fff; }
-.upload-btn { position: absolute; bottom: 5px; right: 5px; background-color: #8D6E63; color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid white; font-size: 1.1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-.upload-guide { margin-top: 8px; color: #aaa; font-size: 0.8rem; }
-.profile-name-input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
-.btn-save { background: linear-gradient(to right, #8D6E63, #6D4C41); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-.btn-reset { background: #EFEBE9; color: #5D4037; border: 1px solid #D7CCC8; border-radius: 8px; font-weight: bold; cursor: pointer; }
-
-/* 설정창 디자인 */
-.settings-list { display: flex; flex-direction: column; gap: 20px; padding: 10px; width: 100%; box-sizing: border-box; }
-.settings-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #FFE0B2; }
-.settings-label { font-size: 1rem; color: #5D4037; font-weight: bold; display: flex; align-items: center; gap: 10px; }
-.setting-action-btn { background: #78909C; color: white; border: none; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
-.settings-btn { background: white; color: #455A64; border: 2px solid #455A64; font-size: 1.8rem; padding-bottom: 3px !important; }
-
-/* 토글 스위치 디자인 */
+/* --- 설정창 스타일 --- */
+.settings-list { display: flex; flex-direction: column; gap: 15px; padding: 10px; }
+.settings-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border-radius: 15px; border: 1px solid #FFE0B2; }
 .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-.slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
 input:checked + .slider { background-color: #FF9800; }
 input:checked + .slider:before { transform: translateX(22px); }
+.setting-action-btn { background: #78909C; color: white; border: none; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
 
-/* 고정 및 핀 스타일 */
-.prayer-card.pinned { background-color: #FFFDE7; border: 2px solid #FFD54F; border-left: 6px solid #FFC107; box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2); margin-bottom: 15px; }
-.pinned-icon { margin-right: 6px; font-size: 1.1rem; vertical-align: middle; color: #FF8F00; }
-
-/* 토스트 알림 */
-.system-toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #333; color: white; padding: 12px 24px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 10000; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: transform 0.4s; opacity: 0; pointer-events: none; }
-.system-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+/* --- 애니메이션 및 고정 --- */
+.prayer-card.pinned { background-color: #FFFDE7; border: 2px solid #FFD54F; border-left: 6px solid #FFC107; }
+.pinned-icon { margin-right: 6px; font-size: 1.1rem; color: #FF8F00; }
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
