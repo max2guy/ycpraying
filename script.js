@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// (기능: UI 최적화 + 영구 뱃지 + 새 글 알림 + 아멘/답글 삭제)
+// (기능: UI 최적화 + 영구 뱃지 + 설정 메뉴)
 // ==========================================
 
 // 1. 서비스 워커 등록
@@ -75,6 +75,16 @@ function forceRefresh() {
     }
 }
 
+// [신규] 설정 모달 제어 함수
+function openSettingsModal() {
+    if(isFabOpen) toggleFabMenu();
+    document.getElementById('settings-modal').classList.add('active');
+}
+
+function closeSettingsModal() {
+    document.getElementById('settings-modal').classList.remove('active');
+}
+
 // 2. Firebase 설정
 const firebaseConfig = {
     apiKey: "AIzaSyAF-L1RGBMb_uZBR4a3Aj0OVFu_KjccWZQ",
@@ -94,8 +104,6 @@ const centerNodeRef = database.ref('centerNode');
 const onlineRef = database.ref('.info/connected');
 const presenceRef = database.ref('presence');
 const messagesRef = database.ref('messages');
-
-// (푸시 알림용 messaging 객체는 남겨두되, 필수는 아님)
 const messaging = firebase.messaging();
 
 let mySessionId = localStorage.getItem('mySessionId');
@@ -107,10 +115,7 @@ if (!mySessionId) {
 // 3. 변수 및 상태
 let isAdmin = false;
 let isFirstRender = true;
-
-// [핵심 변경] 로컬 스토리지에서 '읽음 상태'를 불러옵니다. (영구 저장)
 let readStatus = JSON.parse(localStorage.getItem('prayerReadStatus')) || {};
-
 let newMemberIds = new Set();
 let globalNodes = [];
 let simulation = null;
@@ -215,11 +220,11 @@ firebase.auth().onAuthStateChanged((user) => {
     if (user) {
         isAdmin = true;
         document.getElementById('body').classList.add('admin-mode');
-        document.getElementById('admin-trigger').classList.add('active');
+        // 설정 메뉴 안에서 관리자 모드가 활성화되었음을 시각적으로 표현하려면 추가 로직 필요하지만
+        // 일단 기능적으로는 admin-mode 클래스가 추가되어 삭제 버튼 등이 보임
     } else {
         isAdmin = false;
         document.getElementById('body').classList.remove('admin-mode');
-        document.getElementById('admin-trigger').classList.remove('active');
     }
 });
 
@@ -244,7 +249,6 @@ function loadData() {
         document.getElementById('loading').classList.add('hide');
         updateGraph(); 
 
-        // [핵심 변경] 앱 켰을 때 안 읽은 글이 몇 개인지 계산해서 알려주기
         let totalUnread = 0;
         members.forEach(m => {
             const total = getTotalPrayerCount(m);
@@ -517,12 +521,11 @@ function toggleChatPopup() {
     }
 }
 
-// [UI 최적화] 스켈레톤 로딩 + 아이콘 UI + 말풍선 댓글 + 아멘 버튼
 function openPrayerPopup(data) {
     currentMemberData = data;
     newMemberIds.delete(data.id);
     
-    // [핵심 변경] 클릭해서 열었으면 이 글 개수만큼 읽은 것으로 저장 (영구)
+    // [영구 읽음 저장]
     readStatus[data.id] = getTotalPrayerCount(data); 
     localStorage.setItem('prayerReadStatus', JSON.stringify(readStatus));
 
@@ -532,7 +535,6 @@ function openPrayerPopup(data) {
     document.getElementById("current-color-display").style.backgroundColor = data.color;
     document.getElementById("prayer-popup").classList.add('active'); 
     
-    // 1. 스켈레톤 UI (로딩 효과) 표시
     const list = document.getElementById("prayer-list");
     list.innerHTML = `
         <div class="skeleton-card">
@@ -547,7 +549,6 @@ function openPrayerPopup(data) {
         </div>
     `;
 
-    // 2. 실제 데이터 렌더링
     requestAnimationFrame(() => {
         setTimeout(() => {
             renderPrayers();
@@ -639,9 +640,6 @@ function saveProfileChanges() {
 
 function createSafeElement(tag, className, text) { const el = document.createElement(tag); if (className) el.className = className; if (text) el.textContent = text; return el; }
 
-// ==========================================
-// [renderPrayers] 아멘 버튼 + 답글 삭제 포함
-// ==========================================
 function renderPrayers() {
     const list = document.getElementById("prayer-list"); 
     list.innerHTML = "";
@@ -655,29 +653,23 @@ function renderPrayers() {
         return; 
     }
 
-    // 1. 정렬: 고정된 글(isPinned) 상단 배치
     const displayList = currentMemberData.prayers.map((p, index) => ({ ...p, originalIndex: index }));
     displayList.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
 
-    // 2. 카드 렌더링
     displayList.forEach((p) => {
         const i = p.originalIndex;
         const div = createSafeElement("div", "prayer-card");
         if (p.isPinned) div.classList.add("pinned");
 
-        // (1) 헤더 영역
         const header = createSafeElement("div", "prayer-header");
         const dateDiv = createSafeElement("div", "prayer-date");
         if(p.isPinned) dateDiv.innerHTML += `<span class="pinned-mark">📌</span>`;
         dateDiv.innerHTML += `<span>${p.date}</span>`;
         header.appendChild(dateDiv);
         
-        // (2) 본문 영역
         const content = createSafeElement("div", "prayer-content", p.content);
         
-        // (3) 액션 버튼 (아멘 버튼 + 아이콘)
         const actionGroup = createSafeElement("div", "action-group");
-        
         const amens = p.amens ? Object.keys(p.amens).length : 0;
         const iAmened = p.amens && p.amens[mySessionId];
 
@@ -696,7 +688,6 @@ function renderPrayers() {
                 <span>🙏</span>
                 <span>아멘 ${amens > 0 ? amens : ''}</span>
             </button>
-
             <button class="icon-btn ${p.isPinned ? 'active' : ''}" onclick="togglePin(${i})" title="고정">${icons.pin}</button>
             <button class="icon-btn" onclick="editPrayer(${i})" title="수정">${icons.edit}</button>
             <button class="icon-btn" onclick="addReply(${i})" title="답글">${icons.reply}</button>
@@ -707,7 +698,6 @@ function renderPrayers() {
         div.appendChild(content);
         div.appendChild(actionGroup);
 
-        // (4) 댓글(답글) 영역 - 말풍선 + 삭제 버튼
         if (p.replies && p.replies.length > 0) {
             const replySection = createSafeElement("div", "reply-section");
             p.replies.forEach((r, rIndex) => { 
@@ -727,7 +717,6 @@ function renderPrayers() {
     });
 }
 
-// 아멘 버튼 클릭 처리
 function toggleAmen(index) {
     if (!currentMemberData) return;
     const path = `members/${currentMemberData.firebaseKey}/prayers/${index}/amens`;
@@ -735,10 +724,10 @@ function toggleAmen(index) {
     const p = currentMemberData.prayers[index];
 
     if (p.amens && p.amens[mySessionId]) {
-        ref.child(mySessionId).remove(); // 취소
+        ref.child(mySessionId).remove();
     } else {
-        ref.child(mySessionId).set(true); // 추가
-        if(navigator.vibrate) navigator.vibrate(50); // 진동 피드백
+        ref.child(mySessionId).set(true);
+        if(navigator.vibrate) navigator.vibrate(50);
     }
 }
 
@@ -746,24 +735,14 @@ function togglePin(index) {
     if (!currentMemberData) return;
     const currentState = currentMemberData.prayers[index].isPinned || false;
     currentMemberData.prayers[index].isPinned = !currentState;
-
-    membersRef.child(currentMemberData.firebaseKey).update({
-        prayers: currentMemberData.prayers
-    }).then(() => {
-        renderPrayers();
-    });
+    membersRef.child(currentMemberData.firebaseKey).update({ prayers: currentMemberData.prayers }).then(() => { renderPrayers(); });
 }
 
 function deleteReply(prayerIndex, replyIndex) {
     if(!confirm("이 답글을 삭제하시겠습니까?")) return;
-
     if (currentMemberData.prayers[prayerIndex].replies) {
         currentMemberData.prayers[prayerIndex].replies.splice(replyIndex, 1);
-        membersRef.child(currentMemberData.firebaseKey).update({
-            prayers: currentMemberData.prayers
-        }).then(() => {
-            renderPrayers();
-        });
+        membersRef.child(currentMemberData.firebaseKey).update({ prayers: currentMemberData.prayers }).then(() => { renderPrayers(); });
     }
 }
 
@@ -785,13 +764,12 @@ messagesRef.limitToLast(50).on('child_added', snap => {
         if (!popup.classList.contains('active')) {
             document.getElementById('chat-badge').classList.add('active'); 
             setAppBadge(unreadChatKeys.size); 
-            // 꼼수 푸시 알림: 앱이 켜져있을 때(백그라운드)만 작동
             if (document.hidden && Notification.permission === "granted" && 'serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then(function(registration) {
                     registration.showNotification("새로운 기도/채팅 메시지", {
                         body: d.text,
                         icon: 'icon-192.png',
-                        tag: 'msg-' + Date.now(), // 알림 씹힘 방지 태그
+                        tag: 'msg-' + Date.now(), 
                         vibrate: [200, 100, 200],
                         renotify: true
                     });
