@@ -10,7 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
     
-    <link rel="stylesheet" href="style.css?v=8">
+    <link rel="stylesheet" href="style.css?v=9">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
@@ -21,7 +21,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js" defer></script>
     
-    <script src="script.js?v=8" defer></script>
+    <script src="script.js?v=9" defer></script>
 </head>
 <body id="body">
 
@@ -145,18 +145,23 @@
 
     <div id="profile-edit-modal" class="popup-overlay" onclick="closeProfileEditModal()">
         <div class="popup-content" style="height: auto; max-width: 320px; padding: 25px; text-align: center;" onclick="event.stopPropagation()">
-            <h3 style="margin-top:0; color:#5D4037;">프로필 사진 변경</h3>
+            <h3 style="margin-top:0; color:#5D4037;">프로필 편집</h3>
             
-            <div class="profile-upload-container">
-                <div class="profile-wrapper">
-                    <img id="edit-profile-preview" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="프로필">
-                </div>
-                
-                <div style="margin-top: 15px; display:flex; justify-content:center; gap:10px;">
-                    <label for="profile-file-input" class="action-btn-gray">📂 사진 선택</label>
+            <div id="profile-view-mode" class="profile-upload-container">
+                <div class="profile-circle-wrapper">
+                    <img id="edit-profile-preview" src="" alt="프로필" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0QwQzJCRSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg=='">
+                    
+                    <label for="profile-file-input" class="camera-btn">📷</label>
                     <input type="file" id="profile-file-input" accept="image/*" style="display: none;" onchange="handleProfileFileSelect(event)">
                 </div>
-                <p class="upload-guide">사진을 선택하면 크기를 조절할 수 있습니다.</p>
+                <p class="upload-guide">카메라 아이콘을 눌러 사진을 변경하세요</p>
+            </div>
+
+            <div id="profile-edit-mode" class="profile-upload-container" style="display: none;">
+                <div class="profile-crop-wrapper">
+                    <img id="cropper-target-img" src="" alt="자르기 대상">
+                </div>
+                <p class="upload-guide">사진을 드래그하여 영역을 맞추세요</p>
             </div>
 
             <div style="margin-top: 20px; text-align: left;">
@@ -198,7 +203,7 @@
                     <span class="setting-text">앱 새로고침 (오류 해결)</span>
                 </button>
                 <div style="margin-top: 20px; font-size: 0.8rem; color: #aaa; text-align: center;">
-                    버전 1.3.0 | 연천장로교회 청년부
+                    버전 1.4.0 | 연천장로교회 청년부
                 </div>
             </div>
         </div>
