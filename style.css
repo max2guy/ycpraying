@@ -529,3 +529,29 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item {
 .setting-icon { font-size: 1.2rem; }
 .setting-text { font-weight: bold; }
 
+/* [신규] 관리자 모드 표시기 스타일 */
+.admin-indicator {
+    position: fixed;
+    bottom: 35px; /* 메뉴 버튼들과 같은 높이 */
+    left: 50%;
+    transform: translateX(-50%); /* 정확히 가운데 정렬 */
+    
+    background: #D32F2F; /* 강렬한 빨간색 */
+    color: white;
+    padding: 8px 18px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4);
+    
+    z-index: 90;    /* 팝업보단 아래, 노드보단 위 */
+    display: none;  /* 기본적으로는 숨김 */
+    pointer-events: none; /* 클릭은 통과되도록 (뒤에 있는거 누를 수 있게) */
+}
+
+/* 관리자 모드가 켜지면 보이게 설정 */
+body.admin-mode .admin-indicator {
+    display: block;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
