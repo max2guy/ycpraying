@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// (기능: UI 최적화 + 영구 뱃지 + 설정 메뉴 + 이미지 자르기)
+// (기능: UI 최적화 + 영구 뱃지 + 설정 메뉴 + 스마트 이미지 자르기)
 // ==========================================
 
 // 1. 서비스 워커 등록
@@ -130,8 +130,6 @@ let isDragAction = false;
 const brightColors = ["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#BBDEFB", "#B3E5FC", "#B2EBF2", "#B2DFDB", "#C8E6C9", "#DCEDC8", "#F0F4C3", "#FFF9C4", "#FFECB3", "#FFE0B2", "#FFCCBC", "#D7CCC8", "#F5F5F5", "#CFD8DC"];
 
 let lastChatReadTime = Number(localStorage.getItem('lastChatReadTime')) || Date.now();
-
-// [신규] Cropper 인스턴스 저장 변수
 let cropper = null;
 
 function checkNotificationPermission() {
@@ -593,22 +591,26 @@ function addNewMember() { const n = prompt("이름:"); if(n && n.trim()) { if(co
 function updateMemberColor(v) { if(currentMemberData) membersRef.child(currentMemberData.firebaseKey).update({color: v}); }
 function deleteMember() { if(currentMemberData && confirm("삭제하시겠습니까?")) { membersRef.child(currentMemberData.firebaseKey).remove(); closePrayerPopup(); }}
 
-// [수정] 프로필 편집 및 자르기 기능
+// [수정] 스마트 프로필 편집 (원형 뷰 <-> 자르기 모드 전환)
 let tempProfileImage = "";
 
 function editProfile() {
     if (!currentMemberData) return;
     document.getElementById('edit-profile-name').value = currentMemberData.name;
     
-    // 사진이 없으면 기본 이미지(투명/회색) 표시, 있으면 그 사진 표시
-    const currentImg = currentMemberData.photoUrl || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
-    const imgElement = document.getElementById('edit-profile-preview');
-    imgElement.src = currentImg;
+    // 1. 초기 상태: 예쁜 원형 뷰 보이기
+    document.getElementById('profile-view-mode').style.display = 'flex';
+    document.getElementById('profile-edit-mode').style.display = 'none';
+
+    // 2. 현재 이미지 설정 (없으면 기본값)
+    const currentImg = currentMemberData.photoUrl || "";
+    // onerror가 처리하므로 src는 그냥 넣음
+    document.getElementById('edit-profile-preview').src = currentImg;
     
     // 모달 열기
     document.getElementById('profile-edit-modal').classList.add('active');
 
-    // 만약 이미 Cropper가 있다면 제거 (초기화)
+    // 기존 크로퍼 정리
     if (cropper) {
         cropper.destroy();
         cropper = null;
@@ -630,19 +632,24 @@ function handleProfileFileSelect(event) {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = function(e) {
-        const imgElement = document.getElementById('edit-profile-preview');
+        // 1. 화면 전환: 원형 숨기고 -> 자르기 모드 표시
+        document.getElementById('profile-view-mode').style.display = 'none';
+        document.getElementById('profile-edit-mode').style.display = 'flex';
+
+        // 2. 자르기 대상 이미지에 파일 로드
+        const imgElement = document.getElementById('cropper-target-img');
         imgElement.src = e.target.result;
 
-        // 기존 Cropper 제거
+        // 3. 기존 Cropper 정리
         if (cropper) {
             cropper.destroy();
         }
 
-        // 새 Cropper 시작 (약간의 딜레이를 주어 이미지가 로드된 후 실행)
+        // 4. 새 Cropper 시작
         setTimeout(() => {
             cropper = new Cropper(imgElement, {
-                aspectRatio: 1, // 정사각형 비율 고정
-                viewMode: 1,    // 캔버스 밖으로 못 나가게
+                aspectRatio: 1, // 정사각형
+                viewMode: 1,
                 dragMode: 'move',
                 autoCropArea: 0.8,
                 restore: false,
@@ -667,12 +674,11 @@ function saveProfileChanges() {
 
     // Cropper가 활성화되어 있다면(사진을 바꿨다면) 자른 이미지를 가져옴
     if (cropper) {
-        // 캔버스에서 데이터 추출
         const canvas = cropper.getCroppedCanvas({
-            width: 300,  // 저장될 크기 (너무 크면 DB 터짐)
+            width: 300, 
             height: 300
         });
-        finalImageUrl = canvas.toDataURL('image/jpeg', 0.8); // JPEG, 퀄리티 0.8
+        finalImageUrl = canvas.toDataURL('image/jpeg', 0.8);
     } else {
         // 사진을 안 바꿨으면 기존 사진 유지
         finalImageUrl = currentMemberData.photoUrl || "";
