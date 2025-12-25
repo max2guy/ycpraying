@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// (기능: UI 최적화 + 스켈레톤 + 푸시알림 + 아멘 버튼)
+// (기능: UI 최적화 + 영구 뱃지 + 새 글 알림 + 아멘/답글 삭제)
 // ==========================================
 
 // 1. 서비스 워커 등록
@@ -95,28 +95,8 @@ const onlineRef = database.ref('.info/connected');
 const presenceRef = database.ref('presence');
 const messagesRef = database.ref('messages');
 
+// (푸시 알림용 messaging 객체는 남겨두되, 필수는 아님)
 const messaging = firebase.messaging();
-// TODO: VAPID 키 설정 (없으면 푸시 알림 작동 안 함)
-const VAPID_KEY = "BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U"; 
-
-async function requestPushPermission() {
-    try {
-        if (!VAPID_KEY || VAPID_KEY.includes("YOUR")) return;
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            const registration = await navigator.serviceWorker.ready;
-            const token = await messaging.getToken({ 
-                vapidKey: VAPID_KEY,
-                serviceWorkerRegistration: registration 
-            });
-            if (token && currentMemberData) {
-                membersRef.child(currentMemberData.firebaseKey).update({ fcmToken: token });
-            }
-        }
-    } catch (err) {
-        console.log('푸시 권한 요청 실패:', err);
-    }
-}
 
 let mySessionId = localStorage.getItem('mySessionId');
 if (!mySessionId) {
@@ -127,7 +107,10 @@ if (!mySessionId) {
 // 3. 변수 및 상태
 let isAdmin = false;
 let isFirstRender = true;
-let readStatus = {}; 
+
+// [핵심 변경] 로컬 스토리지에서 '읽음 상태'를 불러옵니다. (영구 저장)
+let readStatus = JSON.parse(localStorage.getItem('prayerReadStatus')) || {};
+
 let newMemberIds = new Set();
 let globalNodes = [];
 let simulation = null;
@@ -260,6 +243,21 @@ function loadData() {
         isDataLoaded = true;
         document.getElementById('loading').classList.add('hide');
         updateGraph(); 
+
+        // [핵심 변경] 앱 켰을 때 안 읽은 글이 몇 개인지 계산해서 알려주기
+        let totalUnread = 0;
+        members.forEach(m => {
+            const total = getTotalPrayerCount(m);
+            const read = readStatus[m.id] || 0;
+            if (total > read) totalUnread += (total - read);
+        });
+
+        if (totalUnread > 0) {
+            setTimeout(() => {
+                showWeatherToast("새 소식", `🔥 읽지 않은 기도제목이 ${totalUnread}개 있어요!`);
+            }, 1500); 
+        }
+
         fetchWeather();
         setTimeout(() => { isFirstRender = false; }, 5000);
     })
@@ -523,7 +521,11 @@ function toggleChatPopup() {
 function openPrayerPopup(data) {
     currentMemberData = data;
     newMemberIds.delete(data.id);
+    
+    // [핵심 변경] 클릭해서 열었으면 이 글 개수만큼 읽은 것으로 저장 (영구)
     readStatus[data.id] = getTotalPrayerCount(data); 
+    localStorage.setItem('prayerReadStatus', JSON.stringify(readStatus));
+
     updateNodeVisuals(); 
     
     document.getElementById("panel-name").innerText = data.name;
@@ -545,10 +547,7 @@ function openPrayerPopup(data) {
         </div>
     `;
 
-    // 2. 푸시 권한 요청 시도 (프로필 열 때 자연스럽게)
-    requestPushPermission();
-
-    // 3. 실제 데이터 렌더링 (아주 짧은 딜레이 후 교체)
+    // 2. 실제 데이터 렌더링
     requestAnimationFrame(() => {
         setTimeout(() => {
             renderPrayers();
@@ -641,7 +640,7 @@ function saveProfileChanges() {
 function createSafeElement(tag, className, text) { const el = document.createElement(tag); if (className) el.className = className; if (text) el.textContent = text; return el; }
 
 // ==========================================
-// [수정됨] renderPrayers: 아멘 버튼 포함
+// [renderPrayers] 아멘 버튼 + 답글 삭제 포함
 // ==========================================
 function renderPrayers() {
     const list = document.getElementById("prayer-list"); 
@@ -728,7 +727,7 @@ function renderPrayers() {
     });
 }
 
-// [신규] 아멘 버튼 클릭 처리
+// 아멘 버튼 클릭 처리
 function toggleAmen(index) {
     if (!currentMemberData) return;
     const path = `members/${currentMemberData.firebaseKey}/prayers/${index}/amens`;
@@ -786,13 +785,15 @@ messagesRef.limitToLast(50).on('child_added', snap => {
         if (!popup.classList.contains('active')) {
             document.getElementById('chat-badge').classList.add('active'); 
             setAppBadge(unreadChatKeys.size); 
+            // 꼼수 푸시 알림: 앱이 켜져있을 때(백그라운드)만 작동
             if (document.hidden && Notification.permission === "granted" && 'serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then(function(registration) {
                     registration.showNotification("새로운 기도/채팅 메시지", {
                         body: d.text,
                         icon: 'icon-192.png',
-                        tag: 'msg-' + snap.key, 
-                        vibrate: [200, 100, 200]
+                        tag: 'msg-' + Date.now(), // 알림 씹힘 방지 태그
+                        vibrate: [200, 100, 200],
+                        renotify: true
                     });
                 });
             }
@@ -845,4 +846,3 @@ function gameLoop(timestamp) {
 }
 resizeWeatherCanvas();
 requestAnimationFrame(gameLoop);
-
