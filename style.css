@@ -1,11 +1,7 @@
-/* style.css - Layout Fixes (Camp & Chat restored) */
+/* style.css - Final Version (Intro, Music, Layout Fixes) */
 
-/* [기본 설정] 터치 최적화 & 하이라이트 제거 */
-* {
-    -webkit-tap-highlight-color: transparent;
-}
+* { -webkit-tap-highlight-color: transparent; }
 
-/* --- CSS Variables --- */
 :root {
     --bg-gradient: radial-gradient(circle at center, #FFFCF2 0%, #FFF3E0 60%, #FFE0B2 100%);
     --main-node-color: #8D6E63;
@@ -14,7 +10,6 @@
     --theme-orange: #FF7043;
 }
 
-/* --- Base Reset --- */
 body {
     margin: 0; padding: 0;
     background: var(--bg-gradient);
@@ -26,8 +21,7 @@ body {
     user-select: none;
 }
 
-/* 버튼 터치 반응성 개선 */
-button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .action-btn-gray {
+button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .enter-btn {
     touch-action: manipulation;
     user-select: none;
     -webkit-user-select: none;
@@ -35,101 +29,91 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .action-bt
 
 #visualization { width: 100vw; height: 100dvh; position: relative; z-index: 10; }
 #visualization svg { touch-action: none; }
-
 #weather-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
 
-/* --- Loading Screen --- */
-#loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-gradient); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; transition: opacity 0.5s; }
-#loading.hide { opacity: 0; pointer-events: none; }
-.loading-text { font-size: 1.5rem; color: var(--main-node-color); margin-top: 20px; font-weight: bold; }
-.spinner { width: 50px; height: 50px; border: 5px solid #FFE0B2; border-top: 5px solid #FF7043; border-radius: 50%; animation: spin 1s linear infinite; }
+/* [인트로 화면] */
+#intro-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at center, #FFF3E0 0%, #FFE0B2 100%);
+    z-index: 20000;
+    display: flex; justify-content: center; align-items: center;
+    text-align: center;
+    transition: opacity 0.8s ease, transform 0.8s ease;
+}
+#intro-screen.fade-out { opacity: 0; pointer-events: none; transform: scale(1.1); }
+.intro-content h1 { color: #5D4037; margin-bottom: 10px; font-size: 1.8rem; }
+.intro-content p { color: #8D6E63; margin-bottom: 40px; font-size: 1rem; }
+.intro-icon { font-size: 4rem; margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+/* 입장하기 버튼 */
+.enter-btn {
+    background: #5D4037; color: white;
+    border: none; padding: 15px 40px;
+    font-size: 1.2rem; font-weight: bold;
+    border-radius: 50px; cursor: pointer;
+    box-shadow: 0 5px 15px rgba(93, 64, 55, 0.4);
+    transition: transform 0.2s;
+    animation: pulse-btn 2s infinite;
+}
+.enter-btn:active { transform: scale(0.95); }
+@keyframes pulse-btn { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+.spinner { width: 50px; height: 50px; border: 5px solid #FFE0B2; border-top: 5px solid #FF7043; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* --- Top UI --- */
+/* [상단 UI] */
 .top-ui-common {
     position: fixed; z-index: 100;
     background: rgba(255, 255, 255, 0.95);
     color: var(--main-node-color);
     border: 1.5px solid var(--main-node-color);
-    border-radius: 50px; 
-    height: 35px;        
-    padding: 0 14px;    
-    font-size: 0.85rem;    
-    line-height: 1;      
-    box-sizing: border-box; 
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    font-weight: 700;
-    box-shadow: 0 3px 8px rgba(141, 110, 99, 0.15);
-    backdrop-filter: blur(5px);
-    white-space: nowrap;
+    border-radius: 50px; height: 35px; padding: 0 14px; font-size: 0.85rem; line-height: 1; box-sizing: border-box; 
+    display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700;
+    box-shadow: 0 3px 8px rgba(141, 110, 99, 0.15); backdrop-filter: blur(5px); white-space: nowrap;
     transition: transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.camp-btn:active, .float-btn:active, .prayer-send-btn:active, .chat-send-btn:active, .amen-btn:active {
-    transform: scale(0.92) !important;
-}
-
 .camp-btn { cursor: pointer; top: 30px; left: 30px; }
 .camp-btn:hover { background: var(--main-node-color); color: white; transform: scale(1.05); }
-
+.camp-btn:active { transform: scale(0.92); }
 .online-counter { top: 30px; right: 30px; }
 .online-dot { width: 8px; height: 8px; background: #4CAF50; border-radius: 50%; animation: pulse 2s infinite; }
+
+/* [음악 버튼] */
+.music-btn {
+    position: fixed; top: 80px; left: 30px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #8D6E63;
+    z-index: 90; color: #5D4037; font-size: 1.2rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.music-playing #music-icon { animation: spin-music 3s linear infinite; }
+@keyframes spin-music { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 @media (max-width: 768px) {
     .camp-btn { top: 20px; left: 20px; } 
     .online-counter { top: 20px; right: 20px; }
+    .music-btn { top: 70px; left: 20px; }
 }
 
-/* --- Floating Buttons --- */
+/* [플로팅 버튼] */
 .float-btn {
-    cursor: pointer; 
-    transition: transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1); 
-    box-shadow: 0 4px 10px rgba(141, 110, 99, 0.2); 
-    border: none;
-    box-sizing: border-box; 
-    width: 50px !important; height: 50px !important; 
-    border-radius: 50% !important; padding: 0 !important; margin: 0 !important;
-    display: flex !important; align-items: center !important; justify-content: center !important;
+    cursor: pointer; transition: transform 0.1s; box-shadow: 0 4px 10px rgba(141, 110, 99, 0.2); border: none;
+    box-sizing: border-box; width: 50px !important; height: 50px !important; border-radius: 50% !important; 
+    padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;
     -webkit-appearance: none; appearance: none;
 }
 .float-btn:hover { transform: scale(1.05); }
 
-/* Left Bottom Menu Container */
-#menu-container {
-    position: fixed; bottom: 30px; left: 30px; z-index: 100;
-    display: flex; flex-direction: column-reverse; gap: 15px;
-    align-items: center;
-}
-
-.menu-main-btn {
-    background: #3E2723; color: white; 
-    font-size: 1.2rem; 
-    z-index: 101;
-    box-shadow: 0 3px 8px rgba(62, 39, 35, 0.3);
-}
+#menu-container { position: fixed; bottom: 30px; left: 30px; z-index: 100; display: flex; flex-direction: column-reverse; gap: 15px; align-items: center; }
+.menu-main-btn { background: #3E2723; color: white; font-size: 1.2rem; z-index: 101; box-shadow: 0 3px 8px rgba(62, 39, 35, 0.3); }
 .menu-open .menu-main-btn { transform: rotate(90deg); background: #5D4037; }
-
-.sub-btn {
-    opacity: 0; transform: translateY(20px) scale(0.8);
-    pointer-events: none;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative; 
-}
-.menu-open .sub-btn {
-    opacity: 1; transform: translateY(0) scale(1);
-    pointer-events: auto;
-}
-
+.sub-btn { opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.3s; position: relative; }
+.menu-open .sub-btn { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
 .add-member-btn { background: white; color: var(--theme-orange); border: 2px solid var(--theme-orange); }
 .add-member-btn svg { fill: var(--theme-orange); width: 24px; height: 24px; }
 
-.chat-btn { 
-    position: fixed; bottom: 30px; right: 30px; 
-    background: #FFECB3; 
-    color: #5D4037; 
-    font-size: 1.5rem; 
-    border: 3px solid #FFCA28; 
-    z-index: 100;
-}
+.chat-btn { position: fixed; bottom: 30px; right: 30px; background: #FFECB3; color: #5D4037; font-size: 1.5rem; border: 3px solid #FFCA28; z-index: 100; }
 .chat-badge { position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; background: #FF5252; border-radius: 50%; border: 2px solid white; display: none; animation: pulse-red 1.5s infinite; z-index: 101; }
 .chat-badge.active { display: block; }
 
@@ -138,73 +122,31 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .action-bt
     .chat-btn { bottom: calc(20px + env(safe-area-inset-bottom)); right: 20px; }
 }
 
-/* --- Update Toast & Weather Toast --- */
+/* [토스트 메시지] */
 .system-toast {
     position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-100px);
-    background: #333; color: white; padding: 12px 24px;
-    border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    z-index: 10000; font-size: 0.9rem; font-weight: bold;
-    display: flex; align-items: center; gap: 10px; cursor: pointer;
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    opacity: 0; pointer-events: none;
+    background: #333; color: white; padding: 12px 24px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 10000; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; gap: 10px; cursor: pointer;
+    transition: transform 0.4s; opacity: 0; pointer-events: none;
 }
 .system-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
-
-#weather-toast {
-    top: auto; bottom: 100px;
-    background: rgba(255, 255, 255, 0.9); color: #5D4037;
-    border: 1px solid #8D6E63;
-}
-
+#weather-toast { top: auto; bottom: 100px; background: rgba(255, 255, 255, 0.9); color: #5D4037; border: 1px solid #8D6E63; }
 .refresh-icon { animation: spin-slow 2s infinite linear; font-size: 1.1rem; }
 @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-/* --- Popup & Modal --- */
-.popup-overlay {
-    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 2000;
-    display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease;
-}
+/* [팝업 공통] */
+.popup-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 2000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
 .popup-overlay.active { display: flex; opacity: 1; }
-
-.popup-content {
-    background: #FFF8E1; width: 90%; max-width: 500px; height: 85vh; max-height: 700px;
-    border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    display: flex; flex-direction: column; overflow: hidden;
-    transform: scale(0.9); transition: transform 0.3s ease;
-    position: relative;
-}
+.popup-content { background: #FFF8E1; width: 90%; max-width: 500px; height: 85vh; max-height: 700px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; overflow: hidden; transform: scale(0.9); transition: transform 0.3s ease; position: relative; }
 .popup-overlay.active .popup-content { transform: scale(1); }
-
 .popup-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #FFE0B2; padding: 15px; flex-shrink: 0; background: rgba(255, 255, 255, 0.5); }
 .popup-header h2 { margin: 0; font-size: 1.2rem; color: #8D6E63; }
 .close-btn { cursor: pointer; font-size: 2rem; border: none; background: none; color: #888; padding: 0 10px; }
 
-.name-container { display: flex; align-items: center; gap: 10px; flex-grow: 1; }
-.edit-name-btn { background: white; border: 1px solid #8D6E63; border-radius: 15px; padding: 5px 12px; cursor: pointer; color: #8D6E63; font-weight: bold; font-size: 0.8rem; transition: all 0.2s; }
-.edit-name-btn:hover { background: #8D6E63; color: white; }
-.color-trigger-btn { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #ddd; cursor: pointer; transition: transform 0.2s; }
-.color-trigger-btn:hover { transform: scale(1.1); }
-
+/* [기도카드] */
 #prayer-list { flex-grow: 1; overflow-y: auto; padding: 12px; background: #fff; -webkit-overflow-scrolling: touch; }
-
-/* ========================================= */
-/* [UI] 기도카드 디자인 */
-/* ========================================= */
-.prayer-card {
-    background: #FFF;
-    border-radius: 16px; 
-    padding: 18px;
-    margin-bottom: 16px;
-    border: 1px solid rgba(0,0,0,0.05); 
-    border-left: 5px solid #FFCC80; 
-    box-shadow: 0 4px 20px rgba(141, 110, 99, 0.08); 
-    transition: transform 0.2s ease;
-    position: relative;
-    overflow: hidden;
-    animation: slideIn 0.3s ease;
-}
+.prayer-card { background: #FFF; border-radius: 16px; padding: 18px; margin-bottom: 16px; border: 1px solid rgba(0,0,0,0.05); border-left: 5px solid #FFCC80; box-shadow: 0 4px 20px rgba(141, 110, 99, 0.08); transition: transform 0.2s; position: relative; overflow: hidden; animation: slideIn 0.3s ease; }
 @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
 .prayer-card:active { transform: scale(0.98); }
 .prayer-card.pinned { background-color: #FFFDE7; border-color: #FFD54F; border-left-color: #FFC107; box-shadow: 0 4px 15px rgba(255, 193, 7, 0.15); }
 .prayer-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
@@ -218,8 +160,7 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .action-bt
 .icon-btn:active { transform: scale(0.9); }
 .icon-btn svg { width: 16px; height: 16px; fill: currentColor; }
 .icon-btn.active { background: #FFF3E0; color: #FF9800; }
-
-.amen-btn { display: flex; align-items: center; gap: 6px; background: white; border: 1px solid #FFCC80; color: #FF9800; border-radius: 20px; padding: 6px 14px; font-size: 0.9rem; font-weight: bold; cursor: pointer; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); margin-right: auto; box-shadow: 0 2px 5px rgba(255, 152, 0, 0.1); }
+.amen-btn { display: flex; align-items: center; gap: 6px; background: white; border: 1px solid #FFCC80; color: #FF9800; border-radius: 20px; padding: 6px 14px; font-size: 0.9rem; font-weight: bold; cursor: pointer; transition: all 0.2s; margin-right: auto; box-shadow: 0 2px 5px rgba(255, 152, 0, 0.1); }
 .amen-btn:hover { background: #FFF3E0; transform: scale(1.05); }
 .amen-btn:active { transform: scale(0.95); }
 .amen-btn.active { background: #FF9800; color: white; border-color: #F57C00; box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3); }
@@ -236,30 +177,25 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .action-bt
 .prayer-input-row { display: flex; gap: 8px; align-items: center; }
 #new-prayer { flex: 1; padding: 10px 15px; border: 2px solid #FFE0B2; border-radius: 20px; font-size: 0.9rem; font-family: inherit; outline: none; transition: border-color 0.2s; }
 #new-prayer:focus { border-color: #8D6E63; }
-
-.prayer-send-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background: linear-gradient(135deg, #8D6E63, #6D4C41); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(141, 110, 99, 0.3); transition: transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.prayer-send-btn { width: 44px; height: 44px; border-radius: 50%; border: none; background: linear-gradient(135deg, #8D6E63, #6D4C41); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(141, 110, 99, 0.3); transition: transform 0.1s; }
 .prayer-send-btn:hover { transform: scale(1.05); }
-
 .delete-member-btn { margin-top: 8px; background: transparent; color: #ef5350; border: 1px solid #ef5350; padding: 6px 12px; border-radius: 15px; cursor: pointer; font-size: 0.75rem; transition: all 0.2s; float: right;}
 .delete-member-btn:hover { background: #ef5350; color: white; }
+
+.name-container { display: flex; align-items: center; gap: 10px; flex-grow: 1; }
+.edit-name-btn { background: white; border: 1px solid #8D6E63; border-radius: 15px; padding: 5px 12px; cursor: pointer; color: #8D6E63; font-weight: bold; font-size: 0.8rem; transition: all 0.2s; }
+.edit-name-btn:hover { background: #8D6E63; color: white; }
+.color-trigger-btn { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #ddd; cursor: pointer; transition: transform 0.2s; }
+.color-trigger-btn:hover { transform: scale(1.1); }
 
 .admin-delete-btn { display: none !important; color: red !important; }
 .admin-mode .admin-delete-btn { display: inline-block !important; }
 
-@media (max-width: 768px) {
-    .popup-content { width: 95%; height: 90vh; border-radius: 20px; }
-    #prayer-list { padding: 10px; }
-    .prayer-input-area { padding: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
-}
-
-/* --- [수정] 캠프 이미지 & 채팅 스타일 복구 --- */
+/* [캠프 & 채팅 복구] */
 .camp-img-container { margin-bottom: 20px; padding: 0 15px; }
 .camp-img-title { font-size: 1rem; font-weight: bold; color: #5D4037; margin-bottom: 10px; display: block; border-left: 5px solid #FF7043; padding-left: 10px; }
-
-/* [중요] height: auto로 비율 깨짐 방지 */
 .camp-image { width: 100%; height: auto; display: block; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; }
 
-/* [중요] 채팅방 레이아웃 복구 */
 .chat-messages { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 15px; background: #fff; }
 .chat-bubble-wrapper { display: flex; flex-direction: column; }
 .chat-bubble { max-width: 75%; padding: 8px 12px; border-radius: 12px; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; }
@@ -268,11 +204,11 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .action-bt
 .chat-sender { font-size: 0.75rem; color: #8D6E63; margin-bottom: 2px; margin-left: 5px; }
 .chat-input-area { padding: 10px; border-top: 2px solid #FFE0B2; display: flex; gap: 8px; background: #fff; align-items: center; flex-shrink: 0; }
 #chat-msg { flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; font-size: 1rem; }
-.chat-send-btn { background: var(--main-node-color); color: white; border: none; border-radius: 20px; padding: 0 20px; font-weight: bold; cursor: pointer; height: 40px; white-space: nowrap; min-width: 60px; display: flex; align-items: center; justify-content: center; transition: transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1); }
-
+.chat-send-btn { background: var(--main-node-color); color: white; border: none; border-radius: 20px; padding: 0 20px; font-weight: bold; cursor: pointer; height: 40px; white-space: nowrap; min-width: 60px; display: flex; align-items: center; justify-content: center; transition: transform 0.1s; }
 .admin-delete-chat { font-size: 0.7rem; color: red; cursor: pointer; margin-left: 5px; font-weight: bold; display: none; }
 .admin-mode .admin-delete-chat { display: inline-block; }
 
+/* [기타 모달] */
 #lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 3000; justify-content: center; align-items: center; }
 #lightbox.active { display: flex; }
 #lightbox img { max-width: 95%; max-height: 90%; border-radius: 8px; animation: popIn 0.3s forwards; }
@@ -300,67 +236,23 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .action-bt
 .nodes g { cursor: pointer; transition: opacity 0.3s; }
 .nodes g:hover { opacity: 0.9; }
 
-/* [수정] 예쁜 프로필 UI (동그라미) */
+/* [프로필 편집 화면] */
 .profile-upload-container { display: flex; flex-direction: column; align-items: center; margin: 10px 0; }
-
-.profile-circle-wrapper {
-    position: relative;
-    width: 120px;
-    height: 120px;
-}
-
-#edit-profile-preview {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #FFE0B2;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    background-color: #f0f0f0;
-}
-
-/* 카메라 버튼 (예쁜 둥근 아이콘) */
-.camera-btn {
-    position: absolute;
-    bottom: 5px;
-    right: 5px;
-    background-color: #8D6E63;
-    color: white;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border: 2px solid white;
-    font-size: 1.1rem;
-    transition: transform 0.2s;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
+.profile-circle-wrapper { position: relative; width: 120px; height: 120px; }
+#edit-profile-preview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #FFE0B2; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #f0f0f0; }
+.camera-btn { position: absolute; bottom: 5px; right: 5px; background-color: #8D6E63; color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid white; font-size: 1.1rem; transition: transform 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 .camera-btn:active { transform: scale(0.9); }
 
-/* [수정] 자르기 모드 화면 (네모난 영역) */
-.profile-crop-wrapper {
-    width: 100%;
-    max-width: 280px;
-    height: 300px;
-    background: #333; /* 이미지 잘 보이게 어두운 배경 */
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 10px;
-}
-#cropper-target-img {
-    display: block;
-    max-width: 100%;
-}
+/* 자르기 모드 */
+.profile-crop-wrapper { width: 100%; max-width: 280px; height: 300px; background: #333; border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
+#cropper-target-img { display: block; max-width: 100%; }
 
 .upload-guide { margin-top: 8px; color: #aaa; font-size: 0.8rem; }
 .profile-name-input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; text-align: center; box-sizing: border-box; }
 .btn-save { background: linear-gradient(to right, #8D6E63, #6D4C41); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
 .btn-reset { background: #EFEBE9; color: #5D4037; border: 1px solid #D7CCC8; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
-/* [설정 메뉴 스타일] */
+/* [설정 메뉴] */
 .settings-btn { background: white; color: #5D4037; font-size: 1.4rem; border: 2px solid #5D4037; }
 .settings-box { max-width: 300px; height: auto; max-height: 50vh; background: #fff; padding: 0; }
 .settings-list { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
@@ -370,19 +262,12 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .action-bt
 .setting-icon { font-size: 1.2rem; }
 .setting-text { font-weight: bold; }
 
-/* [관리자 모드 표시기] */
-.admin-indicator {
-    position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%);
-    background: #D32F2F; color: white;
-    padding: 8px 18px; border-radius: 30px;
-    font-size: 0.9rem; font-weight: bold;
-    box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4);
-    z-index: 90; display: none; pointer-events: none;
-}
+/* [관리자 표시기] */
+.admin-indicator { position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%); background: #D32F2F; color: white; padding: 8px 18px; border-radius: 30px; font-size: 0.9rem; font-weight: bold; box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4); z-index: 90; display: none; pointer-events: none; }
 body.admin-mode .admin-indicator { display: block; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
-/* [Install Banner] */
-.install-banner { position: fixed; bottom: -120px; left: 20px; right: 20px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 16px; padding: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); display: flex; justify-content: space-between; align-items: center; transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999; }
+/* [설치 배너] */
+.install-banner { position: fixed; bottom: -120px; left: 20px; right: 20px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 16px; padding: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); display: flex; justify-content: space-between; align-items: center; transition: bottom 0.5s; z-index: 9999; }
 .install-banner.show { bottom: 30px; }
 .install-text { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: #5D4037; line-height: 1.4; }
 .app-icon-small { font-size: 1.8rem; background: #FFF3E0; padding: 6px; border-radius: 12px; }
