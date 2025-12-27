@@ -1,4 +1,4 @@
-/* style.css - Final V12 (Icon Unified + Full Fixes) */
+/* style.css - Fixed Version 13 (Missing Chat/Camp Styles Restored) */
 
 * { -webkit-tap-highlight-color: transparent; }
 
@@ -27,22 +27,17 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .enter-btn
     -webkit-user-select: none;
 }
 
-/* [신규] 구글 아이콘 스타일 */
+/* [구글 아이콘] */
 .material-symbols-rounded {
     font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    font-size: 1.6rem; 
-    line-height: 1;
-    display: block;
+    font-size: 1.6rem; line-height: 1; display: block;
 }
-.float-btn svg { display: none; } /* 기존 SVG 숨김 */
-
-/* 개별 아이콘 크기 조정 */
+.float-btn svg { display: none; }
 .menu-main-btn .material-symbols-rounded { font-size: 1.8rem; }
 .chat-btn .material-symbols-rounded { font-size: 1.7rem; }
 .settings-btn .material-symbols-rounded { font-size: 1.6rem; }
 .add-member-btn .material-symbols-rounded { font-size: 1.6rem; }
 .music-btn .material-symbols-rounded { font-size: 1.5rem; }
-
 
 #visualization { width: 100vw; height: 100dvh; position: relative; z-index: 10; }
 #visualization svg { touch-action: none; }
@@ -63,7 +58,6 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .enter-btn
 .intro-icon { font-size: 4rem; margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
 @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-/* 입장하기 버튼 */
 .enter-btn {
     background: #5D4037; color: white;
     border: none; padding: 15px 40px;
@@ -79,16 +73,14 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .enter-btn
 .spinner { width: 50px; height: 50px; border: 5px solid #FFE0B2; border-top: 5px solid #FF7043; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* [상단 UI] */
+/* [상단 UI & 음악] */
 .top-ui-common {
     position: fixed; z-index: 100;
-    background: rgba(255, 255, 255, 0.95);
-    color: var(--main-node-color);
-    border: 1.5px solid var(--main-node-color);
-    border-radius: 50px; height: 35px; padding: 0 14px; font-size: 0.85rem; line-height: 1; box-sizing: border-box; 
-    display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700;
+    background: rgba(255, 255, 255, 0.95); color: var(--main-node-color);
+    border: 1.5px solid var(--main-node-color); border-radius: 50px; height: 35px; padding: 0 14px;
+    font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;
     box-shadow: 0 3px 8px rgba(141, 110, 99, 0.15); backdrop-filter: blur(5px); white-space: nowrap;
-    transition: transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.1s;
 }
 .camp-btn { cursor: pointer; top: 30px; left: 30px; }
 .camp-btn:hover { background: var(--main-node-color); color: white; transform: scale(1.05); }
@@ -96,11 +88,9 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .enter-btn
 .online-counter { top: 30px; right: 30px; }
 .online-dot { width: 8px; height: 8px; background: #4CAF50; border-radius: 50%; animation: pulse 2s infinite; }
 
-/* [음악 버튼] */
 .music-btn {
     position: fixed; top: 80px; left: 30px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 2px solid #8D6E63;
+    background: rgba(255, 255, 255, 0.9); border: 2px solid #8D6E63;
     z-index: 90; color: #5D4037; font-size: 1.2rem;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
@@ -139,19 +129,13 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .enter-btn
     .chat-btn { bottom: calc(20px + env(safe-area-inset-bottom)); right: 20px; }
 }
 
-/* [토스트 메시지 - 줄바꿈 방지 수정됨] */
+/* [토스트] */
 .system-toast {
     position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-100px);
-    background: #333; color: white; padding: 12px 24px;
-    border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    z-index: 10000; font-size: 0.9rem; font-weight: bold;
-    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    background: #333; color: white; padding: 12px 24px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 10000; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; gap: 10px; cursor: pointer;
     transition: transform 0.4s; opacity: 0; pointer-events: none;
-    
-    white-space: nowrap; 
-    width: auto;
-    max-width: 90vw;
-    justify-content: center;
+    white-space: nowrap; width: auto; max-width: 90vw; justify-content: center;
 }
 .system-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
 #weather-toast { top: auto; bottom: 100px; background: rgba(255, 255, 255, 0.9); color: #5D4037; border: 1px solid #8D6E63; }
@@ -182,8 +166,6 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .enter-btn
 .icon-btn { background: #F5F5F5; border: none; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; color: #8D6E63; }
 .icon-btn:hover { background: #EFEBE9; color: #5D4037; }
 .icon-btn:active { transform: scale(0.9); }
-.icon-btn svg { width: 16px; height: 16px; fill: currentColor; }
-.icon-btn.active { background: #FFF3E0; color: #FF9800; }
 .amen-btn { display: flex; align-items: center; gap: 6px; background: white; border: 1px solid #FFCC80; color: #FF9800; border-radius: 20px; padding: 6px 14px; font-size: 0.9rem; font-weight: bold; cursor: pointer; transition: all 0.2s; margin-right: auto; box-shadow: 0 2px 5px rgba(255, 152, 0, 0.1); }
 .amen-btn:hover { background: #FFF3E0; transform: scale(1.05); }
 .amen-btn:active { transform: scale(0.95); }
@@ -212,17 +194,17 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .enter-btn
 .color-trigger-btn { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #ddd; cursor: pointer; transition: transform 0.2s; }
 .color-trigger-btn:hover { transform: scale(1.1); }
 
-/* [프로필 편집 화면] */
+.admin-delete-btn { display: none !important; color: red !important; }
+.admin-mode .admin-delete-btn { display: inline-block !important; }
+
+/* [프로필 편집] */
 .profile-upload-container { display: flex; flex-direction: column; align-items: center; margin: 10px 0; }
 .profile-circle-wrapper { position: relative; width: 120px; height: 120px; }
 #edit-profile-preview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #FFE0B2; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #f0f0f0; }
 .camera-btn { position: absolute; bottom: 5px; right: 5px; background-color: #8D6E63; color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid white; font-size: 1.1rem; transition: transform 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 .camera-btn:active { transform: scale(0.9); }
-
-/* 자르기 모드 */
 .profile-crop-wrapper { width: 100%; max-width: 280px; height: 300px; background: #333; border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
 #cropper-target-img { display: block; max-width: 100%; }
-
 .upload-guide { margin-top: 8px; color: #aaa; font-size: 0.8rem; }
 .profile-name-input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; text-align: center; box-sizing: border-box; }
 .btn-save { background: linear-gradient(to right, #8D6E63, #6D4C41); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -238,9 +220,34 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .enter-btn
 .setting-icon { font-size: 1.2rem; }
 .setting-text { font-weight: bold; }
 
-/* [관리자 표시기] */
+/* [관리자 표시] */
 .admin-indicator { position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%); background: #D32F2F; color: white; padding: 8px 18px; border-radius: 30px; font-size: 0.9rem; font-weight: bold; box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4); z-index: 90; display: none; pointer-events: none; }
 body.admin-mode .admin-indicator { display: block; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+/* [기타 모달] */
+#lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 3000; justify-content: center; align-items: center; }
+#lightbox.active { display: flex; }
+#lightbox img { max-width: 95%; max-height: 90%; border-radius: 8px; animation: popIn 0.3s forwards; }
+#admin-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: center; }
+#admin-modal.active { display: flex; }
+.admin-box { background: white; width: 260px; padding: 20px; border-radius: 16px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+.admin-box h3 { margin-top: 0; margin-bottom: 15px; color: #5D4037; font-size: 1.1rem; }
+#admin-pw { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; text-align: center; font-size: 1rem; box-sizing: border-box; }
+.submit-btn { width: 100%; padding: 10px; background: linear-gradient(to right, #8D6E63, #6D4C41); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; }
+#color-modal { display: none; position: fixed; z-index: 3000; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
+#color-modal.active { display: flex; animation: fadeIn 0.2s; }
+.color-box { background:white; width: 320px; border-radius: 20px; padding: 20px; text-align:center; }
+.color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-top: 20px; }
+.color-swatch { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
+.color-swatch:hover { transform: scale(1.1); }
+.color-swatch.selected { border-color: #333; transform: scale(1.1); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popIn { to { transform: scale(1); } }
+@keyframes pulse-red { 0% { transform: scale(0.9); } 50% { transform: scale(1.2); } 100% { transform: scale(0.9); } }
+@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } }
+.links line { stroke: #FFFFFF !important; stroke-width: 3px !important; stroke-opacity: 1 !important; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); pointer-events: none; }
+.nodes g { cursor: pointer; transition: opacity 0.3s; }
+.nodes g:hover { opacity: 0.9; }
 
 /* [설치 배너] */
 .install-banner { position: fixed; bottom: -120px; left: 20px; right: 20px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 16px; padding: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); display: flex; justify-content: space-between; align-items: center; transition: bottom 0.5s; z-index: 9999; }
@@ -251,3 +258,29 @@ body.admin-mode .admin-indicator { display: block; animation: popIn 0.3s cubic-b
 .install-confirm { background: #8D6E63; color: white; border: none; padding: 10px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.9rem; box-shadow: 0 4px 10px rgba(141, 110, 99, 0.3); }
 .install-dismiss { background: transparent; border: none; font-size: 1.8rem; color: #bbb; cursor: pointer; padding: 0 5px; line-height: 1; }
 @media (max-width: 768px) { .install-banner.show { bottom: calc(20px + env(safe-area-inset-bottom)); } }
+
+/* ========================================= */
+/* [빠진 부분 복구] 캠프 포스터 & 채팅 스타일 */
+/* ========================================= */
+
+/* [캠프 포스터] */
+.camp-img-container { margin-bottom: 20px; padding: 0 15px; }
+.camp-img-title { font-size: 1rem; font-weight: bold; color: #5D4037; margin-bottom: 10px; display: block; border-left: 5px solid #FF7043; padding-left: 10px; }
+.camp-image { width: 100%; height: auto; display: block; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; }
+
+/* [채팅방] */
+.chat-messages { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 15px; background: #fff; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+.chat-bubble-wrapper { display: flex; flex-direction: column; max-width: 100%; }
+.chat-sender { font-size: 0.75rem; color: #8D6E63; margin-bottom: 4px; margin-left: 8px; font-weight: bold; }
+.chat-bubble { padding: 10px 14px; border-radius: 16px; font-size: 0.95rem; line-height: 1.4; word-break: break-word; white-space: pre-wrap; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; max-width: 75%; }
+.chat-bubble.mine { background: #FFCC80; color: #3E2723; border-top-right-radius: 2px; margin-left: auto; }
+.chat-bubble.others { background: #f1f1f1; color: #333; border-top-left-radius: 2px; margin-right: auto; }
+.admin-delete-chat { font-size: 0.75rem; color: #ef5350; cursor: pointer; font-weight: bold; margin: 0 5px; white-space: nowrap; display: none; }
+.admin-mode .admin-delete-chat { display: inline-block; }
+
+/* [채팅 입력창] */
+.chat-input-area { padding: 10px; border-top: 2px solid #FFE0B2; display: flex; align-items: center; gap: 8px; background: #fff; flex-shrink: 0; }
+#chat-msg { flex: 1; padding: 12px 15px; border: 2px solid #eee; border-radius: 25px; font-size: 1rem; outline: none; transition: border-color 0.2s; background: #fafafa; }
+#chat-msg:focus { border-color: #FFCC80; background: #fff; }
+.chat-send-btn { background: var(--main-node-color); color: white; border: none; border-radius: 25px; padding: 0 20px; height: 44px; font-weight: bold; font-size: 0.95rem; cursor: pointer; white-space: nowrap; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.1s; }
+.chat-send-btn:active { transform: scale(0.95); }
