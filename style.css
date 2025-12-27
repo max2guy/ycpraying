@@ -1,4 +1,4 @@
-/* style.css - Final Version 17 (Popup Height Reduced) */
+/* style.css - Final Version 20 (Holy Spirit Fire Edition) */
 
 * { -webkit-tap-highlight-color: transparent; }
 
@@ -142,18 +142,15 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .enter-btn
 .refresh-icon { animation: spin-slow 2s infinite linear; font-size: 1.1rem; }
 @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-/* [팝업 공통] 높이 조절 버전 */
+/* [팝업 공통] */
 .popup-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 2000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
 .popup-overlay.active { display: flex; opacity: 1; }
 .popup-content { 
     background: #FFF8E1; 
     width: 90%; 
     max-width: 500px; 
-    
-    /* [높이 조절됨] */
     height: 75vh;       
     max-height: 600px;  
-    
     border-radius: 20px; 
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); 
     display: flex; flex-direction: column; overflow: hidden; transform: scale(0.9); transition: transform 0.3s ease; position: relative; 
@@ -178,21 +175,13 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .enter-btn
 /* [알록달록 아이콘 버튼] */
 .icon-btn { background: #F5F5F5; border: none; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease-in-out; color: #8D6E63; }
 .action-group .icon-btn .material-symbols-rounded { font-size: 1.4rem; }
-
-/* 1. 고정 (Pin) - 빨강 */
 .pin-btn { color: #E53935; }
 .pin-btn:hover { background: #FFEBEE; color: #C62828; }
 .pin-btn.active { background: #FFEBEE; color: #D32F2F; box-shadow: inset 0 0 0 2px #FFCDD2; }
-
-/* 2. 수정 (Edit) - 파랑 */
 .edit-btn { color: #1E88E5; }
 .edit-btn:hover { background: #E3F2FD; color: #1565C0; }
-
-/* 3. 답글 (Reply) - 초록 */
 .reply-btn { color: #43A047; }
 .reply-btn:hover { background: #E8F5E9; color: #2E7D32; }
-
-/* 4. 삭제 (Delete) - 회색 -> 빨강 */
 .delete-btn { background-color: #9E9E9E; color: white !important; }
 .delete-btn:hover { background-color: #D32F2F; transform: rotate(15deg) scale(1.1); }
 .admin-delete-btn-icon { color: white !important; background-color: #ef5350 !important; }
