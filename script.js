@@ -738,16 +738,37 @@ function renderPrayers() {
         let delBtnHtml = `<button class="icon-btn" onclick="deletePrayer(${i})" title="삭제">${icons.trash}</button>`;
         if(isAdmin) delBtnHtml = `<button class="icon-btn" style="color:#ef5350;" onclick="adminDeletePrayer(${i})" title="관리자 삭제">${icons.trash}</button>`;
 
+        /* script.js의 renderPrayers 함수 내부 */
+
+// ... (앞부분 생략) ...
+
+        // [기존 icons 객체 정의 부분 삭제]
+        // const icons = { pin: '...', edit: '...', trash: '...', reply: '...' }; <-- 이 부분 지우기
+
+        let delBtnHtml = `<button class="icon-btn delete-btn" onclick="deletePrayer(${i})" title="삭제"><span class="material-symbols-rounded">delete_forever</span></button>`;
+        if(isAdmin) delBtnHtml = `<button class="icon-btn admin-delete-btn-icon" style="color:white; background:#ef5350;" onclick="adminDeletePrayer(${i})" title="관리자 삭제"><span class="material-symbols-rounded">delete_forever</span></button>`;
+
+        // [▼▼▼ 여기를 통째로 바꿔주세요 ▼▼▼]
         actionGroup.innerHTML = `
             <button class="amen-btn ${iAmened ? 'active' : ''}" onclick="toggleAmen(${i})">
                 <span>🙏</span>
                 <span>아멘 ${amens > 0 ? amens : ''}</span>
             </button>
-            <button class="icon-btn ${p.isPinned ? 'active' : ''}" onclick="togglePin(${i})" title="고정">${icons.pin}</button>
-            <button class="icon-btn" onclick="editPrayer(${i})" title="수정">${icons.edit}</button>
-            <button class="icon-btn" onclick="addReply(${i})" title="답글">${icons.reply}</button>
+            <button class="icon-btn pin-btn ${p.isPinned ? 'active' : ''}" onclick="togglePin(${i})" title="고정">
+                <span class="material-symbols-rounded">push_pin</span>
+            </button>
+            <button class="icon-btn edit-btn" onclick="editPrayer(${i})" title="수정">
+                <span class="material-symbols-rounded">edit</span>
+            </button>
+            <button class="icon-btn reply-btn" onclick="addReply(${i})" title="답글">
+                <span class="material-symbols-rounded">chat_bubble</span>
+            </button>
             ${delBtnHtml}
         `;
+        // [▲▲▲ 여기까지 ▲▲▲]
+
+        div.appendChild(header);
+// ... (뒷부분 생략) ...
 
         div.appendChild(header);
         div.appendChild(content);
@@ -953,3 +974,4 @@ function toggleMusic() {
         showWeatherToast("음악", "배경음악을 켰습니다. 🎵");
     }
 }
+
