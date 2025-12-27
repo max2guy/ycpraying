@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// (v20 최종: 성령의 불 에디션 🔥)
+// (v21 최종: 성령의 불 에디션 🔥 - Z-Index & 크기 보완)
 // ==========================================
 
 // 1. 서비스 워커
@@ -434,9 +434,19 @@ function renderPrayers() {
 function toggleAmen(i, e) { 
     if (!currentMemberData) return; 
     
-    // 1. 성령의 불 생성
+    // 1. 성령의 불 생성 (크기: 5~10, 개수: 40개로 강화)
     if(e && e.clientX) {
-        createFirework(e.clientX, e.clientY);
+        // [수정] 40개 파티클, 크기 더 크게
+        for(let k=0; k<40; k++) {
+            fireParts.push({
+                x: e.clientX, y: e.clientY,
+                vx: (Math.random() - 0.5) * 8, 
+                vy: (Math.random() - 0.5) * 8 - 3, 
+                life: 1.0,
+                color: `hsl(${30 + Math.random() * 30}, 100%, 60%)`, 
+                size: 5 + Math.random() * 5 // [수정] 크기 5~10
+            });
+        }
     }
     
     // 2. 파이어베이스 업데이트
@@ -444,6 +454,7 @@ function toggleAmen(i, e) {
     if (currentMemberData.prayers[i].amens && currentMemberData.prayers[i].amens[mySessionId]) ref.child(mySessionId).remove(); 
     else { ref.child(mySessionId).set(true); if(navigator.vibrate) navigator.vibrate(50); } 
 }
+// ... (이하 동일)
 function togglePin(i) { if (!currentMemberData) return; currentMemberData.prayers[i].isPinned = !currentMemberData.prayers[i].isPinned; membersRef.child(currentMemberData.firebaseKey).update({ prayers: currentMemberData.prayers }).then(() => renderPrayers()); }
 function deleteReply(pi, ri) { if(!confirm("답글 삭제?")) return; currentMemberData.prayers[pi].replies.splice(ri, 1); membersRef.child(currentMemberData.firebaseKey).update({ prayers: currentMemberData.prayers }).then(() => renderPrayers()); }
 function deletePrayer(i) { if(confirm("삭제?")) { currentMemberData.prayers.splice(i, 1); const d = currentMemberData.prayers.length>0?currentMemberData.prayers:[]; membersRef.child(currentMemberData.firebaseKey).update({prayers: d}); closePrayerPopup(); } }
@@ -496,16 +507,7 @@ function createHearts() { wParts=[]; for(let i=0;i<30;i++) wParts.push({x:Math.r
 
 // [성령의 불] 파티클 생성
 function createFirework(x, y) {
-    for(let k=0; k<25; k++) {
-        fireParts.push({
-            x: x, y: y,
-            vx: (Math.random() - 0.5) * 8, // 좌우 퍼짐
-            vy: (Math.random() - 0.5) * 8 - 3, // 약간 위로 솟구침
-            life: 1.0,
-            color: `hsl(${30 + Math.random() * 30}, 100%, 60%)`, // 금색~주황색
-            size: 3 + Math.random() * 4
-        });
-    }
+    // ... (위에서 수정된 함수 내용 참고) ...
 }
 
 function openLightbox(src) { document.getElementById('lightbox-img').src=src; document.getElementById('lightbox').classList.add('active'); }
