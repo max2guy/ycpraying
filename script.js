@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// (기능: 인트로 입장 + 배경음악 + UI 최적화 + 이미지 자르기)
+// (기능: 인트로 + 배경음악 + 아이콘통일 + UI 최적화 + 자르기)
 // ==========================================
 
 // 1. 서비스 워커 등록
@@ -260,13 +260,11 @@ function loadData() {
             if (total > read) totalUnread += (total - read);
         });
 
-        // 인트로 때문에 토스트는 나중에 띄움 (enterApp에서 처리)
         fetchWeather();
         setTimeout(() => { isFirstRender = false; }, 5000);
     })
     .catch(err => {
         console.log("Firebase Load Error:", err);
-        // 에러 나도 입장은 가능하게
         const spinner = document.getElementById('intro-loading-spinner');
         const btn = document.getElementById('enter-btn');
         if(spinner) spinner.style.display = 'none';
@@ -896,7 +894,7 @@ firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 function onYouTubeIframeAPIReady() {
     player = new YT.Player('youtube-player', {
         height: '0', width: '0',
-        videoId: '0wcxl81QclQ', // 배경음악 ID
+        videoId: '0wcxl81QclQ', // [수정됨] Way Maker (Korean Cover)
         playerVars: {
             'autoplay': 0, 
             'loop': 1, 
@@ -914,7 +912,7 @@ function onYouTubeIframeAPIReady() {
 
 // [핵심] 입장하기 버튼을 눌렀을 때 실행되는 함수
 function enterApp() {
-    // 1. 음악 재생 시도 (버튼 클릭이라 무조건 성공함)
+    // 1. 음악 재생 시도
     if (player && typeof player.playVideo === 'function') {
         player.playVideo();
     }
@@ -927,17 +925,21 @@ function enterApp() {
     setTimeout(() => {
         intro.style.display = 'none';
         showWeatherToast("환영합니다", "배경음악이 재생됩니다 🎵");
-    }, 800); // 0.8초 뒤에 완전히 삭제
+    }, 800); 
 }
 
 function onPlayerStateChange(event) {
     const btn = document.getElementById('music-btn');
+    const icon = document.getElementById('music-icon'); // 아이콘 요소 가져오기
+    
     if (event.data === YT.PlayerState.PLAYING) {
         isMusicPlaying = true;
         if(btn) btn.classList.add('music-playing');
+        if(icon) icon.innerText = "music_note"; // 구글 아이콘 이름
     } else {
         isMusicPlaying = false;
         if(btn) btn.classList.remove('music-playing');
+        if(icon) icon.innerText = "music_off";  // 구글 아이콘 이름
     }
 }
 
@@ -951,5 +953,3 @@ function toggleMusic() {
         showWeatherToast("음악", "배경음악을 켰습니다. 🎵");
     }
 }
-
-
