@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// (기능: 인트로 + 안전장치 + 아이콘 + 접근성 + 배경음악 + 이스터에그🎁)
+// (기능: 인트로 + 안전장치 + 아이콘 + 접근성 + 배경음악 + 이스터에그 보완)
 // ==========================================
 
 // 1. 서비스 워커
@@ -107,24 +107,24 @@ onlineRef.on('value', async (snapshot) => { if (snapshot.val()) { const myIp = a
 presenceRef.on('value', (snapshot) => { 
     const count = snapshot.numChildren() || 0; 
     document.getElementById('online-count').innerText = `${count}명 접속 중`; 
-    // [이스터에그 트리거] 온라인 카운터 클릭 시 처리
-    document.querySelector('.online-counter').onclick = handleOnlineCounterClick;
 });
 
-// [이스터에그] 변수 및 함수
+// [이스터에그] 변수 및 함수 (모바일 터치 보완)
 let eggClickCount = 0;
 let eggTimer = null;
 let isHeartRain = false;
+const originalCenterName = "연천장로교회\n청년부\n함께 기도해요"; // 원래 이름 저장
 
 function handleOnlineCounterClick() {
-    // 관리자 모드 진입용 팝업 (기존)
+    // 관리자 모드 진입용
     if (isAdmin) { showConnectedUsers(); return; }
 
     // 이스터에그 카운트 (5번 연속 클릭)
     eggClickCount++;
     if (eggTimer) clearTimeout(eggTimer);
     
-    eggTimer = setTimeout(() => { eggClickCount = 0; }, 1000); // 1초 안에 연타해야 함
+    // [보완] 시간을 1초 -> 1.5초로 늘려서 모바일에서 더 쉽게 발동되게 함
+    eggTimer = setTimeout(() => { eggClickCount = 0; }, 1500); 
 
     if (eggClickCount >= 5) {
         eggClickCount = 0;
@@ -133,17 +133,24 @@ function handleOnlineCounterClick() {
 }
 
 function triggerHeartRain() {
-    isHeartRain = !isHeartRain; // 켜고 끄기 토글
+    isHeartRain = !isHeartRain; 
     if (isHeartRain) {
-        createHearts(); // 하트 생성
-        centerNode.icon = "💖"; // 십자가 -> 하트
-        showWeatherToast("이스터에그 발견! 🎁", "하나님의 사랑이 가득하네요 🥰");
-        // 파티클 효과를 위해 캔버스 초기화
+        createHearts(); 
+        centerNode.icon = "💖";
+        // [추가] 텍스트 변경
+        centerNode.name = "사랑이\n넘치는\n우리 청년부";
+        updateGraph(); // 텍스트 변경 반영을 위해 그래프 갱신
+        
+        // [보완] 토스트 메시지 시간 6초로 설정
+        showWeatherToast("이스터에그 발견! 🎁", "사랑이 가득하네요 🥰", 6000);
         wctx.clearRect(0,0,wc.width,wc.height);
     } else {
-        // 원래대로 복구 (날씨 다시 불러오기)
         fetchWeather(); 
         centerNode.icon = "✝️";
+        // [추가] 텍스트 원상복구
+        centerNode.name = originalCenterName;
+        updateGraph(); 
+
         showWeatherToast("일상 모드", "원래대로 돌아왔습니다.");
     }
     updateNodeVisuals();
@@ -468,7 +475,13 @@ async function fetchWeather() { if (navigator.geolocation) { navigator.geolocati
 async function useFallbackWeather() { try { const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=38.0964&longitude=127.0748&current_weather=true"); const d = await res.json(); applyWeather({name:"연천군", main:{temp:d.current_weather.temperature}, weather:[{id:convertMeteoCode(d.current_weather.weathercode)}]}, false); } catch(e){} }
 function convertMeteoCode(c) { if(c>=50&&c<=69)return 500; if(c>=70&&c<=79)return 600; return 800; }
 function applyWeather(d, r) { const t = Math.round(d.main.temp); if(r) { const h = new Date().getHours(); centerNode.icon = (h>6&&h<18)?"☀️":"🌙"; } const c = d.weather[0].id; if(c>=200&&c<600) { createRain(); centerNode.icon="🌧️"; } else if(c>=600&&c<700) { createSnow(); centerNode.icon="❄️"; } else if(c>800) centerNode.icon="☁️"; updateNodeVisuals(); showWeatherToast(d.name, `${t}°C`); }
-function showWeatherToast(l, i) { const t = document.getElementById('weather-toast'); document.getElementById('weather-text').innerHTML = `📍 ${l}<br>${i}`; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+function showWeatherToast(l, i, duration = 3000) { 
+    const t = document.getElementById('weather-toast'); 
+    document.getElementById('weather-text').innerHTML = `📍 ${l}<br>${i}`; 
+    t.classList.add('show'); 
+    // [보완] 시간 조절 기능 (기본 3초)
+    setTimeout(() => t.classList.remove('show'), duration); 
+}
 const wc = document.getElementById('weather-canvas'); const wctx = wc.getContext('2d'); let wParts = [];
 function resizeWeatherCanvas() { wc.width = window.innerWidth; wc.height = window.innerHeight; }
 function createRain() { wParts=[]; for(let i=0;i<35;i++) wParts.push({x:Math.random()*wc.width, y:Math.random()*wc.height, s:3+Math.random()*4, l:7+Math.random()*8}); }
