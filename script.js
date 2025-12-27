@@ -896,11 +896,11 @@ firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 function onYouTubeIframeAPIReady() {
     player = new YT.Player('youtube-player', {
         height: '0', width: '0',
-        videoId: 'wUvomTzKygs', // 배경음악 ID
+        videoId: '0wcxl81QclQ', // 배경음악 ID
         playerVars: {
             'autoplay': 0, 
             'loop': 1, 
-            'playlist': 'wUvomTzKygs',
+            'playlist': '0wcxl81QclQ',
             'controls': 0, 
             'showinfo': 0, 
             'modestbranding': 1,
@@ -951,4 +951,5 @@ function toggleMusic() {
         showWeatherToast("음악", "배경음악을 켰습니다. 🎵");
     }
 }
+
 
