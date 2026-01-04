@@ -1,6 +1,6 @@
-// Service Worker Version 21
-// (v21 최종판 - 성령의 불 에디션)
-const CACHE_NAME = 'yc-prayer-v21'; 
+// Service Worker Version 22
+// (v22 최종판 - 성령의 불 에디션 + 프로필 업로드 수정)
+const CACHE_NAME = 'yc-prayer-v22'; 
 
 const FILES_TO_CACHE = [
   './',
@@ -47,4 +47,5 @@ self.addEventListener('fetch', (evt) => {
       })
   );
 });
+
 
