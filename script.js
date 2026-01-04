@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// (v21 최종: 성령의 불 에디션 🔥 - Z-Index & 크기 보완)
+// (v22: 프로필 사진 업로드 오류 수정 🚑)
 // ==========================================
 
 // 1. 서비스 워커
@@ -385,7 +385,27 @@ function deleteMember() { if(currentMemberData && confirm("삭제하시겠습니
 function editProfile() { if (!currentMemberData) return; document.getElementById('edit-profile-name').value = currentMemberData.name; document.getElementById('profile-view-mode').style.display = 'flex'; document.getElementById('profile-edit-mode').style.display = 'none'; document.getElementById('edit-profile-preview').src = currentMemberData.photoUrl || ""; document.getElementById('profile-edit-modal').classList.add('active'); if (cropper) { cropper.destroy(); cropper = null; } }
 function closeProfileEditModal() { document.getElementById('profile-edit-modal').classList.remove('active'); if (cropper) { cropper.destroy(); cropper = null; } }
 function handleProfileFileSelect(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = function(e) { document.getElementById('profile-view-mode').style.display = 'none'; document.getElementById('profile-edit-mode').style.display = 'flex'; const imgElement = document.getElementById('cropper-target-img'); imgElement.src = e.target.result; if (cropper) cropper.destroy(); setTimeout(() => { cropper = new Cropper(imgElement, { aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 0.8 }); }, 100); }; }
-function saveProfileChanges() { if (!currentMemberData) return; const newName = document.getElementById('edit-profile-name').value.trim(); if (!newName) return alert("이름 입력"); if (containsBannedWords(newName)) return alert("부적절 이름"); let finalImageUrl = tempProfileImage; if (cropper) { finalImageUrl = cropper.getCroppedCanvas({width: 300, height: 300}).toDataURL('image/jpeg', 0.8); } else { finalImageUrl = currentMemberData.photoUrl || ""; } membersRef.child(currentMemberData.firebaseKey).update({ name: newName, photoUrl: finalImageUrl }).then(() => { document.getElementById("panel-name").innerText = newName; closeProfileEditModal(); }); }
+
+// [수정됨] saveProfileChanges 함수 오류 수정 (tempProfileImage 제거)
+function saveProfileChanges() { 
+    if (!currentMemberData) return; 
+    const newName = document.getElementById('edit-profile-name').value.trim(); 
+    if (!newName) return alert("이름 입력"); 
+    if (containsBannedWords(newName)) return alert("부적절 이름"); 
+    
+    let finalImageUrl = ""; 
+    // 이미지를 새로 자른 경우(cropper 존재)와 그렇지 않은 경우를 구분
+    if (cropper) { 
+        finalImageUrl = cropper.getCroppedCanvas({width: 300, height: 300}).toDataURL('image/jpeg', 0.8); 
+    } else { 
+        finalImageUrl = currentMemberData.photoUrl || ""; 
+    } 
+    
+    membersRef.child(currentMemberData.firebaseKey).update({ name: newName, photoUrl: finalImageUrl }).then(() => { 
+        document.getElementById("panel-name").innerText = newName; 
+        closeProfileEditModal(); 
+    }); 
+}
 
 // Render Prayers (성령의 불 효과 추가됨)
 function createSafeElement(tag, className, text) { const el = document.createElement(tag); if (className) el.className = className; if (text) el.textContent = text; return el; }
