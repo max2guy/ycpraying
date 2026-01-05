@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// (v22: 프로필 사진 업로드 오류 수정 🚑)
+// (v23: 프로필 사진 삭제 기능 추가 🗑️)
 // ==========================================
 
 // 1. 서비스 워커
@@ -381,12 +381,56 @@ function addNewMember() { const n = prompt("이름:"); if(n && n.trim()) { if(co
 function updateMemberColor(v) { if(currentMemberData) membersRef.child(currentMemberData.firebaseKey).update({color: v}); }
 function deleteMember() { if(currentMemberData && confirm("삭제하시겠습니까?")) { membersRef.child(currentMemberData.firebaseKey).remove(); closePrayerPopup(); }}
 
-// Profile
-function editProfile() { if (!currentMemberData) return; document.getElementById('edit-profile-name').value = currentMemberData.name; document.getElementById('profile-view-mode').style.display = 'flex'; document.getElementById('profile-edit-mode').style.display = 'none'; document.getElementById('edit-profile-preview').src = currentMemberData.photoUrl || ""; document.getElementById('profile-edit-modal').classList.add('active'); if (cropper) { cropper.destroy(); cropper = null; } }
-function closeProfileEditModal() { document.getElementById('profile-edit-modal').classList.remove('active'); if (cropper) { cropper.destroy(); cropper = null; } }
-function handleProfileFileSelect(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = function(e) { document.getElementById('profile-view-mode').style.display = 'none'; document.getElementById('profile-edit-mode').style.display = 'flex'; const imgElement = document.getElementById('cropper-target-img'); imgElement.src = e.target.result; if (cropper) cropper.destroy(); setTimeout(() => { cropper = new Cropper(imgElement, { aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 0.8 }); }, 100); }; }
+// [추가됨] 기본 이미지 상수 및 삭제 상태 플래그
+const DEFAULT_PROFILE_IMG = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI0QwQzJCRSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==';
+let isProfilePhotoRemoved = false; 
 
-// [수정됨] saveProfileChanges 함수 오류 수정 (tempProfileImage 제거)
+// Profile Functions
+function editProfile() { 
+    if (!currentMemberData) return; 
+    isProfilePhotoRemoved = false; 
+    
+    document.getElementById('edit-profile-name').value = currentMemberData.name; 
+    document.getElementById('profile-view-mode').style.display = 'flex'; 
+    document.getElementById('profile-edit-mode').style.display = 'none'; 
+    document.getElementById('edit-profile-preview').src = currentMemberData.photoUrl || DEFAULT_PROFILE_IMG; 
+    
+    document.getElementById('profile-edit-modal').classList.add('active'); 
+    if (cropper) { cropper.destroy(); cropper = null; } 
+}
+
+function closeProfileEditModal() { 
+    document.getElementById('profile-edit-modal').classList.remove('active'); 
+    if (cropper) { cropper.destroy(); cropper = null; } 
+}
+
+function removeProfilePhoto() {
+    if(confirm("프로필 사진을 삭제하고 기본 이미지로 돌아가시겠습니까?")) {
+        isProfilePhotoRemoved = true; 
+        document.getElementById('edit-profile-preview').src = DEFAULT_PROFILE_IMG; 
+        if (cropper) { cropper.destroy(); cropper = null; } 
+        document.getElementById('profile-view-mode').style.display = 'flex'; 
+        document.getElementById('profile-edit-mode').style.display = 'none';
+    }
+}
+
+function handleProfileFileSelect(event) { 
+    const file = event.target.files[0]; 
+    if (!file) return; 
+    isProfilePhotoRemoved = false;
+    
+    const reader = new FileReader(); 
+    reader.readAsDataURL(file); 
+    reader.onload = function(e) { 
+        document.getElementById('profile-view-mode').style.display = 'none'; 
+        document.getElementById('profile-edit-mode').style.display = 'flex'; 
+        const imgElement = document.getElementById('cropper-target-img'); 
+        imgElement.src = e.target.result; 
+        if (cropper) cropper.destroy(); 
+        setTimeout(() => { cropper = new Cropper(imgElement, { aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 0.8 }); }, 100); 
+    }; 
+}
+
 function saveProfileChanges() { 
     if (!currentMemberData) return; 
     const newName = document.getElementById('edit-profile-name').value.trim(); 
@@ -394,9 +438,11 @@ function saveProfileChanges() {
     if (containsBannedWords(newName)) return alert("부적절 이름"); 
     
     let finalImageUrl = ""; 
-    // 이미지를 새로 자른 경우(cropper 존재)와 그렇지 않은 경우를 구분
+    
     if (cropper) { 
         finalImageUrl = cropper.getCroppedCanvas({width: 300, height: 300}).toDataURL('image/jpeg', 0.8); 
+    } else if (isProfilePhotoRemoved) {
+        finalImageUrl = ""; 
     } else { 
         finalImageUrl = currentMemberData.photoUrl || ""; 
     } 
@@ -427,7 +473,6 @@ function renderPrayers() {
         let delBtnHtml = `<button class="icon-btn delete-btn" onclick="deletePrayer(${i})" title="삭제" aria-label="삭제하기"><span class="material-symbols-rounded">delete_forever</span></button>`;
         if(isAdmin) delBtnHtml = `<button class="icon-btn admin-delete-btn-icon" style="color:white; background:#ef5350;" onclick="adminDeletePrayer(${i})" title="관리자 삭제" aria-label="관리자 권한 삭제"><span class="material-symbols-rounded">delete_forever</span></button>`;
 
-        // [수정됨] onclick에 event 객체 전달
         actionGroup.innerHTML = `
             <button class="amen-btn ${iAmened ? 'active' : ''}" onclick="toggleAmen(${i}, event)" aria-label="아멘 하기"><span>🙏</span><span>아멘 ${amens > 0 ? amens : ''}</span></button>
             <button class="icon-btn pin-btn ${p.isPinned ? 'active' : ''}" onclick="togglePin(${i})" title="고정" aria-label="상단 고정"><span class="material-symbols-rounded">push_pin</span></button>
@@ -454,9 +499,7 @@ function renderPrayers() {
 function toggleAmen(i, e) { 
     if (!currentMemberData) return; 
     
-    // 1. 성령의 불 생성 (크기: 5~10, 개수: 40개로 강화)
     if(e && e.clientX) {
-        // [수정] 40개 파티클, 크기 더 크게
         for(let k=0; k<40; k++) {
             fireParts.push({
                 x: e.clientX, y: e.clientY,
@@ -464,12 +507,11 @@ function toggleAmen(i, e) {
                 vy: (Math.random() - 0.5) * 8 - 3, 
                 life: 1.0,
                 color: `hsl(${30 + Math.random() * 30}, 100%, 60%)`, 
-                size: 5 + Math.random() * 5 // [수정] 크기 5~10
+                size: 5 + Math.random() * 5
             });
         }
     }
     
-    // 2. 파이어베이스 업데이트
     const ref = firebase.database().ref(`members/${currentMemberData.firebaseKey}/prayers/${i}/amens`); 
     if (currentMemberData.prayers[i].amens && currentMemberData.prayers[i].amens[mySessionId]) ref.child(mySessionId).remove(); 
     else { ref.child(mySessionId).set(true); if(navigator.vibrate) navigator.vibrate(50); } 
