@@ -1,12 +1,11 @@
-// Service Worker Version 22
-// (v22 최종판 - 성령의 불 에디션 + 프로필 업로드 수정)
-const CACHE_NAME = 'yc-prayer-v22'; 
+// Service Worker Version 23 (Add Delete Photo)
+const CACHE_NAME = 'yc-prayer-v23'; 
 
 const FILES_TO_CACHE = [
   './',
   './index.html',
-  './style.css?v=21',
-  './script.js?v=21',
+  './style.css?v=23',
+  './script.js?v=23',
   './manifest.json',
   './icon-192.png'
 ];
@@ -47,5 +46,3 @@ self.addEventListener('fetch', (evt) => {
       })
   );
 });
-
-
