@@ -1,4 +1,4 @@
-/* style.css - Final Version 21 (Firework Fix) */
+/* style.css - Version 23 (Delete Photo Button Added) */
 
 * { -webkit-tap-highlight-color: transparent; }
 
@@ -42,15 +42,15 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .enter-btn
 #visualization { width: 100vw; height: 100dvh; position: relative; z-index: 10; }
 #visualization svg { touch-action: none; }
 
-/* [수정됨 v21] 캔버스 레이어를 팝업 위로 올림 (불꽃 효과용) */
+/* 캔버스 레이어 */
 #weather-canvas { 
     position: fixed; 
     top: 0; 
     left: 0; 
     width: 100%; 
     height: 100%; 
-    pointer-events: none; /* 클릭은 통과시킴 */
-    z-index: 2500; /* 팝업(2000)보다 높게 설정 */
+    pointer-events: none; 
+    z-index: 2500; 
 }
 
 /* [인트로 화면] */
@@ -270,12 +270,18 @@ button, .float-btn, .icon-btn, .amen-btn, .setting-item, .camera-btn, .enter-btn
 .nodes g { cursor: pointer; transition: opacity 0.3s; }
 .nodes g:hover { opacity: 0.9; }
 
-/* [프로필 편집 화면] */
+/* [프로필 편집 화면 - v23] */
 .profile-upload-container { display: flex; flex-direction: column; align-items: center; margin: 10px 0; }
 .profile-circle-wrapper { position: relative; width: 120px; height: 120px; }
 #edit-profile-preview { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #FFE0B2; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background-color: #f0f0f0; }
+
 .camera-btn { position: absolute; bottom: 5px; right: 5px; background-color: #8D6E63; color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid white; font-size: 1.1rem; transition: transform 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 .camera-btn:active { transform: scale(0.9); }
+
+/* [추가됨] 삭제 버튼 스타일 */
+.remove-photo-btn { position: absolute; bottom: 5px; left: 5px; background-color: #ef5350; color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px solid white; font-size: 1.1rem; transition: transform 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); padding: 0; }
+.remove-photo-btn:active { transform: scale(0.9); background-color: #c62828; }
+
 .profile-crop-wrapper { width: 100%; max-width: 280px; height: 300px; background: #333; border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
 #cropper-target-img { display: block; max-width: 100%; }
 .upload-guide { margin-top: 8px; color: #aaa; font-size: 0.8rem; }
