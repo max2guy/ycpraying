@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// v24 — Sanctuary Dark Edition
+// v25 — Warm Light Edition
 // ==========================================
 
 // ── 서비스 워커 ──
@@ -367,10 +367,10 @@ function updateGraph() {
         .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended));
 
     ne.append("circle").attr("stroke-width",0).attr("r",0).style("pointer-events","all");
-    ne.append("rect").attr("rx",10).attr("ry",10).attr("fill","rgba(8,12,24,0.65)").style("opacity",0).style("pointer-events","none");
+    ne.append("rect").attr("rx",10).attr("ry",10).attr("fill","rgba(255,248,234,0.88)").style("opacity",0).style("pointer-events","none");
     ne.append("text").attr("text-anchor","middle").attr("dominant-baseline","middle").attr("font-weight","bold").style("pointer-events","none").style("opacity",0);
     const badge = ne.append("g").attr("class","node-badge").style("opacity",0).style("pointer-events","none");
-    badge.append("circle").attr("r",9).attr("cx",0).attr("cy",0).attr("fill","#f87171").attr("stroke","#080c18").attr("stroke-width",2);
+    badge.append("circle").attr("r",9).attr("cx",0).attr("cy",0).attr("fill","#E05252").attr("stroke","#fff").attr("stroke-width",2);
     badge.append("text").attr("x",0).attr("y",0).attr("dy","0.35em").attr("text-anchor","middle").attr("fill","white").style("font-size","11px").style("font-weight","bold");
     node = ne.merge(node);
     node.style("pointer-events","all");
@@ -397,23 +397,23 @@ function updateNodeVisuals() {
         const fillUrl = (d.photoUrl && d.type !== 'root') ? `url(#img-${d.id})` : (d.type === 'root' ? "#FFF8E1" : d.color);
         const pct = getTotalPrayerCount(d);
         let filterStr = (d.type === 'root')
-            ? "drop-shadow(0 0 18px rgba(201,168,76,0.6))"
-            : (pct > 0 ? `drop-shadow(0 0 ${Math.min(pct*3,28)}px rgba(255,140,0,${0.4+pct/25}))` : "drop-shadow(0 2px 6px rgba(0,0,0,0.4))");
+            ? "drop-shadow(0 0 18px rgba(193,127,36,0.55))"
+            : (pct > 0 ? `drop-shadow(0 0 ${Math.min(pct*3,28)}px rgba(193,127,36,${0.35+pct/25}))` : "drop-shadow(0 2px 8px rgba(120,80,20,0.18))");
 
         circle.attr("fill", fillUrl).style("opacity",1).style("filter",filterStr).style("-webkit-filter",filterStr)
-            .attr("stroke", (d.type !== 'root' && pct > 0) ? "#c9a84c" : "rgba(255,255,255,0.25)")
+            .attr("stroke", (d.type !== 'root' && pct > 0) ? "#C17F24" : "rgba(180,130,50,0.35)")
             .attr("stroke-width", (d.type !== 'root' && pct > 0) ? 2.5 : 1.5);
 
         const textEl = el.select("text"), rectEl = el.select("rect");
         textEl.text(null);
         if (d.type === 'root') {
             textEl.append("tspan").text(d.icon).attr("x",0).attr("dy","-1.2em").attr("font-size","2.8rem");
-            d.name.split("\n").forEach((l,i) => textEl.append("tspan").text(l).attr("x",0).attr("dy",i===0?"4.0em":"1.3em").attr("font-size","14px").attr("fill","#ede8de"));
+            d.name.split("\n").forEach((l,i) => textEl.append("tspan").text(l).attr("x",0).attr("dy",i===0?"4.0em":"1.3em").attr("font-size","14px").attr("fill","#2D1F0E"));
             rectEl.style("display","none");
             textEl.transition().delay(textDelay).duration(800).style("opacity",1);
         } else {
             const ty = d.photoUrl ? r + 15 : 0;
-            textEl.attr("y", ty).text(d.name).attr("font-size","12px").attr("fill","#ede8de");
+            textEl.attr("y", ty).text(d.name).attr("font-size","12px").attr("fill","#2D1F0E");
             const bbox = textEl.node().getBBox();
             const w = bbox.width > 0 ? bbox.width + 16 : d.name.length * 12 + 16;
             if (d.photoUrl) {

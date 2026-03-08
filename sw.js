@@ -1,11 +1,11 @@
-// Service Worker Version 24 (Sanctuary Dark Redesign + Full Bug Fixes)
-const CACHE_NAME = 'yc-prayer-v24';
+// Service Worker Version 25 (Warm Light Theme)
+const CACHE_NAME = 'yc-prayer-v25';
 
 const FILES_TO_CACHE = [
   './',
   './index.html',
-  './style.css?v=24',
-  './script.js?v=24',
+  './style.css?v=25',
+  './script.js?v=25',
   './manifest.json',
   './icon-192.png'
 ];
