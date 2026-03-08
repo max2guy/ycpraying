@@ -646,12 +646,22 @@ function getRandomColor() { return brightColors[Math.floor(Math.random() * brigh
 function dragstarted(event) { isDragAction=false; dragStartX=event.x; dragStartY=event.y; if(!event.active) simulation.alphaTarget(0.3).restart(); event.subject.fx=event.subject.x; event.subject.fy=event.subject.y; }
 function dragged(event) { const dx=event.x-dragStartX,dy=event.y-dragStartY; if(dx*dx+dy*dy>25)isDragAction=true; event.subject.fx=event.x; event.subject.fy=event.y; }
 function dragended(event) { if(!event.active)simulation.alphaTarget(0); event.subject.fx=null; event.subject.fy=null; }
+let _lastResizeW = window.innerWidth;
+let _resizeTimer = null;
 window.addEventListener("resize", () => {
-    const w=window.innerWidth, h=window.innerHeight;
-    svg.attr("width",w).attr("height",h);
-    simulation.force("center", d3.forceCenter(w/2,h/2));
-    simulation.alpha(0.5).restart();
-    resizeWeatherCanvas();
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => {
+        const w = window.innerWidth, h = window.innerHeight;
+        svg.attr("width", w).attr("height", h);
+        resizeWeatherCanvas();
+        // 너비 변화(기기 회전 등)일 때만 시뮬레이션 재시작
+        // 높이만 바뀌는 경우(모바일 URL 바 show/hide)는 무시
+        if (Math.abs(w - _lastResizeW) > 10) {
+            simulation.force("center", d3.forceCenter(w/2, h/2));
+            simulation.alpha(0.5).restart();
+            _lastResizeW = w;
+        }
+    }, 200);
 });
 
 // ── UI FUNCTIONS ──
@@ -1074,7 +1084,10 @@ const wc = document.getElementById('weather-canvas');
 const wctx = wc.getContext('2d');
 let wParts = [], fireParts = [];
 
-function resizeWeatherCanvas() { wc.width = window.innerWidth; wc.height = window.innerHeight; }
+function resizeWeatherCanvas() {
+    const w = window.innerWidth, h = window.innerHeight;
+    if (wc.width !== w || wc.height !== h) { wc.width = w; wc.height = h; }
+}
 resizeWeatherCanvas();
 function createRain()   { wParts=[]; for(let i=0;i<35;i++) wParts.push({x:Math.random()*wc.width,y:Math.random()*wc.height,s:3+Math.random()*4,l:7+Math.random()*8}); }
 function createSnow()   { wParts=[]; for(let i=0;i<35;i++) wParts.push({x:Math.random()*wc.width,y:Math.random()*wc.height,s:1+Math.random()*2,r:2+Math.random()*3}); }
