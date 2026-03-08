@@ -139,7 +139,7 @@
                 </div>
             </div>
             <div class="chat-input-area">
-                <input type="text" id="chat-msg" placeholder="메시지를 입력하세요..." onkeydown="if(event.key==='Enter')sendChatMessage()" aria-label="메시지 입력">
+                <input type="text" id="chat-msg" placeholder="메시지를 입력하세요..." onkeydown="if(event.key==='Enter'&&!event.isComposing&&event.keyCode!==229)sendChatMessage()" aria-label="메시지 입력">
                 <button class="chat-send-btn" onclick="sendChatMessage()" aria-label="메시지 전송">전송</button>
             </div>
         </div>
@@ -161,7 +161,7 @@
             <div class="prayer-input-area">
                 <div class="prayer-verse">"두세 사람이 내 이름으로 모인 곳에는<br>나도 그들 중에 있느니라" (마 18:20)</div>
                 <div class="prayer-input-row">
-                    <input type="text" id="new-prayer" placeholder="기도 제목을 입력하세요..." aria-label="새 기도제목 입력" onkeydown="if(event.key==='Enter')addPrayer()">
+                    <input type="text" id="new-prayer" placeholder="기도 제목을 입력하세요..." aria-label="새 기도제목 입력" onkeydown="if(event.key==='Enter'&&!event.isComposing&&event.keyCode!==229)addPrayer()">
                     <button class="prayer-send-btn" onclick="addPrayer()" aria-label="기도제목 등록">
                         <span class="material-symbols-rounded" style="font-size:1.2rem;">send</span>
                     </button>
@@ -238,7 +238,7 @@
         <div class="simple-modal-box" onclick="event.stopPropagation()">
             <div class="simple-modal-title" id="simple-modal-title">입력</div>
             <input  type="text"     class="simple-modal-input" id="simple-modal-text"     placeholder="입력하세요..." style="display:none;"
-                    onkeydown="if(event.key==='Enter')confirmSimpleModal()">
+                    onkeydown="if(event.key==='Enter'&&!event.isComposing&&event.keyCode!==229)confirmSimpleModal()">
             <textarea               class="simple-modal-input" id="simple-modal-textarea" placeholder="입력하세요..." rows="4" style="display:none;"
                     onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();confirmSimpleModal();}"></textarea>
             <div class="simple-modal-btns">
