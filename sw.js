@@ -1,11 +1,11 @@
-// Service Worker Version 23 (Add Delete Photo)
-const CACHE_NAME = 'yc-prayer-v23'; 
+// Service Worker Version 24 (Sanctuary Dark Redesign + Full Bug Fixes)
+const CACHE_NAME = 'yc-prayer-v24';
 
 const FILES_TO_CACHE = [
   './',
   './index.html',
-  './style.css?v=23',
-  './script.js?v=23',
+  './style.css?v=24',
+  './script.js?v=24',
   './manifest.json',
   './icon-192.png'
 ];
