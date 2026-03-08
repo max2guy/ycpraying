@@ -200,14 +200,14 @@ function triggerHeartRain() {
         createHearts();
         centerNode.icon = "💖";
         centerNode.name = "사랑이 넘치는\n우리 청년부";
-        updateGraph();
+        updateGraph(true);
         showWeatherToast("이스터에그 발견! 🎁", "사랑이 가득하네요 🥰", 6000);
         wctx.clearRect(0, 0, wc.width, wc.height);
     } else {
         fetchWeather();
         centerNode.icon = "✝️";
         centerNode.name = originalCenterName;
-        updateGraph();
+        updateGraph(true);
         showWeatherToast("일상 모드", "원래대로 돌아왔습니다.");
     }
     updateNodeVisuals();
@@ -340,13 +340,7 @@ const width = window.innerWidth, height = window.innerHeight;
 const svg = d3.select("#visualization").append("svg").attr("width", width).attr("height", height);
 const defs = svg.append("defs");
 
-// ── SVG 필터: glow ──
-const glowF = defs.append("filter").attr("id","f-glow").attr("x","-60%").attr("y","-60%").attr("width","220%").attr("height","220%");
-glowF.append("feGaussianBlur").attr("in","SourceGraphic").attr("stdDeviation","8").attr("result","blur");
-const gm = glowF.append("feMerge");
-gm.append("feMergeNode").attr("in","blur");
-gm.append("feMergeNode").attr("in","blur");
-gm.append("feMergeNode").attr("in","SourceGraphic");
+// SVG filter 제거 (성능) — CSS drop-shadow로 대체
 
 // ── 광택 오버레이 그라디언트 (모든 버블 공통) ──
 const gloss = defs.append("radialGradient").attr("id","gloss-overlay")
@@ -404,21 +398,26 @@ const decoData = [
     {e:"🎵", x:.89, y:.55, s:1.4, d:6.2, dl:1.0},
 ];
 const decoBg = svg.append("g").attr("class","deco-bg").style("pointer-events","none");
-decoData.forEach(o => {
-    const el = decoBg.append("text")
+// 모든 데코 노드를 배열로 수집 후 단일 rAF 루프에서 처리
+const decoNodes = decoData.map(o => {
+    const node = decoBg.append("text")
         .attr("x", width*o.x).attr("y", height*o.y)
         .attr("text-anchor","middle").attr("font-size", o.s + "rem")
-        .style("opacity","0.0").text(o.e);
-    // JS 애니메이션 (CSS animation은 SVG에 불안정)
-    let t = o.dl;
-    function tickDeco() {
-        t += 0.016;
-        const yo = Math.sin(t * (Math.PI*2) / o.d) * 14;
-        el.attr("y", height*o.y + yo).style("opacity", 0.45 + Math.sin(t*0.8)*0.12);
-        requestAnimationFrame(tickDeco);
-    }
-    requestAnimationFrame(tickDeco);
+        .style("opacity","0").text(o.e).node(); // .node()로 DOM 직접 참조
+    return { node, baseY: height*o.y, period: o.d, phase: o.dl };
 });
+// 단일 rAF 루프 (D3 selection 오버헤드 없이 raw DOM 직접 조작)
+function animDecos(ts) {
+    const t = ts * 0.001;
+    for (let i = 0; i < decoNodes.length; i++) {
+        const d = decoNodes[i];
+        const y = d.baseY + Math.sin((t + d.phase) * (Math.PI*2) / d.period) * 12;
+        d.node.setAttribute('y', y);
+        d.node.style.opacity = 0.42 + Math.sin((t + d.phase) * 0.6) * 0.10;
+    }
+    requestAnimationFrame(animDecos);
+}
+requestAnimationFrame(animDecos);
 
 const g = svg.append("g");
 svg.call(d3.zoom().scaleExtent([0.1, 4]).on("zoom", event => g.attr("transform", event.transform)));
@@ -426,13 +425,15 @@ const linkGroup = g.append("g").attr("class","links");
 const nodeGroup = g.append("g").attr("class","nodes");
 const sizeScale = d3.scaleSqrt().domain([0,15]).range([28,60]).clamp(true);
 simulation = d3.forceSimulation()
-    .force("link", d3.forceLink().id(d => d.id).distance(140))
-    .force("charge", d3.forceManyBody().strength(-400))
-    .force("center", d3.forceCenter(width/2, height/2))
-    .force("collide", d3.forceCollide().radius(d => calculateRadius(d) + 30));
+    .alphaDecay(0.04)          // 기본값(0.0228)보다 빠르게 정착
+    .velocityDecay(0.55)       // 마찰 증가 → 튕김 감소 (기본 0.4)
+    .force("link",    d3.forceLink().id(d => d.id).distance(155).strength(0.5))
+    .force("charge",  d3.forceManyBody().strength(-260).distanceMax(380))
+    .force("center",  d3.forceCenter(width/2, height/2).strength(0.04))
+    .force("collide", d3.forceCollide().radius(d => calculateRadius(d) + 16).strength(0.85).iterations(2));
 let link, node;
 
-function updateGraph() {
+function updateGraph(softRestart = false) {
     globalNodes = [centerNode, ...members];
     const links = members.map(m => ({ source:centerNode.id, target:m.id }));
     const patterns = defs.selectAll("pattern").data(members, d => d.id);
@@ -515,7 +516,8 @@ function updateGraph() {
     updateNodeVisuals();
     simulation.nodes(globalNodes);
     simulation.force("link").links(links);
-    simulation.alpha(1).restart();
+    // 토폴로지 변경 시: alpha(0.6), 소프트 업데이트 시: alpha(0.2)
+    simulation.alpha(softRestart ? 0.2 : 0.6).restart();
 }
 
 function updateNodeVisuals() {
@@ -549,7 +551,7 @@ function updateNodeVisuals() {
         const pct = getTotalPrayerCount(d);
         if (d.type === 'root') {
             main.attr("fill","url(#center-grad)")
-                .style("filter","url(#f-glow)")
+                .style("filter","drop-shadow(0 0 20px rgba(255,200,80,0.70)) drop-shadow(0 0 40px rgba(255,170,40,0.35))")
                 .attr("stroke","rgba(255,240,160,0.90)").attr("stroke-width","3.5");
             gloss.attr("fill","url(#gloss-overlay)");
         } else if (d.photoUrl) {
