@@ -138,8 +138,21 @@ async function getMyIp() {
 }
 
 // ── 접속자 현황 ──
-// push() 대신 세션ID 고정 경로 사용 → 재연결 시 중복 카운팅 방지
+// 세션ID 고정 경로: 1세션 = 1레코드 보장
 const myPresenceRef = presenceRef.child(mySessionId);
+const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
+
+// 앱 시작 시 stale 레코드 정리 (이전 push() 방식 고아 레코드 포함)
+presenceRef.once('value', snap => {
+    const now = Date.now();
+    snap.forEach(child => {
+        const data = child.val();
+        if (!data || !data.time || (now - data.time) > PRESENCE_TTL) {
+            child.ref.remove();
+        }
+    });
+});
+
 onlineRef.on('value', async snap => {
     if (snap.val()) {
         const myIp = await getMyIp();
@@ -147,8 +160,21 @@ onlineRef.on('value', async snap => {
         myPresenceRef.set({ ip: myIp, time: Date.now(), device: navigator.userAgent });
     }
 });
+
+// 주기적으로 timestamp 갱신 (heartbeat) → stale 판정 방지
+setInterval(() => {
+    if (myPresenceRef) myPresenceRef.update({ time: Date.now() });
+}, 60 * 1000);
+
 presenceRef.on('value', snap => {
-    document.getElementById('online-count').innerText = `${snap.numChildren() || 0}명 접속 중`;
+    const now = Date.now();
+    let count = 0;
+    snap.forEach(child => {
+        const data = child.val();
+        if (data && data.time && (now - data.time) <= PRESENCE_TTL) count++;
+        else child.ref.remove(); // 실시간 stale 감지 시 즉시 제거
+    });
+    document.getElementById('online-count').innerText = `${count}명 접속 중`;
 });
 
 // ── 이스터에그 ──
