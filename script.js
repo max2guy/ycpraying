@@ -340,36 +340,84 @@ const width = window.innerWidth, height = window.innerHeight;
 const svg = d3.select("#visualization").append("svg").attr("width", width).attr("height", height);
 const defs = svg.append("defs");
 
-// 버블 광택 그라디언트 (흰색 하이라이트)
-const glossGrad = defs.append("radialGradient").attr("id","bubble-gloss")
-    .attr("cx","35%").attr("cy","28%").attr("r","60%")
-    .attr("fx","35%").attr("fy","25%");
-glossGrad.append("stop").attr("offset","0%").attr("stop-color","white").attr("stop-opacity","0.70");
-glossGrad.append("stop").attr("offset","55%").attr("stop-color","white").attr("stop-opacity","0.10");
-glossGrad.append("stop").attr("offset","100%").attr("stop-color","white").attr("stop-opacity","0.00");
+// ── SVG 필터: glow ──
+const glowF = defs.append("filter").attr("id","f-glow").attr("x","-60%").attr("y","-60%").attr("width","220%").attr("height","220%");
+glowF.append("feGaussianBlur").attr("in","SourceGraphic").attr("stdDeviation","8").attr("result","blur");
+const gm = glowF.append("feMerge");
+gm.append("feMergeNode").attr("in","blur");
+gm.append("feMergeNode").attr("in","blur");
+gm.append("feMergeNode").attr("in","SourceGraphic");
 
-// 중앙 노드 발광 그라디언트
-const centerGrad = defs.append("radialGradient").attr("id","center-glow")
+// ── 광택 오버레이 그라디언트 (모든 버블 공통) ──
+const gloss = defs.append("radialGradient").attr("id","gloss-overlay")
+    .attr("cx","30%").attr("cy","24%").attr("r","55%").attr("fx","26%").attr("fy","18%");
+gloss.append("stop").attr("offset","0%").attr("stop-color","#fff").attr("stop-opacity","0.95");
+gloss.append("stop").attr("offset","25%").attr("stop-color","#fff").attr("stop-opacity","0.50");
+gloss.append("stop").attr("offset","55%").attr("stop-color","#fff").attr("stop-opacity","0.05");
+gloss.append("stop").attr("offset","100%").attr("stop-color","#fff").attr("stop-opacity","0.00");
+
+// ── 중앙 노드 그라디언트: 따뜻한 황금 오브 ──
+const cg = defs.append("radialGradient").attr("id","center-grad")
+    .attr("cx","32%").attr("cy","26%").attr("r","72%").attr("fx","28%").attr("fy","20%");
+cg.append("stop").attr("offset","0%").attr("stop-color","#FFFFF0").attr("stop-opacity","1");
+cg.append("stop").attr("offset","22%").attr("stop-color","#FFF3C0").attr("stop-opacity","1");
+cg.append("stop").attr("offset","55%").attr("stop-color","#FFD880").attr("stop-opacity","1");
+cg.append("stop").attr("offset","100%").attr("stop-color","#FFAA40").attr("stop-opacity","1");
+
+// ── 중앙 후광 그라디언트 ──
+const hg = defs.append("radialGradient").attr("id","halo-grad")
     .attr("cx","50%").attr("cy","50%").attr("r","50%");
-centerGrad.append("stop").attr("offset","0%").attr("stop-color","#FFF8E0").attr("stop-opacity","1");
-centerGrad.append("stop").attr("offset","60%").attr("stop-color","#FFE8C0").attr("stop-opacity","1");
-centerGrad.append("stop").attr("offset","100%").attr("stop-color","#FFD0A0").attr("stop-opacity","1");
+hg.append("stop").attr("offset","0%").attr("stop-color","#FFE870").attr("stop-opacity","0.55");
+hg.append("stop").attr("offset","55%").attr("stop-color","#FFD060").attr("stop-opacity","0.18");
+hg.append("stop").attr("offset","100%").attr("stop-color","#FFBB40").attr("stop-opacity","0.00");
 
-// 배경 장식 (구름, 하트, 별)
+// ── 색상별 3D 버블 그라디언트 생성 함수 ──
+function ensureBubbleGrad(color) {
+    const id = 'bg-' + color.replace('#','');
+    if (!defs.select('#' + id).empty()) return 'url(#' + id + ')';
+    const rv = parseInt(color.slice(1,3),16), gv = parseInt(color.slice(3,5),16), bv = parseInt(color.slice(5,7),16);
+    const bright = `rgb(${Math.min(255,rv+30)},${Math.min(255,gv+30)},${Math.min(255,bv+30)})`;
+    const dark   = `rgb(${Math.max(0,rv-60)},${Math.max(0,gv-60)},${Math.max(0,bv-60)})`;
+    const grad = defs.append("radialGradient").attr("id",id)
+        .attr("cx","30%").attr("cy","24%").attr("r","72%").attr("fx","25%").attr("fy","18%");
+    grad.append("stop").attr("offset","0%").attr("stop-color","#fff").attr("stop-opacity","0.92");
+    grad.append("stop").attr("offset","18%").attr("stop-color","#fff").attr("stop-opacity","0.52");
+    grad.append("stop").attr("offset","42%").attr("stop-color",bright).attr("stop-opacity","1");
+    grad.append("stop").attr("offset","78%").attr("stop-color",color).attr("stop-opacity","1");
+    grad.append("stop").attr("offset","100%").attr("stop-color",dark).attr("stop-opacity","1");
+    return 'url(#' + id + ')';
+}
+// 팔레트 전체 사전 생성
+brightColors.forEach(c => ensureBubbleGrad(c));
+
+// ── 배경 장식 이모지 ──
 const decoData = [
-    {emoji:"☁️", x:width*0.08, y:height*0.88, size:2.2, dur:7},
-    {emoji:"💗", x:width*0.88, y:height*0.82, size:1.6, dur:5},
-    {emoji:"✨", x:width*0.92, y:height*0.42, size:1.4, dur:4},
-    {emoji:"🎵", x:width*0.05, y:height*0.55, size:1.5, dur:6},
-    {emoji:"💫", x:width*0.85, y:height*0.12, size:1.3, dur:5.5},
+    {e:"☁️", x:.06, y:.10, s:2.8, d:7.0, dl:0.0},
+    {e:"☁️", x:.88, y:.08, s:2.2, d:8.5, dl:1.2},
+    {e:"☁️", x:.10, y:.90, s:2.0, d:7.5, dl:2.0},
+    {e:"☁️", x:.84, y:.92, s:2.4, d:9.0, dl:0.6},
+    {e:"💗", x:.93, y:.75, s:1.8, d:5.0, dl:0.3},
+    {e:"💗", x:.04, y:.62, s:1.5, d:6.0, dl:1.8},
+    {e:"✨", x:.90, y:.32, s:1.5, d:4.0, dl:0.8},
+    {e:"✨", x:.14, y:.45, s:1.3, d:3.8, dl:2.5},
+    {e:"⭐", x:.82, y:.18, s:1.4, d:5.5, dl:0.5},
+    {e:"🎵", x:.89, y:.55, s:1.4, d:6.2, dl:1.0},
 ];
 const decoBg = svg.append("g").attr("class","deco-bg").style("pointer-events","none");
-decoData.forEach(d => {
-    decoBg.append("text")
-        .attr("x", d.x).attr("y", d.y)
-        .attr("text-anchor","middle").attr("font-size", d.size + "rem")
-        .style("opacity","0.55").text(d.emoji)
-        .style("animation",`floatD ${d.dur}s ease-in-out infinite`);
+decoData.forEach(o => {
+    const el = decoBg.append("text")
+        .attr("x", width*o.x).attr("y", height*o.y)
+        .attr("text-anchor","middle").attr("font-size", o.s + "rem")
+        .style("opacity","0.0").text(o.e);
+    // JS 애니메이션 (CSS animation은 SVG에 불안정)
+    let t = o.dl;
+    function tickDeco() {
+        t += 0.016;
+        const yo = Math.sin(t * (Math.PI*2) / o.d) * 14;
+        el.attr("y", height*o.y + yo).style("opacity", 0.45 + Math.sin(t*0.8)*0.12);
+        requestAnimationFrame(tickDeco);
+    }
+    requestAnimationFrame(tickDeco);
 });
 
 const g = svg.append("g");
@@ -398,13 +446,14 @@ function updateGraph() {
 
     link = linkGroup.selectAll("line").data(links, d => d.target.id || d.target);
     link.exit().remove();
+    // 진주알 구슬 연결선: stroke-dasharray "0.1 11" + round linecap = 원형 구슬 체인
     const le = link.enter().append("line")
-        .attr("stroke","rgba(255,182,210,0.70)")
-        .attr("stroke-width",3)
-        .attr("stroke-dasharray","6,5")
+        .attr("stroke","rgba(255,195,220,0.72)")
+        .attr("stroke-width", 7)
+        .attr("stroke-dasharray","0.1 12")
         .attr("stroke-linecap","round")
         .style("opacity",0);
-    le.transition().delay(800).duration(1500).style("opacity",1);
+    le.transition().delay(600).duration(1800).style("opacity",1);
     link = le.merge(link);
 
     node = nodeGroup.selectAll("g").data(globalNodes, d => d.id);
@@ -436,22 +485,31 @@ function updateGraph() {
         })
         .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended));
 
-    // 메인 버블 원
-    ne.append("circle").attr("class","bubble-main").attr("stroke-width",2.5).attr("r",0).style("pointer-events","all");
-    // 광택 하이라이트 오버레이 (pointer-events 없음)
-    ne.append("circle").attr("class","bubble-gloss").attr("fill","url(#bubble-gloss)").attr("r",0).style("pointer-events","none").style("opacity",0);
-    // 이름 배경 rect
-    ne.append("rect").attr("rx",12).attr("ry",12).attr("fill","rgba(255,245,252,0.90)").style("opacity",0).style("pointer-events","none");
-    // 이름 텍스트
-    ne.append("text").attr("text-anchor","middle").attr("dominant-baseline","middle").attr("font-weight","800").style("pointer-events","none").style("opacity",0);
-    // 별 배지 (기도 개수 표시)
+    // 1. 중앙 전용: 후광 원 (root에만 보임)
+    ne.append("circle").attr("class","bubble-halo").attr("fill","url(#halo-grad)").attr("r",0)
+        .style("pointer-events","none").style("opacity",0);
+    // 2. 메인 버블 원
+    ne.append("circle").attr("class","bubble-main").attr("stroke-width",3).attr("r",0).style("pointer-events","all");
+    // 3. 광택 하이라이트 오버레이
+    ne.append("circle").attr("class","bubble-gloss").attr("fill","url(#gloss-overlay)").attr("r",0)
+        .style("pointer-events","none").style("opacity",0);
+    // 4. 이름 배경 pill (항상 표시)
+    ne.append("rect").attr("class","name-pill").attr("rx",14).attr("ry",14)
+        .attr("fill","rgba(255,248,255,0.88)").style("opacity",0).style("pointer-events","none");
+    // 5. 이름 텍스트
+    ne.append("text").attr("class","node-label").attr("text-anchor","middle")
+        .attr("dominant-baseline","middle").attr("font-weight","900")
+        .style("pointer-events","none").style("opacity",0);
+    // 6. 별 배지 (기도 개수): 왼쪽 위, 골드 별 + 숫자
     const badge = ne.append("g").attr("class","node-badge").style("opacity",0).style("pointer-events","none");
-    // 별 모양 배경
-    badge.append("text").attr("class","badge-star").attr("x",0).attr("y",0).attr("text-anchor","middle").attr("dominant-baseline","middle")
-        .attr("font-size","20px").text("⭐");
-    badge.append("text").attr("class","badge-num").attr("x",0).attr("y","0.5px").attr("dy","0.35em")
-        .attr("text-anchor","middle").attr("fill","#5C3A6A")
-        .style("font-size","10px").style("font-weight","900");
+    // 별 SVG path (5각형)
+    badge.append("path")
+        .attr("d","M0,-11 L2.6,-4 L10,-3.1 L4.4,2 L6,9.5 L0,6 L-6,9.5 L-4.4,2 L-10,-3.1 L-2.6,-4 Z")
+        .attr("fill","#FFD700").attr("stroke","#FFA500").attr("stroke-width","1.2")
+        .style("filter","drop-shadow(0 1px 3px rgba(200,130,0,0.45))");
+    badge.append("text").attr("class","badge-num").attr("x",0).attr("y","0.5").attr("dy","0.35em")
+        .attr("text-anchor","middle").attr("fill","#7A4800")
+        .style("font-size","9px").style("font-weight","900");
     node = ne.merge(node);
     node.style("pointer-events","all");
     updateNodeVisuals();
@@ -464,67 +522,97 @@ function updateNodeVisuals() {
     if (!node) return;
     node.each(function(d) {
         const el = d3.select(this);
-        const r = calculateRadius(d);
-        const circle = el.select("circle");
-        const textDelay = isFirstRender ? (d.id === 'center' ? 0 : 800 + globalNodes.indexOf(d) * 80) : 0;
+        const r  = calculateRadius(d);
+        const textDelay = isFirstRender ? (d.id === 'center' ? 0 : 900 + globalNodes.indexOf(d) * 70) : 0;
 
-        const bubbleMain  = el.select(".bubble-main");
-        const bubbleGloss = el.select(".bubble-gloss");
+        const halo  = el.select(".bubble-halo");
+        const main  = el.select(".bubble-main");
+        const gloss = el.select(".bubble-gloss");
 
-        if (bubbleMain.attr("r") == 0) {
-            bubbleMain.transition().delay(textDelay).duration(isFirstRender ? 800 : 500)
-                .ease(d3.easeElasticOut.amplitude(2.5)).attr("r", r);
-            bubbleGloss.transition().delay(textDelay + 200).duration(600).style("opacity",1).attr("r", r);
-        } else {
-            bubbleMain.transition().duration(500).attr("r", r);
-            bubbleGloss.transition().duration(500).attr("r", r);
-        }
-
-        const fillUrl = (d.photoUrl && d.type !== 'root') ? `url(#img-${d.id})` : (d.type === 'root' ? "url(#center-glow)" : d.color);
-        const pct = getTotalPrayerCount(d);
-        let filterStr = (d.type === 'root')
-            ? "drop-shadow(0 0 22px rgba(255,200,140,0.75)) drop-shadow(0 4px 12px rgba(255,160,100,0.40))"
-            : (pct > 0
-                ? `drop-shadow(0 0 ${Math.min(pct*2+6,22)}px rgba(255,133,176,${0.40+pct/30})) drop-shadow(0 3px 8px rgba(180,80,130,0.20))`
-                : "drop-shadow(0 3px 10px rgba(180,80,130,0.18))");
-
-        bubbleMain.attr("fill", fillUrl).style("opacity",1).style("filter",filterStr).style("-webkit-filter",filterStr)
-            .attr("stroke", d.type === 'root' ? "rgba(255,220,160,0.8)" : "rgba(255,255,255,0.65)")
-            .attr("stroke-width", 2.5);
-
-        const textEl = el.select("text"), rectEl = el.select("rect");
-        textEl.text(null);
-        if (d.type === 'root') {
-            textEl.append("tspan").text(d.icon).attr("x",0).attr("dy","-1.2em").attr("font-size","2.8rem");
-            d.name.split("\n").forEach((l,i) => textEl.append("tspan").text(l).attr("x",0).attr("dy",i===0?"4.0em":"1.3em").attr("font-size","13px").attr("fill","#7A4820").attr("font-weight","800"));
-            rectEl.style("display","none");
-            textEl.transition().delay(textDelay).duration(800).style("opacity",1);
-        } else {
-            const ty = d.photoUrl ? r + 17 : 0;
-            textEl.attr("y", ty).text(d.name).attr("font-size","13px").attr("fill","#5C3A6A").attr("font-weight","800");
-            const bbox = textEl.node().getBBox();
-            const w = bbox.width > 0 ? bbox.width + 18 : d.name.length * 13 + 18;
-            if (d.photoUrl) {
-                rectEl.style("display","block").attr("x",-w/2).attr("y",ty-11).attr("width",w).attr("height",22)
-                    .transition().delay(textDelay).duration(500).style("opacity",1);
-            } else {
-                rectEl.style("display","none");
+        // ── 크기 애니메이션 ──
+        if (main.attr("r") == 0) {
+            if (d.type === 'root') {
+                halo.transition().delay(textDelay).duration(1400)
+                    .ease(d3.easeElasticOut.amplitude(1.5)).attr("r", r * 2.0).style("opacity","1");
             }
+            main.transition().delay(textDelay).duration(isFirstRender ? 900 : 500)
+                .ease(d3.easeElasticOut.amplitude(2.2)).attr("r", r);
+            gloss.transition().delay(textDelay + 180).duration(700)
+                .style("opacity","1").attr("r", r * 0.80);
+        } else {
+            if (d.type === 'root') halo.transition().duration(500).attr("r", r * 2.0);
+            main.transition().duration(500).attr("r", r);
+            gloss.transition().duration(500).attr("r", r * 0.80);
+        }
+
+        // ── 색 채우기 & 필터 ──
+        const pct = getTotalPrayerCount(d);
+        if (d.type === 'root') {
+            main.attr("fill","url(#center-grad)")
+                .style("filter","url(#f-glow)")
+                .attr("stroke","rgba(255,240,160,0.90)").attr("stroke-width","3.5");
+            gloss.attr("fill","url(#gloss-overlay)");
+        } else if (d.photoUrl) {
+            main.attr("fill", `url(#img-${d.id})`)
+                .style("filter", pct > 0
+                    ? `drop-shadow(0 0 ${Math.min(pct*2+8,20)}px rgba(255,133,176,${0.45+pct/35}))`
+                    : "drop-shadow(0 4px 14px rgba(180,80,130,0.22))")
+                .attr("stroke","rgba(255,255,255,0.82)").attr("stroke-width","3.5");
+            gloss.attr("fill","url(#gloss-overlay)");
+        } else {
+            const fill3d = ensureBubbleGrad(d.color);
+            const glow = pct > 0
+                ? `drop-shadow(0 0 ${Math.min(pct*2+8,20)}px rgba(255,133,176,${0.38+pct/35})) drop-shadow(0 4px 10px rgba(180,80,130,0.18))`
+                : "drop-shadow(0 4px 12px rgba(180,80,130,0.16))";
+            main.attr("fill", fill3d).style("filter", glow)
+                .attr("stroke","rgba(255,255,255,0.72)").attr("stroke-width","2.5");
+            gloss.attr("fill","url(#gloss-overlay)");
+        }
+
+        // ── 텍스트 (이름은 버블 아래 항상 표시) ──
+        const textEl = el.select(".node-label");
+        const rectEl = el.select(".name-pill");
+        textEl.text(null);
+
+        if (d.type === 'root') {
+            // 중앙: 이모지 + 이름 텍스트 (버블 안에)
+            textEl.append("tspan").text(d.icon).attr("x",0).attr("dy","-1.5em").attr("font-size","2.6rem");
+            d.name.split("\n").forEach((l,i) => {
+                textEl.append("tspan").text(l).attr("x",0)
+                    .attr("dy", i===0 ? "4.4em" : "1.35em")
+                    .attr("font-size","13px").attr("fill","#7A4820").attr("font-weight","900");
+            });
+            rectEl.style("display","none");
+            textEl.transition().delay(textDelay).duration(900).style("opacity",1);
+        } else {
+            // 멤버: 이름을 버블 아래에 표시
+            const ty = r + 18;
+            textEl.attr("y", ty).attr("x", 0).text(d.name)
+                .attr("font-size","13px").attr("fill","#5C3A6A").attr("font-weight","900");
+            const bbox = textEl.node().getBBox();
+            const pw = Math.max(bbox.width + 22, 50);
+            rectEl.style("display","block")
+                .attr("x", -pw/2).attr("y", ty - 12)
+                .attr("width", pw).attr("height", 24)
+                .transition().delay(textDelay).duration(500).style("opacity",1);
             textEl.transition().delay(textDelay).duration(800).style("opacity",1);
         }
 
+        // ── 별 배지 (기도 개수) ──
         if (d.type !== 'root') {
-            const prayerCnt = getTotalPrayerCount(d);
-            const unread = Math.max(0, prayerCnt - (readStatus[d.id] || 0));
-            const isNew  = newMemberIds.has(d.id);
-            const badge  = el.select(".node-badge");
-            const bx = r * 0.707 + 4, by = -(r * 0.707 + 4);
-            if (prayerCnt > 0 || isNew) {
+            const cnt = getTotalPrayerCount(d);
+            const isNew = newMemberIds.has(d.id);
+            const badge = el.select(".node-badge");
+            // 왼쪽 위 (약 10시 방향)
+            const bx = -(r * 0.62 + 2), by = -(r * 0.62 + 2);
+            if (cnt > 0 || isNew) {
                 badge.style("display","block");
-                badge.select(".badge-num").text(isNew && prayerCnt === 0 ? "N" : prayerCnt);
-                badge.transition().delay(textDelay + 400).duration(200)
-                    .attr("transform",`translate(${bx},${by})`).style("opacity",1);
-            } else { badge.style("opacity",0); }
+                badge.select(".badge-num").text(isNew && cnt === 0 ? "N" : cnt);
+                badge.transition().delay(textDelay + 450).duration(300)
+                    .attr("transform", `translate(${bx},${by})`).style("opacity",1);
+            } else {
+                badge.style("opacity", 0);
+            }
         }
     });
 }

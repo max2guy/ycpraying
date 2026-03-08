@@ -1,11 +1,11 @@
-// Service Worker Version 26 (Kawaii Pastel)
-const CACHE_NAME = 'yc-prayer-v26';
+// Service Worker Version 27 (Kawaii Pastel v2)
+const CACHE_NAME = 'yc-prayer-v27';
 
 const FILES_TO_CACHE = [
   './',
   './index.html',
-  './style.css?v=26',
-  './script.js?v=26',
+  './style.css?v=27',
+  './script.js?v=27',
   './manifest.json',
   './icon-192.png'
 ];

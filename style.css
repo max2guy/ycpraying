@@ -675,9 +675,10 @@ body.admin-mode .admin-indicator { display:block; animation:popUp .3s cubic-bezi
 
 /* ── D3 GRAPH ── */
 .links line {
-  stroke:rgba(255,182,210,0.65)!important;
-  stroke-width:3px!important;
-  stroke-dasharray:6,5!important;
+  /* 진주알 구슬 체인: 0.1px dash + 12px gap + round linecap = 원형 구슬들 */
+  stroke:rgba(255,195,220,0.72)!important;
+  stroke-width:7px!important;
+  stroke-dasharray:0.1 12!important;
   stroke-linecap:round!important;
   filter:none; pointer-events:none;
 }
