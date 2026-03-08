@@ -1,11 +1,11 @@
-// Service Worker Version 25 (Warm Light Theme)
-const CACHE_NAME = 'yc-prayer-v25';
+// Service Worker Version 26 (Kawaii Pastel)
+const CACHE_NAME = 'yc-prayer-v26';
 
 const FILES_TO_CACHE = [
   './',
   './index.html',
-  './style.css?v=25',
-  './script.js?v=25',
+  './style.css?v=26',
+  './script.js?v=26',
   './manifest.json',
   './icon-192.png'
 ];

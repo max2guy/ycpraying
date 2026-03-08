@@ -96,7 +96,12 @@ let dragStartX = 0, dragStartY = 0, isDragAction = false;
 let currentMemberData = null;   // ← 명시적 선언 (버그 수정)
 let cropper = null;
 
-const brightColors = ["#FFCDD2","#F8BBD0","#E1BEE7","#D1C4E9","#C5CAE9","#BBDEFB","#B3E5FC","#B2EBF2","#B2DFDB","#C8E6C9","#DCEDC8","#F0F4C3","#FFF9C4","#FFECB3","#FFE0B2","#FFCCBC","#D7CCC8","#F5F5F5","#CFD8DC"];
+// 파스텔 카와이 컬러셋
+const brightColors = [
+    "#A8E6CF","#FFD3B6","#D4B8E8","#FFF0A3","#FFB3C6",
+    "#B3E0FF","#C8F0E0","#FAD4E8","#E8D5FF","#FFE4A3",
+    "#A8D8EA","#FFADC8","#B8F0D8","#E0C8FF","#FFD8B0"
+];
 let lastChatReadTime = Number(localStorage.getItem('lastChatReadTime')) || Date.now();
 
 // ── 유틸 ──
@@ -334,6 +339,39 @@ membersRef.on('child_removed', snap => {
 const width = window.innerWidth, height = window.innerHeight;
 const svg = d3.select("#visualization").append("svg").attr("width", width).attr("height", height);
 const defs = svg.append("defs");
+
+// 버블 광택 그라디언트 (흰색 하이라이트)
+const glossGrad = defs.append("radialGradient").attr("id","bubble-gloss")
+    .attr("cx","35%").attr("cy","28%").attr("r","60%")
+    .attr("fx","35%").attr("fy","25%");
+glossGrad.append("stop").attr("offset","0%").attr("stop-color","white").attr("stop-opacity","0.70");
+glossGrad.append("stop").attr("offset","55%").attr("stop-color","white").attr("stop-opacity","0.10");
+glossGrad.append("stop").attr("offset","100%").attr("stop-color","white").attr("stop-opacity","0.00");
+
+// 중앙 노드 발광 그라디언트
+const centerGrad = defs.append("radialGradient").attr("id","center-glow")
+    .attr("cx","50%").attr("cy","50%").attr("r","50%");
+centerGrad.append("stop").attr("offset","0%").attr("stop-color","#FFF8E0").attr("stop-opacity","1");
+centerGrad.append("stop").attr("offset","60%").attr("stop-color","#FFE8C0").attr("stop-opacity","1");
+centerGrad.append("stop").attr("offset","100%").attr("stop-color","#FFD0A0").attr("stop-opacity","1");
+
+// 배경 장식 (구름, 하트, 별)
+const decoData = [
+    {emoji:"☁️", x:width*0.08, y:height*0.88, size:2.2, dur:7},
+    {emoji:"💗", x:width*0.88, y:height*0.82, size:1.6, dur:5},
+    {emoji:"✨", x:width*0.92, y:height*0.42, size:1.4, dur:4},
+    {emoji:"🎵", x:width*0.05, y:height*0.55, size:1.5, dur:6},
+    {emoji:"💫", x:width*0.85, y:height*0.12, size:1.3, dur:5.5},
+];
+const decoBg = svg.append("g").attr("class","deco-bg").style("pointer-events","none");
+decoData.forEach(d => {
+    decoBg.append("text")
+        .attr("x", d.x).attr("y", d.y)
+        .attr("text-anchor","middle").attr("font-size", d.size + "rem")
+        .style("opacity","0.55").text(d.emoji)
+        .style("animation",`floatD ${d.dur}s ease-in-out infinite`);
+});
+
 const g = svg.append("g");
 svg.call(d3.zoom().scaleExtent([0.1, 4]).on("zoom", event => g.attr("transform", event.transform)));
 const linkGroup = g.append("g").attr("class","links");
@@ -360,7 +398,12 @@ function updateGraph() {
 
     link = linkGroup.selectAll("line").data(links, d => d.target.id || d.target);
     link.exit().remove();
-    const le = link.enter().append("line").attr("stroke","rgba(201,168,76,0.25)").attr("stroke-width",1.5).style("opacity",0);
+    const le = link.enter().append("line")
+        .attr("stroke","rgba(255,182,210,0.70)")
+        .attr("stroke-width",3)
+        .attr("stroke-dasharray","6,5")
+        .attr("stroke-linecap","round")
+        .style("opacity",0);
     le.transition().delay(800).duration(1500).style("opacity",1);
     link = le.merge(link);
 
@@ -393,12 +436,22 @@ function updateGraph() {
         })
         .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended));
 
-    ne.append("circle").attr("stroke-width",0).attr("r",0).style("pointer-events","all");
-    ne.append("rect").attr("rx",10).attr("ry",10).attr("fill","rgba(255,248,234,0.88)").style("opacity",0).style("pointer-events","none");
-    ne.append("text").attr("text-anchor","middle").attr("dominant-baseline","middle").attr("font-weight","bold").style("pointer-events","none").style("opacity",0);
+    // 메인 버블 원
+    ne.append("circle").attr("class","bubble-main").attr("stroke-width",2.5).attr("r",0).style("pointer-events","all");
+    // 광택 하이라이트 오버레이 (pointer-events 없음)
+    ne.append("circle").attr("class","bubble-gloss").attr("fill","url(#bubble-gloss)").attr("r",0).style("pointer-events","none").style("opacity",0);
+    // 이름 배경 rect
+    ne.append("rect").attr("rx",12).attr("ry",12).attr("fill","rgba(255,245,252,0.90)").style("opacity",0).style("pointer-events","none");
+    // 이름 텍스트
+    ne.append("text").attr("text-anchor","middle").attr("dominant-baseline","middle").attr("font-weight","800").style("pointer-events","none").style("opacity",0);
+    // 별 배지 (기도 개수 표시)
     const badge = ne.append("g").attr("class","node-badge").style("opacity",0).style("pointer-events","none");
-    badge.append("circle").attr("r",9).attr("cx",0).attr("cy",0).attr("fill","#E05252").attr("stroke","#fff").attr("stroke-width",2);
-    badge.append("text").attr("x",0).attr("y",0).attr("dy","0.35em").attr("text-anchor","middle").attr("fill","white").style("font-size","11px").style("font-weight","bold");
+    // 별 모양 배경
+    badge.append("text").attr("class","badge-star").attr("x",0).attr("y",0).attr("text-anchor","middle").attr("dominant-baseline","middle")
+        .attr("font-size","20px").text("⭐");
+    badge.append("text").attr("class","badge-num").attr("x",0).attr("y","0.5px").attr("dy","0.35em")
+        .attr("text-anchor","middle").attr("fill","#5C3A6A")
+        .style("font-size","10px").style("font-weight","900");
     node = ne.merge(node);
     node.style("pointer-events","all");
     updateNodeVisuals();
@@ -415,36 +468,44 @@ function updateNodeVisuals() {
         const circle = el.select("circle");
         const textDelay = isFirstRender ? (d.id === 'center' ? 0 : 800 + globalNodes.indexOf(d) * 80) : 0;
 
-        if (circle.attr("r") == 0) {
-            circle.transition().delay(textDelay).duration(isFirstRender ? 800 : 500).ease(d3.easeElasticOut.amplitude(3)).attr("r", r);
+        const bubbleMain  = el.select(".bubble-main");
+        const bubbleGloss = el.select(".bubble-gloss");
+
+        if (bubbleMain.attr("r") == 0) {
+            bubbleMain.transition().delay(textDelay).duration(isFirstRender ? 800 : 500)
+                .ease(d3.easeElasticOut.amplitude(2.5)).attr("r", r);
+            bubbleGloss.transition().delay(textDelay + 200).duration(600).style("opacity",1).attr("r", r);
         } else {
-            circle.transition().duration(500).attr("r", r);
+            bubbleMain.transition().duration(500).attr("r", r);
+            bubbleGloss.transition().duration(500).attr("r", r);
         }
 
-        const fillUrl = (d.photoUrl && d.type !== 'root') ? `url(#img-${d.id})` : (d.type === 'root' ? "#FFF8E1" : d.color);
+        const fillUrl = (d.photoUrl && d.type !== 'root') ? `url(#img-${d.id})` : (d.type === 'root' ? "url(#center-glow)" : d.color);
         const pct = getTotalPrayerCount(d);
         let filterStr = (d.type === 'root')
-            ? "drop-shadow(0 0 18px rgba(193,127,36,0.55))"
-            : (pct > 0 ? `drop-shadow(0 0 ${Math.min(pct*3,28)}px rgba(193,127,36,${0.35+pct/25}))` : "drop-shadow(0 2px 8px rgba(120,80,20,0.18))");
+            ? "drop-shadow(0 0 22px rgba(255,200,140,0.75)) drop-shadow(0 4px 12px rgba(255,160,100,0.40))"
+            : (pct > 0
+                ? `drop-shadow(0 0 ${Math.min(pct*2+6,22)}px rgba(255,133,176,${0.40+pct/30})) drop-shadow(0 3px 8px rgba(180,80,130,0.20))`
+                : "drop-shadow(0 3px 10px rgba(180,80,130,0.18))");
 
-        circle.attr("fill", fillUrl).style("opacity",1).style("filter",filterStr).style("-webkit-filter",filterStr)
-            .attr("stroke", (d.type !== 'root' && pct > 0) ? "#C17F24" : "rgba(180,130,50,0.35)")
-            .attr("stroke-width", (d.type !== 'root' && pct > 0) ? 2.5 : 1.5);
+        bubbleMain.attr("fill", fillUrl).style("opacity",1).style("filter",filterStr).style("-webkit-filter",filterStr)
+            .attr("stroke", d.type === 'root' ? "rgba(255,220,160,0.8)" : "rgba(255,255,255,0.65)")
+            .attr("stroke-width", 2.5);
 
         const textEl = el.select("text"), rectEl = el.select("rect");
         textEl.text(null);
         if (d.type === 'root') {
             textEl.append("tspan").text(d.icon).attr("x",0).attr("dy","-1.2em").attr("font-size","2.8rem");
-            d.name.split("\n").forEach((l,i) => textEl.append("tspan").text(l).attr("x",0).attr("dy",i===0?"4.0em":"1.3em").attr("font-size","14px").attr("fill","#2D1F0E"));
+            d.name.split("\n").forEach((l,i) => textEl.append("tspan").text(l).attr("x",0).attr("dy",i===0?"4.0em":"1.3em").attr("font-size","13px").attr("fill","#7A4820").attr("font-weight","800"));
             rectEl.style("display","none");
             textEl.transition().delay(textDelay).duration(800).style("opacity",1);
         } else {
-            const ty = d.photoUrl ? r + 15 : 0;
-            textEl.attr("y", ty).text(d.name).attr("font-size","12px").attr("fill","#2D1F0E");
+            const ty = d.photoUrl ? r + 17 : 0;
+            textEl.attr("y", ty).text(d.name).attr("font-size","13px").attr("fill","#5C3A6A").attr("font-weight","800");
             const bbox = textEl.node().getBBox();
-            const w = bbox.width > 0 ? bbox.width + 16 : d.name.length * 12 + 16;
+            const w = bbox.width > 0 ? bbox.width + 18 : d.name.length * 13 + 18;
             if (d.photoUrl) {
-                rectEl.style("display","block").attr("x",-w/2).attr("y",ty-10).attr("width",w).attr("height",20)
+                rectEl.style("display","block").attr("x",-w/2).attr("y",ty-11).attr("width",w).attr("height",22)
                     .transition().delay(textDelay).duration(500).style("opacity",1);
             } else {
                 rectEl.style("display","none");
@@ -453,15 +514,16 @@ function updateNodeVisuals() {
         }
 
         if (d.type !== 'root') {
-            const unread = Math.max(0, getTotalPrayerCount(d) - (readStatus[d.id] || 0));
+            const prayerCnt = getTotalPrayerCount(d);
+            const unread = Math.max(0, prayerCnt - (readStatus[d.id] || 0));
             const isNew  = newMemberIds.has(d.id);
             const badge  = el.select(".node-badge");
-            const bx = r * 0.707 + 5, by = -(r * 0.707 + 5);
-            if (unread > 0 || isNew) {
+            const bx = r * 0.707 + 4, by = -(r * 0.707 + 4);
+            if (prayerCnt > 0 || isNew) {
                 badge.style("display","block");
-                badge.select("circle").attr("fill", unread > 0 ? "#f87171" : "#fb923c");
-                badge.select("text").text(unread > 0 ? unread : "N");
-                badge.transition().delay(textDelay + 400).duration(200).attr("transform",`translate(${bx},${by})`).style("opacity",1);
+                badge.select(".badge-num").text(isNew && prayerCnt === 0 ? "N" : prayerCnt);
+                badge.transition().delay(textDelay + 400).duration(200)
+                    .attr("transform",`translate(${bx},${by})`).style("opacity",1);
             } else { badge.style("opacity",0); }
         }
     });
