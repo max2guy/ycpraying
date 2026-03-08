@@ -138,12 +138,13 @@ async function getMyIp() {
 }
 
 // ── 접속자 현황 ──
+// push() 대신 세션ID 고정 경로 사용 → 재연결 시 중복 카운팅 방지
+const myPresenceRef = presenceRef.child(mySessionId);
 onlineRef.on('value', async snap => {
     if (snap.val()) {
         const myIp = await getMyIp();
-        const con = presenceRef.push();
-        con.onDisconnect().remove();
-        con.set({ ip: myIp, time: Date.now(), device: navigator.userAgent });
+        myPresenceRef.onDisconnect().remove();
+        myPresenceRef.set({ ip: myIp, time: Date.now(), device: navigator.userAgent });
     }
 });
 presenceRef.on('value', snap => {
