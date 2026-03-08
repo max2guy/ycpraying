@@ -90,6 +90,7 @@ let readStatus    = JSON.parse(localStorage.getItem('prayerReadStatus')) || {};
 let newMemberIds  = new Set();
 let globalNodes   = [];
 let simulation    = null;
+let rawLinkEls    = [];
 let unreadChatKeys = new Set();
 let touchStartTime = 0, touchStartX = 0, touchStartY = 0, isTouchMove = false;
 let dragStartX = 0, dragStartY = 0, isDragAction = false;
@@ -338,7 +339,22 @@ membersRef.on('child_removed', snap => {
 // ── D3 그래프 ──
 const width = window.innerWidth, height = window.innerHeight;
 const svg = d3.select("#visualization").append("svg").attr("width", width).attr("height", height);
+const svgEl = svg.node(); // SVG DOM API용 raw 참조
 const defs = svg.append("defs");
+
+// SVG DOM API 헬퍼: 문자열 없이 숫자 직접 설정 → Chrome GC·파싱 부담 제거
+function svgTranslate(el, x, y) {
+    const tl = el.transform.baseVal;
+    if (tl.numberOfItems === 0) {
+        const t = svgEl.createSVGTransform(); t.setTranslate(x, y); tl.appendItem(t);
+    } else { tl.getItem(0).setTranslate(x, y); }
+}
+function svgRotate(el, r) {
+    const tl = el.transform.baseVal;
+    if (tl.numberOfItems === 0) {
+        const t = svgEl.createSVGTransform(); t.setRotate(r, 0, 0); tl.appendItem(t);
+    } else { tl.getItem(0).setRotate(r, 0, 0); }
+}
 
 // SVG filter 제거 (성능) — CSS drop-shadow로 대체
 
@@ -399,25 +415,15 @@ const decoData = [
 ];
 const decoBg = svg.append("g").attr("class","deco-bg").style("pointer-events","none");
 // 모든 데코 노드를 배열로 수집 후 단일 rAF 루프에서 처리
-const decoNodes = decoData.map(o => {
-    const node = decoBg.append("text")
+// deco: CSS animation으로 전환 (JS 핫루프에서 완전 제거)
+decoData.forEach(o => {
+    const el = decoBg.append("text")
         .attr("x", width*o.x).attr("y", height*o.y)
         .attr("text-anchor","middle").attr("font-size", o.s + "rem")
-        .style("opacity","0").text(o.e).node(); // .node()로 DOM 직접 참조
-    return { node, baseY: height*o.y, period: o.d, phase: o.dl };
+        .text(o.e).node();
+    el.style.animationDuration = `${o.d}s`;
+    el.style.animationDelay   = `-${o.dl}s`;
 });
-// 단일 rAF 루프 (D3 selection 오버헤드 없이 raw DOM 직접 조작)
-function animDecos(ts) {
-    const t = ts * 0.001;
-    for (let i = 0; i < decoNodes.length; i++) {
-        const d = decoNodes[i];
-        const y = d.baseY + Math.sin((t + d.phase) * (Math.PI*2) / d.period) * 12;
-        d.node.setAttribute('y', y);
-        d.node.style.opacity = 0.42 + Math.sin((t + d.phase) * 0.6) * 0.10;
-    }
-    requestAnimationFrame(animDecos);
-}
-requestAnimationFrame(animDecos);
 
 const g = svg.append("g");
 svg.call(d3.zoom().scaleExtent([0.1, 4]).on("zoom", event => g.attr("transform", event.transform)));
@@ -486,24 +492,25 @@ function updateGraph(softRestart = false) {
         })
         .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended));
 
-    // 1. 중앙 전용: 후광 원 (root에만 보임)
+    // 1. 중앙 전용: 후광 원 (filter 있음 → 바깥 g에 위치, rotate 영향 없음)
     ne.append("circle").attr("class","bubble-halo").attr("fill","url(#halo-grad)").attr("r",0)
         .style("pointer-events","none").style("opacity",0);
-    // 2. 메인 버블 원
+    // 2. 메인 버블 원 (filter 있음 → 바깥 g에 위치)
     ne.append("circle").attr("class","bubble-main").attr("stroke-width",3).attr("r",0).style("pointer-events","all");
-    // 3. 광택 하이라이트 오버레이
-    ne.append("circle").attr("class","bubble-gloss").attr("fill","url(#gloss-overlay)").attr("r",0)
-        .style("pointer-events","none").style("opacity",0);
-    // 4. 이름 배경 pill (항상 표시)
+    // 3. 안쪽 회전 레이어: filter 없는 요소만 포함 → rotation 시 filter 재계산 없음
+    const inner = ne.append("g").attr("class","node-inner").style("pointer-events","none");
+    // 3a. 광택 하이라이트 (filter 없음 → 회전해도 cheap)
+    inner.append("circle").attr("class","bubble-gloss").attr("fill","url(#gloss-overlay)").attr("r",0)
+        .style("opacity",0);
+    // 4. 이름 배경 pill
     ne.append("rect").attr("class","name-pill").attr("rx",14).attr("ry",14)
         .attr("fill","rgba(255,248,255,0.88)").style("opacity",0).style("pointer-events","none");
     // 5. 이름 텍스트
     ne.append("text").attr("class","node-label").attr("text-anchor","middle")
         .attr("dominant-baseline","middle").attr("font-weight","900")
         .style("pointer-events","none").style("opacity",0);
-    // 6. 별 배지 (기도 개수): 왼쪽 위, 골드 별 + 숫자
+    // 6. 별 배지 (기도 개수)
     const badge = ne.append("g").attr("class","node-badge").style("opacity",0).style("pointer-events","none");
-    // 별 SVG path (5각형)
     badge.append("path")
         .attr("d","M0,-11 L2.6,-4 L10,-3.1 L4.4,2 L6,9.5 L0,6 L-6,9.5 L-4.4,2 L-10,-3.1 L-2.6,-4 Z")
         .attr("fill","#FFD700").attr("stroke","#FFA500").attr("stroke-width","1.2")
@@ -513,6 +520,15 @@ function updateGraph(softRestart = false) {
         .style("font-size","9px").style("font-weight","900");
     node = ne.merge(node);
     node.style("pointer-events","all");
+    // raw DOM 캐싱 + CSS rotation 방향 설정
+    node.each(function(d) {
+        d._el = this;
+        d._innerEl = this.querySelector('.node-inner');
+        if (d._innerEl && d.rotationDirection === -1) d._innerEl.classList.add('ccw');
+        else if (d._innerEl) d._innerEl.classList.remove('ccw');
+    });
+    rawLinkEls = [];
+    link.each(function(d) { rawLinkEls.push({ el: this, d }); });
     updateNodeVisuals();
     simulation.nodes(globalNodes);
     simulation.force("link").links(links);
@@ -1083,26 +1099,38 @@ function createFirework(x, y) {
 function openLightbox(src) { document.getElementById('lightbox-img').src=src; document.getElementById('lightbox').classList.add('active'); }
 function closeLightbox()    { document.getElementById('lightbox').classList.remove('active'); }
 
-// ── 게임 루프 ──
+// ── 게임 루프 (노드 위치 + 캔버스 파티클만 담당, rotation/deco는 CSS animation) ──
 let lastTime = 0;
 const fpsInterval = 1000 / 60;
+let rafPaused = false;
+
+document.addEventListener('visibilitychange', () => { rafPaused = document.hidden; });
+
 function gameLoop(time) {
     requestAnimationFrame(gameLoop);
+    if (rafPaused) return;
+
     const elapsed = time - lastTime;
     if (elapsed < fpsInterval) return;
     lastTime = time - (elapsed % fpsInterval);
 
-    if (node) {
-        members.forEach(m => {
-            m.rotation = (m.rotation || 0) + (m.rotationDirection * 0.1);
-            if (m.rotation > 360) m.rotation -= 360;
-            else if (m.rotation < -360) m.rotation += 360;
-        });
-        node.attr("transform", d => `translate(${d.x},${d.y}) rotate(${d.rotation||0})`);
-        if (link) link.attr("x1",d=>d.source.x).attr("y1",d=>d.source.y).attr("x2",d=>d.target.x).attr("y2",d=>d.target.y);
+    // 노드/링크 위치: 시뮬 활성 시에만 (SVG DOM API, 문자열 없음)
+    if (node && simulation.alpha() > 0.005) {
+        for (let i = 0; i < globalNodes.length; i++) {
+            const d = globalNodes[i];
+            if (d._el) svgTranslate(d._el, d.x, d.y);
+        }
+        for (let i = 0; i < rawLinkEls.length; i++) {
+            const { el, d } = rawLinkEls[i];
+            el.x1.baseVal.value = d.source.x;
+            el.y1.baseVal.value = d.source.y;
+            el.x2.baseVal.value = d.target.x;
+            el.y2.baseVal.value = d.target.y;
+        }
     }
 
-    // 항상 캔버스 초기화 (버그 수정: 잔상 제거)
+    // 캔버스: 파티클 없으면 스킵
+    if (wParts.length === 0 && fireParts.length === 0) return;
     wctx.clearRect(0, 0, wc.width, wc.height);
 
     // 날씨 / 하트 파티클
@@ -1110,31 +1138,34 @@ function gameLoop(time) {
         if (isHeartRain) {
             wctx.font = "20px serif";
             wParts.forEach(p => { wctx.fillText("💖",p.x,p.y); p.y+=p.s; if(p.y>wc.height)p.y=-20; });
-        } else {
+        } else if (centerNode.icon === "🌧️") {
             wctx.strokeStyle = "rgba(174,194,224,0.7)"; wctx.lineWidth = 1;
-            wctx.fillStyle   = "rgba(255,255,255,0.75)";
             wParts.forEach(p => {
-                if (centerNode.icon === "🌧️") {
-                    wctx.beginPath(); wctx.moveTo(p.x,p.y); wctx.lineTo(p.x,p.y+p.l); wctx.stroke();
-                    p.y += p.s; if(p.y>wc.height)p.y=-p.l;
-                } else {
-                    wctx.beginPath(); wctx.arc(p.x,p.y,p.r,0,Math.PI*2); wctx.fill();
-                    p.y += p.s; if(p.y>wc.height)p.y=-5;
-                }
+                wctx.beginPath(); wctx.moveTo(p.x,p.y); wctx.lineTo(p.x,p.y+p.l); wctx.stroke();
+                p.y += p.s; if(p.y>wc.height)p.y=-p.l;
+            });
+        } else {
+            wctx.fillStyle = "rgba(255,255,255,0.75)";
+            wParts.forEach(p => {
+                wctx.beginPath(); wctx.arc(p.x,p.y,p.r,0,Math.PI*2); wctx.fill();
+                p.y += p.s; if(p.y>wc.height)p.y=-5;
             });
         }
     }
 
     // 불꽃 파티클 (아멘)
-    for (let i = fireParts.length - 1; i >= 0; i--) {
-        const p = fireParts[i];
-        wctx.globalAlpha = p.life;
-        wctx.beginPath(); wctx.arc(p.x,p.y,p.size,0,Math.PI*2);
-        wctx.fillStyle = p.color; wctx.fill();
+    if (fireParts.length > 0) {
         wctx.globalAlpha = 1;
-        p.x += p.vx; p.y += p.vy; p.vy += 0.12;
-        p.life -= 0.025; p.size *= 0.96;
-        if (p.life <= 0) fireParts.splice(i, 1);
+        for (let i = fireParts.length - 1; i >= 0; i--) {
+            const p = fireParts[i];
+            wctx.globalAlpha = p.life;
+            wctx.fillStyle = p.color;
+            wctx.beginPath(); wctx.arc(p.x,p.y,p.size,0,Math.PI*2); wctx.fill();
+            p.x += p.vx; p.y += p.vy; p.vy += 0.12;
+            p.life -= 0.025; p.size *= 0.96;
+            if (p.life <= 0) fireParts.splice(i, 1);
+        }
+        wctx.globalAlpha = 1;
     }
 }
 requestAnimationFrame(gameLoop);

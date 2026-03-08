@@ -66,6 +66,7 @@ button,.float-btn,.icon-btn,.amen-btn,.setting-item,.camera-btn,.enter-btn {
 #weather-canvas {
   position:fixed; top:0; left:0; width:100%; height:100%;
   pointer-events:none; z-index:2500;
+  will-change: transform;
 }
 
 /* ── INTRO ── */
@@ -676,7 +677,6 @@ body.admin-mode .admin-indicator { display:block; animation:popUp .3s cubic-bezi
 
 /* ── D3 GRAPH ── */
 .links line {
-  /* 진주알 구슬 체인: 0.1px dash + 12px gap + round linecap = 원형 구슬들 */
   stroke:rgba(255,195,220,0.72)!important;
   stroke-width:7px!important;
   stroke-dasharray:0.1 12!important;
@@ -684,6 +684,24 @@ body.admin-mode .admin-indicator { display:block; animation:popUp .3s cubic-bezi
   filter:none; pointer-events:none;
 }
 .nodes g { cursor:pointer; }
+
+/* ── CSS 애니메이션 (compositor 스레드, 메인 스레드 부담 없음) ── */
+@keyframes spin-cw  { to { transform: rotate( 360deg); } }
+@keyframes spin-ccw { to { transform: rotate(-360deg); } }
+.node-inner {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: spin-cw 120s linear infinite;
+}
+.node-inner.ccw { animation-name: spin-ccw; }
+
+@keyframes deco-float {
+  from { transform: translateY( 12px); opacity: 0.32; }
+  to   { transform: translateY(-12px); opacity: 0.52; }
+}
+.deco-bg text {
+  animation: deco-float linear infinite alternate;
+}
 
 /* ── ANIMATIONS ── */
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
