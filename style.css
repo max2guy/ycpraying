@@ -90,6 +90,17 @@ button,.float-btn,.icon-btn,.amen-btn,.setting-item,.camera-btn,.enter-btn {
   body::after { animation: none; }            /* 구름 이모지 floatDeco */
   .deco-bg text { animation: none; }          /* SVG 배경 이모지 deco-float */
   .node-inner { animation: none; }            /* 버블 내부 rotation spin-cw/ccw */
+  /* ── 인트로 화면: filter + 애니메이션 제거 ── */
+  .intro-icon { animation: none; filter: none; }  /* drop-shadow 필터 + float 애니메이션 제거 */
+  .enter-btn  { animation: none; }                 /* pulse-btn box-shadow 애니메이션 제거 */
+  #intro-screen::before { display: none; }         /* radial-gradient 오버레이 레이어 제거 */
+  body::before { display: none; }                  /* body 배경 gradient 오버레이 레이어 제거 */
+  /* ── 나머지 backdrop-filter 전부 제거 ── */
+  .popup-overlay      { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .simple-modal-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .system-toast       { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .admin-indicator    { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .install-banner     { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(255,245,252,0.97); }
 }
 #weather-canvas {
   position:fixed; top:0; left:0; width:100%; height:100%;
