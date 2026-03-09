@@ -92,6 +92,8 @@ let globalNodes   = [];
 let simulation    = null;
 let rawLinkEls    = [];
 let unreadChatKeys = new Set();
+// 터치 기기 감지 (iOS/Android PWA) — drop-shadow filter 제거 여부 결정
+const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 let touchStartTime = 0, touchStartX = 0, touchStartY = 0, isTouchMove = false;
 let dragStartX = 0, dragStartY = 0, isDragAction = false;
 let currentMemberData = null;   // ← 명시적 선언 (버그 수정)
@@ -567,21 +569,22 @@ function updateNodeVisuals() {
         const pct = getTotalPrayerCount(d);
         if (d.type === 'root') {
             main.attr("fill","url(#center-grad)")
-                .style("filter","drop-shadow(0 0 20px rgba(255,200,80,0.70)) drop-shadow(0 0 40px rgba(255,170,40,0.35))")
+                // 모바일: drop-shadow filter 제거 → iOS GPU compositing 깨짐 방지
+                .style("filter", isTouchDevice ? "none" : "drop-shadow(0 0 20px rgba(255,200,80,0.70)) drop-shadow(0 0 40px rgba(255,170,40,0.35))")
                 .attr("stroke","rgba(255,240,160,0.90)").attr("stroke-width","3.5");
             gloss.attr("fill","url(#gloss-overlay)");
         } else if (d.photoUrl) {
             main.attr("fill", `url(#img-${d.id})`)
-                .style("filter", pct > 0
+                .style("filter", isTouchDevice ? "none" : (pct > 0
                     ? `drop-shadow(0 0 ${Math.min(pct*2+8,20)}px rgba(255,133,176,${0.45+pct/35}))`
-                    : "drop-shadow(0 4px 14px rgba(180,80,130,0.22))")
+                    : "drop-shadow(0 4px 14px rgba(180,80,130,0.22))"))
                 .attr("stroke","rgba(255,255,255,0.82)").attr("stroke-width","3.5");
             gloss.attr("fill","url(#gloss-overlay)");
         } else {
             const fill3d = ensureBubbleGrad(d.color);
-            const glow = pct > 0
+            const glow = isTouchDevice ? "none" : (pct > 0
                 ? `drop-shadow(0 0 ${Math.min(pct*2+8,20)}px rgba(255,133,176,${0.38+pct/35})) drop-shadow(0 4px 10px rgba(180,80,130,0.18))`
-                : "drop-shadow(0 4px 12px rgba(180,80,130,0.16))";
+                : "drop-shadow(0 4px 12px rgba(180,80,130,0.16))");
             main.attr("fill", fill3d).style("filter", glow)
                 .attr("stroke","rgba(255,255,255,0.72)").attr("stroke-width","2.5");
             gloss.attr("fill","url(#gloss-overlay)");

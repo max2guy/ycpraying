@@ -68,6 +68,7 @@ button,.float-btn,.icon-btn,.amen-btn,.setting-item,.camera-btn,.enter-btn {
    backdrop-filter:blur() + 60fps SVG 애니메이션 동시 실행 시 모바일 GPU 과부하 발생
    터치 기기에서는 backdrop-filter 제거 → 불투명 배경으로 대체하여 GPU 부담 제거 */
 @media (hover: none) and (pointer: coarse) {
+  /* ── backdrop-filter 제거: GPU 레이어 충돌 방지 ── */
   .top-ui-common {
     backdrop-filter: none; -webkit-backdrop-filter: none;
     background: rgba(255, 245, 252, 0.96);
@@ -84,6 +85,11 @@ button,.float-btn,.icon-btn,.amen-btn,.setting-item,.camera-btn,.enter-btn {
     backdrop-filter: none; -webkit-backdrop-filter: none;
     background: rgba(255, 245, 252, 0.96) !important;
   }
+  /* ── CSS 애니메이션 제거: iOS GPU compositing 깨짐 원인 차단 ── */
+  /* SVG drop-shadow는 script.js의 isTouchDevice로 이미 제거됨 */
+  body::after { animation: none; }            /* 구름 이모지 floatDeco */
+  .deco-bg text { animation: none; }          /* SVG 배경 이모지 deco-float */
+  .node-inner { animation: none; }            /* 버블 내부 rotation spin-cw/ccw */
 }
 #weather-canvas {
   position:fixed; top:0; left:0; width:100%; height:100%;
