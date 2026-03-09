@@ -469,27 +469,10 @@ function updateGraph(softRestart = false) {
 
     node = nodeGroup.selectAll("g").data(globalNodes, d => d.id);
     node.exit().remove();
+    // 터치/드래그 통합: D3 drag가 touch 이벤트도 처리하므로
+    // 별도 touchstart/touchmove/touchend 등록 시 좌표 충돌(화면 vs SVG) → 깜빡임 유발
+    // → D3 drag만 사용하고, 탭 감지는 dragended에서 처리
     const ne = node.enter().append("g").attr("cursor","pointer").style("pointer-events","all")
-        .on("touchstart", function(event, d) {
-            event.stopPropagation();
-            touchStartTime = Date.now(); touchStartX = event.touches[0].clientX; touchStartY = event.touches[0].clientY; isTouchMove = false;
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            d.fx = d.x; d.fy = d.y;
-        })
-        .on("touchmove", function(event, d) {
-            if (event.touches.length > 0) {
-                const dx = event.touches[0].clientX - touchStartX, dy = event.touches[0].clientY - touchStartY;
-                if (Math.sqrt(dx*dx+dy*dy) > 10) isTouchMove = true;
-                d.fx = event.touches[0].clientX; d.fy = event.touches[0].clientY;
-            }
-        })
-        .on("touchend", function(event, d) {
-            if (!event.active) simulation.alphaTarget(0);
-            d.fx = null; d.fy = null;
-            if ((Date.now() - touchStartTime < 500) && !isTouchMove && d.type === 'member') {
-                event.preventDefault(); openPrayerPopup(d);
-            }
-        })
         .on("click", function(event, d) {
             event.stopPropagation();
             if (!isDragAction && d.type === 'member') openPrayerPopup(d);
@@ -648,9 +631,28 @@ function getTotalPrayerCount(d) {
     return t;
 }
 function getRandomColor() { return brightColors[Math.floor(Math.random() * brightColors.length)]; }
-function dragstarted(event) { isDragAction=false; dragStartX=event.x; dragStartY=event.y; if(!event.active) simulation.alphaTarget(0.3).restart(); event.subject.fx=event.subject.x; event.subject.fy=event.subject.y; }
-function dragged(event) { const dx=event.x-dragStartX,dy=event.y-dragStartY; if(dx*dx+dy*dy>25)isDragAction=true; event.subject.fx=event.x; event.subject.fy=event.y; }
-function dragended(event) { if(!event.active)simulation.alphaTarget(0); event.subject.fx=null; event.subject.fy=null; }
+let dragStartTime = 0;
+function dragstarted(event) {
+    isDragAction = false;
+    dragStartX = event.x; dragStartY = event.y;
+    dragStartTime = Date.now();
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    event.subject.fx = event.subject.x; event.subject.fy = event.subject.y;
+}
+function dragged(event) {
+    const dx = event.x - dragStartX, dy = event.y - dragStartY;
+    if (dx * dx + dy * dy > 25) isDragAction = true;
+    event.subject.fx = event.x; event.subject.fy = event.y;
+}
+function dragended(event) {
+    if (!event.active) simulation.alphaTarget(0);
+    event.subject.fx = null; event.subject.fy = null;
+    // 터치 탭 감지: 짧은 시간 + 이동 없음 → 팝업 열기 (click 이벤트 미발생 대비)
+    if (!isDragAction && (Date.now() - dragStartTime < 500) && event.subject.type === 'member') {
+        openPrayerPopup(event.subject);
+        isDragAction = true;   // 후속 click 이벤트에서 중복 호출 방지
+    }
+}
 let _lastResizeW = window.innerWidth;
 let _resizeTimer = null;
 window.addEventListener("resize", () => {
