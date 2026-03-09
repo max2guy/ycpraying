@@ -108,11 +108,15 @@ button,.float-btn,.icon-btn,.amen-btn,.setting-item,.camera-btn,.enter-btn {
   /* ── canvas GPU 최적화 ── */
   #weather-canvas { will-change: auto; } /* 강제 GPU 전용 레이어 해제 */
   /* ── 나머지 backdrop-filter 전부 제거 ── */
-  .popup-overlay      { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .popup-overlay        { backdrop-filter: none; -webkit-backdrop-filter: none; }
   .simple-modal-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .system-toast       { backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .admin-indicator    { backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .install-banner     { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(255,245,252,0.97); }
+  .system-toast         { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .admin-indicator      { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .install-banner       { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(255,245,252,0.97); }
+  /* ── 트랜지션 → GPU 컴포지팅 레이어 생성 방지 ── */
+  .popup-overlay        { transition: none; }
+  #intro-screen         { transition: none; }
+  .popup-content        { transition: none; }
 }
 #weather-canvas {
   position:fixed; top:0; left:0; width:100%; height:100%;
@@ -694,6 +698,12 @@ button,.float-btn,.icon-btn,.amen-btn,.setting-item,.camera-btn,.enter-btn {
   color:#fff; box-shadow:0 3px 12px rgba(255,133,176,0.35);
 }
 .simple-modal-confirm:active { opacity:0.88; }
+
+/* ── CONFIRM DIALOG ── */
+.confirm-dialog-msg {
+  font-size:0.88rem; color:var(--text-muted); text-align:center;
+  margin:0 0 20px; line-height:1.55; white-space:pre-line;
+}
 
 /* ── ADMIN INDICATOR ── */
 .admin-indicator {

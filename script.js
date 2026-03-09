@@ -43,16 +43,34 @@ document.body.addEventListener('click', e => {
     if (isFabOpen && !e.target.closest('#menu-container')) toggleFabMenu();
 });
 
+// ── 커스텀 확인 다이얼로그 ──
+let _confirmDialogCallback = null;
+function showConfirmDialog(title, message, onConfirm) {
+    _confirmDialogCallback = onConfirm;
+    document.getElementById('confirm-dialog-title').textContent = title;
+    document.getElementById('confirm-dialog-msg').textContent  = message;
+    document.getElementById('confirm-dialog').classList.add('active');
+}
+function okConfirmDialog() {
+    document.getElementById('confirm-dialog').classList.remove('active');
+    if (_confirmDialogCallback) { _confirmDialogCallback(); _confirmDialogCallback = null; }
+}
+function cancelConfirmDialog() {
+    document.getElementById('confirm-dialog').classList.remove('active');
+    _confirmDialogCallback = null;
+}
+
 function forceRefresh() {
-    if (!confirm("화면을 강제로 새로고침 하시겠습니까?\n(캐시된 데이터를 모두 삭제합니다)")) return;
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
-    }
-    if ('caches' in window) {
-        caches.keys().then(names => { names.forEach(n => caches.delete(n)); window.location.reload(true); });
-    } else {
-        window.location.reload(true);
-    }
+    showConfirmDialog('앱 새로고침', '화면을 강제로 새로고침 하시겠습니까?\n캐시된 데이터를 모두 삭제합니다.', function() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+        }
+        if ('caches' in window) {
+            caches.keys().then(names => { names.forEach(n => caches.delete(n)); window.location.reload(true); });
+        } else {
+            window.location.reload(true);
+        }
+    });
 }
 
 function openSettingsModal()  { if (isFabOpen) toggleFabMenu(); document.getElementById('settings-modal').classList.add('active'); }
@@ -501,7 +519,7 @@ function updateGraph(softRestart = false) {
     badge.append("path")
         .attr("d","M0,-11 L2.6,-4 L10,-3.1 L4.4,2 L6,9.5 L0,6 L-6,9.5 L-4.4,2 L-10,-3.1 L-2.6,-4 Z")
         .attr("fill","#FFD700").attr("stroke","#FFA500").attr("stroke-width","1.2")
-        .style("filter","drop-shadow(0 1px 3px rgba(200,130,0,0.45))");
+        .style("filter", isTouchDevice ? "none" : "drop-shadow(0 1px 3px rgba(200,130,0,0.45))");
     badge.append("text").attr("class","badge-num").attr("x",0).attr("y","0.5").attr("dy","0.35em")
         .attr("text-anchor","middle").attr("fill","#7A4800")
         .style("font-size","9px").style("font-weight","900");

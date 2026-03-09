@@ -1,11 +1,11 @@
-// Service Worker Version 32 (v2.7.4)
-const CACHE_NAME = 'yc-prayer-v32';
+// Service Worker Version 33 (v2.7.5)
+const CACHE_NAME = 'yc-prayer-v33';
 
 const FILES_TO_CACHE = [
   './',
   './index.html',
-  './style.css?v=31',
-  './script.js?v=32',
+  './style.css?v=32',
+  './script.js?v=33',
   './manifest.json',
   './icon-192.png'
 ];
