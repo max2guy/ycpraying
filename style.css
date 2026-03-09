@@ -90,11 +90,23 @@ button,.float-btn,.icon-btn,.amen-btn,.setting-item,.camera-btn,.enter-btn {
   body::after { animation: none; }            /* 구름 이모지 floatDeco */
   .deco-bg text { animation: none; }          /* SVG 배경 이모지 deco-float */
   .node-inner { animation: none; }            /* 버블 내부 rotation spin-cw/ccw */
-  /* ── 인트로 화면: filter + 애니메이션 제거 ── */
-  .intro-icon { animation: none; filter: none; }  /* drop-shadow 필터 + float 애니메이션 제거 */
-  .enter-btn  { animation: none; }                 /* pulse-btn box-shadow 애니메이션 제거 */
-  #intro-screen::before { display: none; }         /* radial-gradient 오버레이 레이어 제거 */
-  body::before { display: none; }                  /* body 배경 gradient 오버레이 레이어 제거 */
+  /* ── 인트로 화면: GPU 깨짐 완전 차단 ── */
+  #intro-screen {
+    background: #FFEAF5;              /* linear-gradient → 단색: GPU 레이어 1개 절감 */
+  }
+  #intro-screen::before { display: none; }  /* radial-gradient 오버레이 제거 */
+  body::before { display: none; }           /* body 배경 gradient 오버레이 제거 */
+  .intro-icon {
+    animation: none; filter: none;    /* drop-shadow + float 애니메이션 제거 */
+  }
+  .intro-content h1 { text-shadow: none; }  /* text-shadow GPU 부담 제거 */
+  .enter-btn {
+    animation: none;                  /* pulse-btn box-shadow 애니메이션 제거 */
+    box-shadow: none;                 /* 멀티 box-shadow 레이어 제거 */
+    transition: none;                 /* transition GPU 레이어 생성 방지 */
+  }
+  /* ── canvas GPU 최적화 ── */
+  #weather-canvas { will-change: auto; } /* 강제 GPU 전용 레이어 해제 */
   /* ── 나머지 backdrop-filter 전부 제거 ── */
   .popup-overlay      { backdrop-filter: none; -webkit-backdrop-filter: none; }
   .simple-modal-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }

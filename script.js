@@ -94,6 +94,8 @@ let rawLinkEls    = [];
 let unreadChatKeys = new Set();
 // 터치 기기 감지 (iOS/Android PWA) — drop-shadow filter 제거 여부 결정
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+// 인트로 화면 활성 상태 — true일 때 gameLoop(60fps SVG/canvas)를 정지하여 GPU 부담 제거
+let isIntroActive = true;
 let touchStartTime = 0, touchStartX = 0, touchStartY = 0, isTouchMove = false;
 let dragStartX = 0, dragStartY = 0, isDragAction = false;
 let currentMemberData = null;   // ← 명시적 선언 (버그 수정)
@@ -1032,6 +1034,7 @@ function onYouTubeIframeAPIReady() {
     });
 }
 function enterApp() {
+    isIntroActive = false;   // gameLoop 60fps 렌더링 시작
     if (player && typeof player.playVideo === 'function') player.playVideo();
     document.getElementById('intro-screen').classList.add('fade-out');
     setTimeout(() => {
@@ -1133,7 +1136,7 @@ document.addEventListener('visibilitychange', () => { rafPaused = document.hidde
 
 function gameLoop(time) {
     requestAnimationFrame(gameLoop);
-    if (rafPaused) return;
+    if (rafPaused || isIntroActive) return;   // 인트로 중 60fps 렌더링 완전 정지
 
     const elapsed = time - lastTime;
     if (elapsed < fpsInterval) return;
