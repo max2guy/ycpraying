@@ -978,6 +978,15 @@ messagesRef.limitToLast(50).on('child_added', snap => {
             document.getElementById('chat-badge').classList.add('active');
             setAppBadge(unreadChatKeys.size);
         }
+        // 백그라운드 푸시 알림 (PWA / 탭 숨김 시)
+        if (document.hidden && Notification.permission === 'granted') {
+            const notifOpts = { body: d.text, icon: './icon-192.png', badge: './icon-192.png', tag: 'chat-message', renotify: true };
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => reg.showNotification('💬 새 메시지', notifOpts)).catch(() => {
+                    new Notification('💬 새 메시지', notifOpts);
+                });
+            } else { new Notification('💬 새 메시지', notifOpts); }
+        }
     }
     const isMine = d.senderId === mySessionId;
     const wrapper = createSafeElement("div","chat-bubble-wrapper");
