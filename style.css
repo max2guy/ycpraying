@@ -62,10 +62,29 @@ button,.float-btn,.icon-btn,.amen-btn,.setting-item,.camera-btn,.enter-btn {
 
 /* ── VISUALIZATION ── */
 #visualization { width:100vw; height:100dvh; position:relative; z-index:10; }
-/* SVG를 별도 GPU 레이어로 분리 → backdrop-filter 요소 매 프레임 재샘플링 방지 (PWA 깜빡임 수정) */
-#visualization svg { touch-action:none; transform:translateZ(0); will-change:transform; }
-/* backdrop-filter 요소도 독립 GPU 레이어로 → SVG 변경 시 불필요한 리페인트 차단 */
-.top-ui-common, .music-btn, .float-btn, .chat-btn { transform:translateZ(0); }
+#visualization svg { touch-action:none; }
+
+/* ── 모바일 PWA 깨짐 방지 ──
+   backdrop-filter:blur() + 60fps SVG 애니메이션 동시 실행 시 모바일 GPU 과부하 발생
+   터치 기기에서는 backdrop-filter 제거 → 불투명 배경으로 대체하여 GPU 부담 제거 */
+@media (hover: none) and (pointer: coarse) {
+  .top-ui-common {
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    background: rgba(255, 245, 252, 0.96);
+  }
+  .music-btn {
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    background: rgba(255, 245, 252, 0.96);
+  }
+  .sub-btn {
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    background: rgba(255, 245, 252, 0.96);
+  }
+  .chat-btn {
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    background: rgba(255, 245, 252, 0.96) !important;
+  }
+}
 #weather-canvas {
   position:fixed; top:0; left:0; width:100%; height:100%;
   pointer-events:none; z-index:2500;
