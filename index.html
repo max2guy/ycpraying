@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="icon-192.png">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
-    <link rel="stylesheet" href="style.css?v=35">
+    <link rel="stylesheet" href="style.css?v=36">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
@@ -216,20 +216,24 @@
     <div id="settings-modal" class="popup-overlay" onclick="closeSettingsModal()">
         <div class="popup-content" onclick="event.stopPropagation()">
             <div class="popup-header">
-                <h2>⚙️ 설정</h2>
+                <h2><span class="material-symbols-rounded" style="font-size:1.1rem;color:var(--rose);vertical-align:middle;margin-right:6px;">auto_fix_high</span>설정</h2>
                 <button class="close-btn" onclick="closeSettingsModal()" aria-label="닫기">&times;</button>
             </div>
             <div class="settings-list">
                 <button class="setting-item" onclick="toggleAdminMode(); closeSettingsModal();" aria-label="관리자 모드 전환">
-                    <span class="setting-icon">🔒</span>
-                    <span class="setting-text">관리자 모드 (로그인)</span>
+                    <span class="setting-icon-badge" style="background:linear-gradient(135deg,#FFB0CC,#FF85B0);">
+                        <span class="material-symbols-rounded" style="font-size:1.1rem;color:#fff;">star</span>
+                    </span>
+                    <span class="setting-text">관리자 모드</span>
                 </button>
                 <button class="setting-item" onclick="forceRefresh()" aria-label="앱 새로고침">
-                    <span class="setting-icon">🔄</span>
-                    <span class="setting-text">앱 새로고침 (오류 해결)</span>
+                    <span class="setting-icon-badge" style="background:linear-gradient(135deg,#7DDCC0,#50C8A8);">
+                        <span class="material-symbols-rounded" style="font-size:1.1rem;color:#fff;">refresh</span>
+                    </span>
+                    <span class="setting-text">앱 새로고침</span>
                 </button>
             </div>
-            <div class="settings-version">v2.8.1 | 연천장로교회 청년부</div>
+            <div class="settings-version">✨ v2.8.2 | 연천장로교회 청년부 ✨</div>
         </div>
     </div>
 
