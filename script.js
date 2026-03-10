@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// v25 — Warm Light Edition
+// v2.8.1 — Smooth Physics Update
 // ==========================================
 
 // ── 서비스 워커 ──
@@ -449,9 +449,10 @@ svg.call(d3.zoom().scaleExtent([0.1, 4]).on("zoom", event => g.attr("transform",
 const linkGroup = g.append("g").attr("class","links");
 const nodeGroup = g.append("g").attr("class","nodes");
 const sizeScale = d3.scaleSqrt().domain([0,15]).range([28,60]).clamp(true);
+// 모바일/PC 동일 파라미터 적용 (뭉침·제자리 현상 근절)
 simulation = d3.forceSimulation()
-    .alphaDecay(isTouchDevice ? 0.15 : 0.04)   // 모바일: 빠른 정착 (≈25틱≈0.4초)
-    .velocityDecay(isTouchDevice ? 0.7  : 0.55) // 모바일: 강한 마찰 → 노드 즉시 안정
+    .alphaDecay(0.04)
+    .velocityDecay(0.55)
     .force("link",    d3.forceLink().id(d => d.id).distance(155).strength(0.5))
     .force("charge",  d3.forceManyBody().strength(-260).distanceMax(380))
     .force("center",  d3.forceCenter(width/2, height/2).strength(0.04))
@@ -486,14 +487,12 @@ function updateGraph(softRestart = false) {
 
     link = linkGroup.selectAll("line").data(links, d => d.target.id || d.target);
     link.exit().remove();
-    // 진주알 구슬 연결선: stroke-dasharray "0.1 11" + round linecap = 원형 구슬 체인
+    // 진주알 구슬 연결선: 개별 투명도 애니메이션 제거 → .links CSS 그룹 트랜지션에 위임
     const le = link.enter().append("line")
         .attr("stroke","rgba(255,195,220,0.72)")
         .attr("stroke-width", 7)
         .attr("stroke-dasharray","0.1 12")
-        .attr("stroke-linecap","round")
-        .style("opacity",0);
-    le.transition().delay(600).duration(1800).style("opacity",1);
+        .attr("stroke-linecap","round");
     link = le.merge(link);
 
     node = nodeGroup.selectAll("g").data(globalNodes, d => d.id);
@@ -548,9 +547,7 @@ function updateGraph(softRestart = false) {
     updateNodeVisuals();
     simulation.nodes(globalNodes);
     simulation.force("link").links(links);
-    // 토폴로지 변경 시: alpha(0.6/0.3), 소프트 업데이트 시: alpha(0.2)
-    // 모바일: 초기 alpha 0.3으로 제한 (진입 깜빡임 기간 절반으로 단축)
-    simulation.alpha(softRestart ? 0.2 : (isTouchDevice ? 0.3 : 0.6)).restart();
+    simulation.alpha(softRestart ? 0.2 : 0.6).restart();
 }
 
 function updateNodeVisuals() {
@@ -666,8 +663,7 @@ function dragstarted(event) {
     isDragAction = false;
     dragStartX = event.x; dragStartY = event.y;
     dragStartTime = Date.now();
-    // 모바일: alphaTarget 0.01 → 다른 노드 거의 안 움직임 = SVG transform 최소화, 깜빡임 감소
-    if (!event.active) simulation.alphaTarget(isTouchDevice ? 0.01 : 0.3).restart();
+    if (!event.active) simulation.alphaTarget(0.3).restart();
     event.subject.fx = event.subject.x; event.subject.fy = event.subject.y;
 
     // GPU 과부하 방지: 드래그 시작 시 무거운 필터 일시 제거
@@ -682,14 +678,13 @@ function dragged(event) {
     const dx = event.x - dragStartX, dy = event.y - dragStartY;
     if (dx * dx + dy * dy > 25) isDragAction = true;
     event.subject.fx = event.x; event.subject.fy = event.y;
-    // gameLoop 30fps를 기다리지 않고 드래그 위치 즉각 화면 반영 → 터치 지연 제거
-    if (event.subject._el) svgTranslate(event.subject._el, event.x, event.y);
+    // 60fps gameLoop에 렌더링 일임 (이중 호출 제거)
 }
 function dragended(event) {
     if (!event.active) {
         simulation.alphaTarget(0);
-        // 드래그 해제 후 물리 엔진이 노드를 자연스럽게 정착시킬 수 있도록 alpha 확보
-        simulation.alpha(isTouchDevice ? 0.12 : 0.3).restart();
+        // 모든 기기에서 충분한 에너지 부여 → 자연스럽게 정착
+        simulation.alpha(0.3).restart();
     }
     event.subject.fx = null; event.subject.fy = null;
 
@@ -1091,9 +1086,17 @@ function onYouTubeIframeAPIReady() {
     });
 }
 function enterApp() {
-    isIntroActive = false;   // gameLoop 60fps 렌더링 시작
+    isIntroActive = false;
     if (player && typeof player.playVideo === 'function') player.playVideo();
     document.getElementById('intro-screen').classList.add('fade-out');
+
+    // 라인 CSS 페이드인 트리거
+    const linksGroup = document.querySelector('.links');
+    if (linksGroup) linksGroup.classList.add('show');
+
+    // 뭉침 방지: 입장 시 물리엔진 재가동
+    if (simulation) simulation.alpha(0.5).restart();
+
     setTimeout(() => {
         document.getElementById('intro-screen').style.display = 'none';
         showWeatherToast("환영합니다", "배경음악이 재생됩니다 🎵");
@@ -1184,21 +1187,14 @@ function createFirework(x, y) {
 function openLightbox(src) { document.getElementById('lightbox-img').src=src; document.getElementById('lightbox').classList.add('active'); }
 function closeLightbox()    { document.getElementById('lightbox').classList.remove('active'); }
 
-// ── 게임 루프 (노드 위치 + 캔버스 파티클만 담당, rotation/deco는 CSS animation) ──
-let lastTime = 0;
-// 모바일: 30fps로 제한 → SVG transform 업데이트 횟수 절반, GPU 부담 대폭 감소
-const fpsInterval = isTouchDevice ? 1000 / 30 : 1000 / 60;
+// ── 게임 루프 (노드 위치 + 캔버스 파티클, 60fps 통합) ──
 let rafPaused = false;
 
 document.addEventListener('visibilitychange', () => { rafPaused = document.hidden; });
 
 function gameLoop(time) {
     requestAnimationFrame(gameLoop);
-    if (rafPaused || isIntroActive) return;   // 인트로 중 60fps 렌더링 완전 정지
-
-    const elapsed = time - lastTime;
-    if (elapsed < fpsInterval) return;
-    lastTime = time - (elapsed % fpsInterval);
+    if (rafPaused || isIntroActive) return;
 
     // 노드/링크 위치: 시뮬 활성 시에만 (SVG DOM API, 문자열 없음)
     if (node && simulation.alpha() > 0.005) {
