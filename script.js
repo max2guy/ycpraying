@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// v2.8.1 — Smooth Physics Update
+// v2.8.3 — Mobile Physics & Inertia Fix
 // ==========================================
 
 // ── 서비스 워커 ──
@@ -449,10 +449,9 @@ svg.call(d3.zoom().scaleExtent([0.1, 4]).on("zoom", event => g.attr("transform",
 const linkGroup = g.append("g").attr("class","links");
 const nodeGroup = g.append("g").attr("class","nodes");
 const sizeScale = d3.scaleSqrt().domain([0,15]).range([28,60]).clamp(true);
-// 모바일/PC 동일 파라미터 적용 (뭉침·제자리 현상 근절)
 simulation = d3.forceSimulation()
     .alphaDecay(0.04)
-    .velocityDecay(0.55)
+    .velocityDecay(isTouchDevice ? 0.40 : 0.55) // 모바일: 관성 증가 (덜 뻑뻑하게)
     .force("link",    d3.forceLink().id(d => d.id).distance(155).strength(0.5))
     .force("charge",  d3.forceManyBody().strength(-260).distanceMax(380))
     .force("center",  d3.forceCenter(width/2, height/2).strength(0.04))
@@ -497,14 +496,7 @@ function updateGraph(softRestart = false) {
 
     node = nodeGroup.selectAll("g").data(globalNodes, d => d.id);
     node.exit().remove();
-    // 터치/드래그 통합: D3 drag가 touch 이벤트도 처리하므로
-    // 별도 touchstart/touchmove/touchend 등록 시 좌표 충돌(화면 vs SVG) → 깜빡임 유발
-    // → D3 drag만 사용하고, 탭 감지는 dragended에서 처리
     const ne = node.enter().append("g").attr("cursor","pointer").style("pointer-events","all")
-        .on("click", function(event, d) {
-            event.stopPropagation();
-            if (!isDragAction && d.type === 'member') openPrayerPopup(d);
-        })
         .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended));
 
     // 1. 중앙 전용: 후광 원 (filter 있음 → 바깥 g에 위치, rotate 영향 없음)
@@ -661,40 +653,30 @@ function getRandomColor() { return brightColors[Math.floor(Math.random() * brigh
 let dragStartTime = 0;
 function dragstarted(event) {
     isDragAction = false;
-    dragStartX = event.x; dragStartY = event.y;
+    dragStartX = event.x;
+    dragStartY = event.y;
     dragStartTime = Date.now();
     if (!event.active) simulation.alphaTarget(0.3).restart();
-    event.subject.fx = event.subject.x; event.subject.fy = event.subject.y;
-
-    // GPU 과부하 방지: 드래그 시작 시 무거운 필터 일시 제거
-    if (event.subject._el) {
-        const mainBubble = event.subject._el.querySelector('.bubble-main');
-        if (mainBubble) mainBubble.style.filter = 'none';
-        const badge = event.subject._el.querySelector('.node-badge path');
-        if (badge) badge.style.filter = 'none';
-    }
+    event.subject.fx = event.subject.x;
+    event.subject.fy = event.subject.y;
 }
 function dragged(event) {
     const dx = event.x - dragStartX, dy = event.y - dragStartY;
-    if (dx * dx + dy * dy > 25) isDragAction = true;
-    event.subject.fx = event.x; event.subject.fy = event.y;
-    // 60fps gameLoop에 렌더링 일임 (이중 호출 제거)
+    if (Math.sqrt(dx*dx + dy*dy) > 10) isDragAction = true;
+    event.subject.fx = event.x;
+    event.subject.fy = event.y;
 }
 function dragended(event) {
     if (!event.active) {
         simulation.alphaTarget(0);
-        // 모든 기기에서 충분한 에너지 부여 → 자연스럽게 정착
-        simulation.alpha(0.3).restart();
+        simulation.alpha(isTouchDevice ? 0.4 : 0.3).restart(); // 모바일: 더 큰 튕김 에너지
     }
-    event.subject.fx = null; event.subject.fy = null;
+    event.subject.fx = null;
+    event.subject.fy = null;
+    // updateNodeVisuals() 제거 → 드래그 종료 시 렉 원인 제거
 
-    // 드래그 종료 후 필터 등 시각 요소 복구
-    updateNodeVisuals();
-
-    // 터치 탭 감지: 짧은 시간 + 이동 없음 → 팝업 열기 (click 이벤트 미발생 대비)
-    if (!isDragAction && (Date.now() - dragStartTime < 500) && event.subject.type === 'member') {
+    if (!isDragAction && (Date.now() - dragStartTime < 400) && event.subject.type === 'member') {
         openPrayerPopup(event.subject);
-        isDragAction = true;   // 후속 click 이벤트에서 중복 호출 방지
     }
 }
 let _lastResizeW = window.innerWidth;
@@ -732,13 +714,8 @@ function openPrayerPopup(data) {
     currentMemberData = data; newMemberIds.delete(data.id);
     readStatus[data.id] = getTotalPrayerCount(data);
     localStorage.setItem('prayerReadStatus', JSON.stringify(readStatus));
-    // 모바일: updateNodeVisuals()가 전체 노드 D3 트랜지션 실행 → 팝업 깜빡임 원인
-    // 팝업 열리는 동안 시뮬레이션 정지 + 트랜지션 건너뜀 (팝업 닫힐 때 자연 복구됨)
-    if (isTouchDevice) {
-        simulation.stop();
-    } else {
-        updateNodeVisuals();
-    }
+    // [핵심 3] 모바일 팝업 시 시뮬레이션 멈추는(stop) 로직 삭제 -> 뒤에서 부드럽게 움직이도록 둠
+    updateNodeVisuals();
     document.getElementById("panel-name").innerText = data.name;
     document.getElementById("current-color-display").style.backgroundColor = data.color;
     document.getElementById("prayer-popup").classList.add('active');
