@@ -669,6 +669,14 @@ function dragstarted(event) {
     // 모바일: alphaTarget 0.01 → 다른 노드 거의 안 움직임 = SVG transform 최소화, 깜빡임 감소
     if (!event.active) simulation.alphaTarget(isTouchDevice ? 0.01 : 0.3).restart();
     event.subject.fx = event.subject.x; event.subject.fy = event.subject.y;
+
+    // GPU 과부하 방지: 드래그 시작 시 무거운 필터 일시 제거
+    if (event.subject._el) {
+        const mainBubble = event.subject._el.querySelector('.bubble-main');
+        if (mainBubble) mainBubble.style.filter = 'none';
+        const badge = event.subject._el.querySelector('.node-badge path');
+        if (badge) badge.style.filter = 'none';
+    }
 }
 function dragged(event) {
     const dx = event.x - dragStartX, dy = event.y - dragStartY;
@@ -684,6 +692,10 @@ function dragended(event) {
         simulation.alpha(isTouchDevice ? 0.12 : 0.3).restart();
     }
     event.subject.fx = null; event.subject.fy = null;
+
+    // 드래그 종료 후 필터 등 시각 요소 복구
+    updateNodeVisuals();
+
     // 터치 탭 감지: 짧은 시간 + 이동 없음 → 팝업 열기 (click 이벤트 미발생 대비)
     if (!isDragAction && (Date.now() - dragStartTime < 500) && event.subject.type === 'member') {
         openPrayerPopup(event.subject);
