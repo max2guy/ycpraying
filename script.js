@@ -465,8 +465,11 @@ function updateGraph(softRestart = false) {
     const unplaced = members.filter(d => d.x == null);
     if (unplaced.length > 0) {
         const r0 = isTouchDevice ? 140 : 200;
-        unplaced.forEach((d, i) => {
-            const angle = (i / unplaced.length) * 2 * Math.PI - Math.PI / 2;
+        const total = Math.max(members.length, 1);
+        unplaced.forEach((d) => {
+            // members 전체 인덱스 기준으로 각도 배분 → child_added가 1개씩 올 때도 겹치지 않음
+            const memberIdx = members.indexOf(d);
+            const angle = (memberIdx / total) * 2 * Math.PI - Math.PI / 2;
             d.x = width/2 + Math.cos(angle) * r0;
             d.y = height/2 + Math.sin(angle) * r0;
         });
@@ -677,8 +680,8 @@ function dragged(event) {
 function dragended(event) {
     if (!event.active) {
         simulation.alphaTarget(0);
-        // 모바일: alpha(0.002) → gameLoop 0.005 threshold 즉시 통과 → SVG 업데이트 중단
-        if (isTouchDevice) simulation.alpha(0.002);
+        // 드래그 해제 후 물리 엔진이 노드를 자연스럽게 정착시킬 수 있도록 alpha 확보
+        simulation.alpha(isTouchDevice ? 0.12 : 0.3).restart();
     }
     event.subject.fx = null; event.subject.fy = null;
     // 터치 탭 감지: 짧은 시간 + 이동 없음 → 팝업 열기 (click 이벤트 미발생 대비)
