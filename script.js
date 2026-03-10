@@ -5,16 +5,11 @@
 
 // ── 서비스 워커 ──
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').then(function(reg) {
-        reg.addEventListener('updatefound', () => {
-            const nw = reg.installing;
-            nw.addEventListener('statechange', () => {
-                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-                    document.getElementById('update-toast').classList.add('show');
-                }
-            });
-        });
-    }).catch(err => console.log('SW Fail:', err));
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Fail:', err));
+    // 새 SW가 활성화되면 자동 reload → 업데이트 즉시 반영
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+    });
 }
 
 // ── PWA 설치 배너 ──

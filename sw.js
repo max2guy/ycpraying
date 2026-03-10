@@ -4,8 +4,8 @@ const CACHE_NAME = 'yc-prayer-v35';
 const FILES_TO_CACHE = [
   './',
   './index.html',
-  './style.css?v=32',
-  './script.js?v=34',
+  './style.css?v=33',
+  './script.js?v=35',
   './manifest.json',
   './icon-192.png'
 ];
