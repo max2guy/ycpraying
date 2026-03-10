@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// v2.8.3 — Mobile Physics & Inertia Fix
+// v2.8.6 — 카와이 플랫 버블 (3D 그라디언트 제거)
 // ==========================================
 
 // ── 서비스 워커 ──
@@ -375,49 +375,7 @@ function svgRotate(el, r) {
     } else { tl.getItem(0).setRotate(r, 0, 0); }
 }
 
-// SVG filter 제거 (성능) — CSS drop-shadow로 대체
-
-// ── 광택 오버레이 그라디언트 (모든 버블 공통) ──
-const gloss = defs.append("radialGradient").attr("id","gloss-overlay")
-    .attr("cx","30%").attr("cy","24%").attr("r","55%").attr("fx","26%").attr("fy","18%");
-gloss.append("stop").attr("offset","0%").attr("stop-color","#fff").attr("stop-opacity","0.95");
-gloss.append("stop").attr("offset","25%").attr("stop-color","#fff").attr("stop-opacity","0.50");
-gloss.append("stop").attr("offset","55%").attr("stop-color","#fff").attr("stop-opacity","0.05");
-gloss.append("stop").attr("offset","100%").attr("stop-color","#fff").attr("stop-opacity","0.00");
-
-// ── 중앙 노드 그라디언트: 따뜻한 황금 오브 ──
-const cg = defs.append("radialGradient").attr("id","center-grad")
-    .attr("cx","32%").attr("cy","26%").attr("r","72%").attr("fx","28%").attr("fy","20%");
-cg.append("stop").attr("offset","0%").attr("stop-color","#FFFFF0").attr("stop-opacity","1");
-cg.append("stop").attr("offset","22%").attr("stop-color","#FFF3C0").attr("stop-opacity","1");
-cg.append("stop").attr("offset","55%").attr("stop-color","#FFD880").attr("stop-opacity","1");
-cg.append("stop").attr("offset","100%").attr("stop-color","#FFAA40").attr("stop-opacity","1");
-
-// ── 중앙 후광 그라디언트 ──
-const hg = defs.append("radialGradient").attr("id","halo-grad")
-    .attr("cx","50%").attr("cy","50%").attr("r","50%");
-hg.append("stop").attr("offset","0%").attr("stop-color","#FFE870").attr("stop-opacity","0.55");
-hg.append("stop").attr("offset","55%").attr("stop-color","#FFD060").attr("stop-opacity","0.18");
-hg.append("stop").attr("offset","100%").attr("stop-color","#FFBB40").attr("stop-opacity","0.00");
-
-// ── 색상별 3D 버블 그라디언트 생성 함수 ──
-function ensureBubbleGrad(color) {
-    const id = 'bg-' + color.replace('#','');
-    if (!defs.select('#' + id).empty()) return 'url(#' + id + ')';
-    const rv = parseInt(color.slice(1,3),16), gv = parseInt(color.slice(3,5),16), bv = parseInt(color.slice(5,7),16);
-    const bright = `rgb(${Math.min(255,rv+30)},${Math.min(255,gv+30)},${Math.min(255,bv+30)})`;
-    const dark   = `rgb(${Math.max(0,rv-60)},${Math.max(0,gv-60)},${Math.max(0,bv-60)})`;
-    const grad = defs.append("radialGradient").attr("id",id)
-        .attr("cx","30%").attr("cy","24%").attr("r","72%").attr("fx","25%").attr("fy","18%");
-    grad.append("stop").attr("offset","0%").attr("stop-color","#fff").attr("stop-opacity","0.92");
-    grad.append("stop").attr("offset","18%").attr("stop-color","#fff").attr("stop-opacity","0.52");
-    grad.append("stop").attr("offset","42%").attr("stop-color",bright).attr("stop-opacity","1");
-    grad.append("stop").attr("offset","78%").attr("stop-color",color).attr("stop-opacity","1");
-    grad.append("stop").attr("offset","100%").attr("stop-color",dark).attr("stop-opacity","1");
-    return 'url(#' + id + ')';
-}
-// 팔레트 전체 사전 생성
-brightColors.forEach(c => ensureBubbleGrad(c));
+// ── 3D 그라디언트 제거 → 카와이 플랫 스타일 ──
 
 // ── 배경 장식 이모지 ──
 const decoData = [
@@ -499,16 +457,11 @@ function updateGraph(softRestart = false) {
     const ne = node.enter().append("g").attr("cursor","pointer").style("pointer-events","all")
         .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended));
 
-    // 1. 중앙 전용: 후광 원 (filter 있음 → 바깥 g에 위치, rotate 영향 없음)
-    ne.append("circle").attr("class","bubble-halo").attr("fill","url(#halo-grad)").attr("r",0)
-        .style("pointer-events","none").style("opacity",0);
-    // 2. 메인 버블 원 (filter 있음 → 바깥 g에 위치)
-    ne.append("circle").attr("class","bubble-main").attr("stroke-width",3).attr("r",0).style("pointer-events","all");
-    // 3. 안쪽 회전 레이어: filter 없는 요소만 포함 → rotation 시 filter 재계산 없음
-    const inner = ne.append("g").attr("class","node-inner").style("pointer-events","none");
-    // 3a. 광택 하이라이트 (filter 없음 → 회전해도 cheap)
-    inner.append("circle").attr("class","bubble-gloss").attr("fill","url(#gloss-overlay)").attr("r",0)
-        .style("opacity",0);
+    // 1. 메인 버블 원 (플랫 단색)
+    ne.append("circle").attr("class","bubble-main").attr("stroke-width",2.5).attr("r",0).style("pointer-events","all");
+    // 2. 카와이 광택 도트 (작은 흰 원 — 그라디언트/filter 없이 귀여운 느낌)
+    ne.append("circle").attr("class","bubble-shine").attr("r",0)
+        .attr("fill","white").attr("opacity",0).style("pointer-events","none");
     // 4. 이름 배경 pill
     ne.append("rect").attr("class","name-pill").attr("rx",14).attr("ry",14)
         .attr("fill","rgba(255,248,255,0.88)").style("opacity",0).style("pointer-events","none");
@@ -530,9 +483,6 @@ function updateGraph(softRestart = false) {
     // raw DOM 캐싱 + CSS rotation 방향 설정
     node.each(function(d) {
         d._el = this;
-        d._innerEl = this.querySelector('.node-inner');
-        if (d._innerEl && d.rotationDirection === -1) d._innerEl.classList.add('ccw');
-        else if (d._innerEl) d._innerEl.classList.remove('ccw');
     });
     rawLinkEls = [];
     link.each(function(d) { rawLinkEls.push({ el: this, d }); });
@@ -549,49 +499,32 @@ function updateNodeVisuals() {
         const r  = calculateRadius(d);
         const textDelay = isFirstRender ? (d.id === 'center' ? 0 : 900 + globalNodes.indexOf(d) * 70) : 0;
 
-        const halo  = el.select(".bubble-halo");
         const main  = el.select(".bubble-main");
-        const gloss = el.select(".bubble-gloss");
+        const shine = el.select(".bubble-shine");
 
         // ── 크기 애니메이션 ──
         if (main.attr("r") == 0) {
-            if (d.type === 'root') {
-                halo.transition().delay(textDelay).duration(1400)
-                    .ease(d3.easeElasticOut.amplitude(1.5)).attr("r", r * 2.0).style("opacity","1");
-            }
             main.transition().delay(textDelay).duration(isFirstRender ? 900 : 500)
                 .ease(d3.easeElasticOut.amplitude(2.2)).attr("r", r);
-            gloss.transition().delay(textDelay + 180).duration(700)
-                .style("opacity","1").attr("r", r * 0.80);
+            shine.transition().delay(textDelay + 200).duration(600)
+                .attr("opacity", 0.55).attr("r", r * 0.22)
+                .attr("cx", -(r * 0.34)).attr("cy", -(r * 0.34));
         } else {
-            if (d.type === 'root') halo.transition().duration(500).attr("r", r * 2.0);
             main.transition().duration(500).attr("r", r);
-            gloss.transition().duration(500).attr("r", r * 0.80);
+            shine.transition().duration(500)
+                .attr("r", r * 0.22).attr("cx", -(r * 0.34)).attr("cy", -(r * 0.34));
         }
 
-        // ── 색 채우기 & 필터 ──
-        const pct = getTotalPrayerCount(d);
+        // ── 색 채우기 (플랫 카와이) ──
         if (d.type === 'root') {
-            main.attr("fill","url(#center-grad)")
-                // 모바일: drop-shadow filter 제거 → iOS GPU compositing 깨짐 방지
-                .style("filter", isTouchDevice ? "none" : "drop-shadow(0 0 20px rgba(255,200,80,0.70)) drop-shadow(0 0 40px rgba(255,170,40,0.35))")
+            main.attr("fill","#FFD580")
                 .attr("stroke","rgba(255,240,160,0.90)").attr("stroke-width","3.5");
-            gloss.attr("fill","url(#gloss-overlay)");
         } else if (d.photoUrl) {
             main.attr("fill", `url(#img-${d.id})`)
-                .style("filter", isTouchDevice ? "none" : (pct > 0
-                    ? `drop-shadow(0 0 ${Math.min(pct*2+8,20)}px rgba(255,133,176,${0.45+pct/35}))`
-                    : "drop-shadow(0 4px 14px rgba(180,80,130,0.22))"))
                 .attr("stroke","rgba(255,255,255,0.82)").attr("stroke-width","3.5");
-            gloss.attr("fill","url(#gloss-overlay)");
         } else {
-            const fill3d = ensureBubbleGrad(d.color);
-            const glow = isTouchDevice ? "none" : (pct > 0
-                ? `drop-shadow(0 0 ${Math.min(pct*2+8,20)}px rgba(255,133,176,${0.38+pct/35})) drop-shadow(0 4px 10px rgba(180,80,130,0.18))`
-                : "drop-shadow(0 4px 12px rgba(180,80,130,0.16))");
-            main.attr("fill", fill3d).style("filter", glow)
-                .attr("stroke","rgba(255,255,255,0.72)").attr("stroke-width","2.5");
-            gloss.attr("fill","url(#gloss-overlay)");
+            main.attr("fill", d.color)
+                .attr("stroke","rgba(255,255,255,0.80)").attr("stroke-width","2.5");
         }
 
         // ── 텍스트 (이름은 버블 아래 항상 표시) ──

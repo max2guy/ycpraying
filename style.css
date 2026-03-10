@@ -70,7 +70,6 @@ button,.float-btn,.icon-btn,.amen-btn,.setting-item,.camera-btn,.enter-btn {
   .chat-btn { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(255, 245, 252, 0.96) !important; }
   body::after { animation: none; }
   .deco-bg text { animation: none; }
-  .node-inner { animation: none; }
   #intro-screen { background: #FFEAF5; }
   #intro-screen::before { display: none; }
   body::before { display: none; }
@@ -487,12 +486,7 @@ body.admin-mode .admin-indicator { display:block; animation:popUp .3s cubic-bezi
 }
 .nodes g:hover { opacity: 1 !important; }
 
-/* ── CSS 애니메이션 (compositor 스레드, 메인 스레드 부담 없음) ── */
-@keyframes spin-cw  { to { transform: rotate( 360deg); } }
-@keyframes spin-ccw { to { transform: rotate(-360deg); } }
-.node-inner { transform-box: fill-box; transform-origin: center; animation: spin-cw 120s linear infinite; }
-.node-inner.ccw { animation-name: spin-ccw; }
-
+/* ── CSS 애니메이션 ── */
 @keyframes deco-float { from { transform: translateY( 12px); opacity: 0.32; } to   { transform: translateY(-12px); opacity: 0.52; } }
 .deco-bg text { animation: deco-float linear infinite alternate; }
 
