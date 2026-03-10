@@ -5,7 +5,9 @@
 
 // ── 서비스 워커 ──
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Fail:', err));
+    navigator.serviceWorker.register('sw.js').then(reg => {
+        reg.update(); // 페이지 로드마다 sw.js 강제 체크 (기본값 24시간 주기 무시)
+    }).catch(err => console.log('SW Fail:', err));
     // 새 SW가 활성화되면 자동 reload → 업데이트 즉시 반영
     navigator.serviceWorker.addEventListener('controllerchange', () => {
         window.location.reload();
