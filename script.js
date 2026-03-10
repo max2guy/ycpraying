@@ -453,7 +453,7 @@ const linkGroup = g.append("g").attr("class","links");
 const nodeGroup = g.append("g").attr("class","nodes");
 const sizeScale = d3.scaleSqrt().domain([0,15]).range([28,60]).clamp(true);
 simulation = d3.forceSimulation()
-    .alphaDecay(isTouchDevice ? 0.12 : 0.04)   // 모바일: 3배 빠른 정착 (35틱≈1.2초)
+    .alphaDecay(isTouchDevice ? 0.15 : 0.04)   // 모바일: 빠른 정착 (≈25틱≈0.4초)
     .velocityDecay(isTouchDevice ? 0.7  : 0.55) // 모바일: 강한 마찰 → 노드 즉시 안정
     .force("link",    d3.forceLink().id(d => d.id).distance(155).strength(0.5))
     .force("charge",  d3.forceManyBody().strength(-260).distanceMax(380))
@@ -463,6 +463,17 @@ let link, node;
 
 function updateGraph(softRestart = false) {
     globalNodes = [centerNode, ...members];
+    // 위치 없는 노드 → 원형으로 사전 배치 (가운데 몰림 방지)
+    if (centerNode.x == null) { centerNode.x = width/2; centerNode.y = height/2; }
+    const unplaced = members.filter(d => d.x == null);
+    if (unplaced.length > 0) {
+        const r0 = isTouchDevice ? 140 : 200;
+        unplaced.forEach((d, i) => {
+            const angle = (i / unplaced.length) * 2 * Math.PI - Math.PI / 2;
+            d.x = width/2 + Math.cos(angle) * r0;
+            d.y = height/2 + Math.sin(angle) * r0;
+        });
+    }
     const links = members.map(m => ({ source:centerNode.id, target:m.id }));
     const patterns = defs.selectAll("pattern").data(members, d => d.id);
     patterns.enter().append("pattern")
@@ -655,8 +666,8 @@ function dragstarted(event) {
     isDragAction = false;
     dragStartX = event.x; dragStartY = event.y;
     dragStartTime = Date.now();
-    // 모바일: alphaTarget 0.05 → 다른 노드 거의 움직이지 않음 = SVG transform 최소화
-    if (!event.active) simulation.alphaTarget(isTouchDevice ? 0.05 : 0.3).restart();
+    // 모바일: alphaTarget 0.01 → 다른 노드 거의 안 움직임 = SVG transform 최소화, 깜빡임 감소
+    if (!event.active) simulation.alphaTarget(isTouchDevice ? 0.01 : 0.3).restart();
     event.subject.fx = event.subject.x; event.subject.fy = event.subject.y;
 }
 function dragged(event) {
@@ -667,9 +678,8 @@ function dragged(event) {
 function dragended(event) {
     if (!event.active) {
         simulation.alphaTarget(0);
-        // 모바일: 드래그 종료 즉시 alpha를 극소값으로 낮춤
-        // alphaDecay=0.12 → 2~3틱(0.1초) 내 시뮬레이션 정지, 드래그 후 깜빡임 제거
-        if (isTouchDevice) simulation.alpha(0.006);
+        // 모바일: alpha(0.002) → gameLoop 0.005 threshold 즉시 통과 → SVG 업데이트 중단
+        if (isTouchDevice) simulation.alpha(0.002);
     }
     event.subject.fx = null; event.subject.fy = null;
     // 터치 탭 감지: 짧은 시간 + 이동 없음 → 팝업 열기 (click 이벤트 미발생 대비)
