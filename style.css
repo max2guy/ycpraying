@@ -477,7 +477,19 @@ body.admin-mode .admin-indicator { display:block; animation:popUp .3s cubic-bezi
   stroke-linecap:round!important;
   filter:none; pointer-events:none;
 }
-.nodes g { cursor:pointer; }
+/* ── [패치] 모바일 터치 드래그 시 번쩍임(Flickering) 완벽 제거 ── */
+.nodes g {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    user-select: none !important;
+    will-change: transform;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    transition: none !important;
+}
+.nodes g:hover { opacity: 1 !important; }
 
 /* ── CSS 애니메이션 (compositor 스레드, 메인 스레드 부담 없음) ── */
 @keyframes spin-cw  { to { transform: rotate( 360deg); } }

@@ -662,7 +662,7 @@ function dragstarted(event) {
 }
 function dragged(event) {
     const dx = event.x - dragStartX, dy = event.y - dragStartY;
-    if (Math.sqrt(dx*dx + dy*dy) > 10) isDragAction = true;
+    if (dx * dx + dy * dy > 25) isDragAction = true; // 5px 이상 이동 시 드래그로 판별
     event.subject.fx = event.x;
     event.subject.fy = event.y;
 }
@@ -677,6 +677,7 @@ function dragended(event) {
 
     if (!isDragAction && (Date.now() - dragStartTime < 400) && event.subject.type === 'member') {
         openPrayerPopup(event.subject);
+        isDragAction = true; // 중복 실행 방지
     }
 }
 let _lastResizeW = window.innerWidth;
