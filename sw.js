@@ -1,5 +1,5 @@
-// Service Worker Version 45 (v2.8.7)
-const CACHE_NAME = 'yc-prayer-v45';
+// Service Worker Version 46 (v2.8.8)
+const CACHE_NAME = 'yc-prayer-v46';
 
 // 쿼리스트링 제거 (ignoreSearch: true로 버전 관계없이 캐시 매칭)
 const FILES_TO_CACHE = [

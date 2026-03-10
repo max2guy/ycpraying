@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// v2.8.7 — bubble-shine 제거, 별 배지 → 카와이 원형 배지
+// v2.8.8 — 배지 카와이 통통 별 모양
 // ==========================================
 
 // ── 서비스 워커 ──
@@ -466,10 +466,12 @@ function updateGraph(softRestart = false) {
     ne.append("text").attr("class","node-label").attr("text-anchor","middle")
         .attr("dominant-baseline","middle").attr("font-weight","900")
         .style("pointer-events","none").style("opacity",0);
-    // 3. 카와이 배지 (기도 개수 — 둥근 원형)
+    // 3. 카와이 배지 (기도 개수 — 통통한 별 모양)
+    // 내부 반지름 5 / 외부 11 → 기존(4/11)보다 꼭짓점이 짧아 귀여운 별
     const badge = ne.append("g").attr("class","node-badge").style("opacity",0).style("pointer-events","none");
-    badge.append("circle").attr("class","badge-bg").attr("r",11)
-        .attr("stroke","white").attr("stroke-width","2");
+    badge.append("path").attr("class","badge-bg")
+        .attr("d","M0,-11 L2.9,-4.1 L10.5,-3.4 L4.8,1.6 L6.5,8.9 L0,5.0 L-6.5,8.9 L-4.8,1.6 L-10.5,-3.4 L-2.9,-4.1 Z")
+        .attr("stroke","white").attr("stroke-width","2").attr("stroke-linejoin","round");
     badge.append("text").attr("class","badge-num").attr("x",0).attr("y","0.5").attr("dy","0.35em")
         .attr("text-anchor","middle").attr("fill","white")
         .style("font-size","9px").style("font-weight","900");
