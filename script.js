@@ -453,8 +453,8 @@ const linkGroup = g.append("g").attr("class","links");
 const nodeGroup = g.append("g").attr("class","nodes");
 const sizeScale = d3.scaleSqrt().domain([0,15]).range([28,60]).clamp(true);
 simulation = d3.forceSimulation()
-    .alphaDecay(0.04)          // 기본값(0.0228)보다 빠르게 정착
-    .velocityDecay(0.55)       // 마찰 증가 → 튕김 감소 (기본 0.4)
+    .alphaDecay(isTouchDevice ? 0.12 : 0.04)   // 모바일: 3배 빠른 정착 (35틱≈1.2초)
+    .velocityDecay(isTouchDevice ? 0.7  : 0.55) // 모바일: 강한 마찰 → 노드 즉시 안정
     .force("link",    d3.forceLink().id(d => d.id).distance(155).strength(0.5))
     .force("charge",  d3.forceManyBody().strength(-260).distanceMax(380))
     .force("center",  d3.forceCenter(width/2, height/2).strength(0.04))
@@ -537,8 +537,9 @@ function updateGraph(softRestart = false) {
     updateNodeVisuals();
     simulation.nodes(globalNodes);
     simulation.force("link").links(links);
-    // 토폴로지 변경 시: alpha(0.6), 소프트 업데이트 시: alpha(0.2)
-    simulation.alpha(softRestart ? 0.2 : 0.6).restart();
+    // 토폴로지 변경 시: alpha(0.6/0.3), 소프트 업데이트 시: alpha(0.2)
+    // 모바일: 초기 alpha 0.3으로 제한 (진입 깜빡임 기간 절반으로 단축)
+    simulation.alpha(softRestart ? 0.2 : (isTouchDevice ? 0.3 : 0.6)).restart();
 }
 
 function updateNodeVisuals() {
@@ -654,7 +655,8 @@ function dragstarted(event) {
     isDragAction = false;
     dragStartX = event.x; dragStartY = event.y;
     dragStartTime = Date.now();
-    if (!event.active) simulation.alphaTarget(0.3).restart();
+    // 모바일: alphaTarget 0.05 → 다른 노드 거의 움직이지 않음 = SVG transform 최소화
+    if (!event.active) simulation.alphaTarget(isTouchDevice ? 0.05 : 0.3).restart();
     event.subject.fx = event.subject.x; event.subject.fy = event.subject.y;
 }
 function dragged(event) {
@@ -663,7 +665,12 @@ function dragged(event) {
     event.subject.fx = event.x; event.subject.fy = event.y;
 }
 function dragended(event) {
-    if (!event.active) simulation.alphaTarget(0);
+    if (!event.active) {
+        simulation.alphaTarget(0);
+        // 모바일: 드래그 종료 즉시 alpha를 극소값으로 낮춤
+        // alphaDecay=0.12 → 2~3틱(0.1초) 내 시뮬레이션 정지, 드래그 후 깜빡임 제거
+        if (isTouchDevice) simulation.alpha(0.006);
+    }
     event.subject.fx = null; event.subject.fy = null;
     // 터치 탭 감지: 짧은 시간 + 이동 없음 → 팝업 열기 (click 이벤트 미발생 대비)
     if (!isDragAction && (Date.now() - dragStartTime < 500) && event.subject.type === 'member') {
@@ -706,7 +713,13 @@ function openPrayerPopup(data) {
     currentMemberData = data; newMemberIds.delete(data.id);
     readStatus[data.id] = getTotalPrayerCount(data);
     localStorage.setItem('prayerReadStatus', JSON.stringify(readStatus));
-    updateNodeVisuals();
+    // 모바일: updateNodeVisuals()가 전체 노드 D3 트랜지션 실행 → 팝업 깜빡임 원인
+    // 팝업 열리는 동안 시뮬레이션 정지 + 트랜지션 건너뜀 (팝업 닫힐 때 자연 복구됨)
+    if (isTouchDevice) {
+        simulation.stop();
+    } else {
+        updateNodeVisuals();
+    }
     document.getElementById("panel-name").innerText = data.name;
     document.getElementById("current-color-display").style.backgroundColor = data.color;
     document.getElementById("prayer-popup").classList.add('active');
@@ -1149,7 +1162,8 @@ function closeLightbox()    { document.getElementById('lightbox').classList.remo
 
 // ── 게임 루프 (노드 위치 + 캔버스 파티클만 담당, rotation/deco는 CSS animation) ──
 let lastTime = 0;
-const fpsInterval = 1000 / 60;
+// 모바일: 30fps로 제한 → SVG transform 업데이트 횟수 절반, GPU 부담 대폭 감소
+const fpsInterval = isTouchDevice ? 1000 / 30 : 1000 / 60;
 let rafPaused = false;
 
 document.addEventListener('visibilitychange', () => { rafPaused = document.hidden; });
