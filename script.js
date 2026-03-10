@@ -671,6 +671,8 @@ function dragged(event) {
     const dx = event.x - dragStartX, dy = event.y - dragStartY;
     if (dx * dx + dy * dy > 25) isDragAction = true;
     event.subject.fx = event.x; event.subject.fy = event.y;
+    // gameLoop 30fps를 기다리지 않고 드래그 위치 즉각 화면 반영 → 터치 지연 제거
+    if (event.subject._el) svgTranslate(event.subject._el, event.x, event.y);
 }
 function dragended(event) {
     if (!event.active) {
