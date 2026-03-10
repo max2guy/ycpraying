@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// v2.8.6 — 카와이 플랫 버블 (3D 그라디언트 제거)
+// v2.8.7 — bubble-shine 제거, 별 배지 → 카와이 원형 배지
 // ==========================================
 
 // ── 서비스 워커 ──
@@ -459,24 +459,19 @@ function updateGraph(softRestart = false) {
 
     // 1. 메인 버블 원 (플랫 단색)
     ne.append("circle").attr("class","bubble-main").attr("stroke-width",2.5).attr("r",0).style("pointer-events","all");
-    // 2. 카와이 광택 도트 (작은 흰 원 — 그라디언트/filter 없이 귀여운 느낌)
-    ne.append("circle").attr("class","bubble-shine").attr("r",0)
-        .attr("fill","white").attr("opacity",0).style("pointer-events","none");
-    // 4. 이름 배경 pill
+    // 2. 이름 배경 pill
     ne.append("rect").attr("class","name-pill").attr("rx",14).attr("ry",14)
         .attr("fill","rgba(255,248,255,0.88)").style("opacity",0).style("pointer-events","none");
     // 5. 이름 텍스트
     ne.append("text").attr("class","node-label").attr("text-anchor","middle")
         .attr("dominant-baseline","middle").attr("font-weight","900")
         .style("pointer-events","none").style("opacity",0);
-    // 6. 별 배지 (기도 개수)
+    // 3. 카와이 배지 (기도 개수 — 둥근 원형)
     const badge = ne.append("g").attr("class","node-badge").style("opacity",0).style("pointer-events","none");
-    badge.append("path")
-        .attr("d","M0,-11 L2.6,-4 L10,-3.1 L4.4,2 L6,9.5 L0,6 L-6,9.5 L-4.4,2 L-10,-3.1 L-2.6,-4 Z")
-        .attr("fill","#FFD700").attr("stroke","#FFA500").attr("stroke-width","1.2")
-        .style("filter", isTouchDevice ? "none" : "drop-shadow(0 1px 3px rgba(200,130,0,0.45))");
+    badge.append("circle").attr("class","badge-bg").attr("r",11)
+        .attr("stroke","white").attr("stroke-width","2");
     badge.append("text").attr("class","badge-num").attr("x",0).attr("y","0.5").attr("dy","0.35em")
-        .attr("text-anchor","middle").attr("fill","#7A4800")
+        .attr("text-anchor","middle").attr("fill","white")
         .style("font-size","9px").style("font-weight","900");
     node = ne.merge(node);
     node.style("pointer-events","all");
@@ -500,19 +495,13 @@ function updateNodeVisuals() {
         const textDelay = isFirstRender ? (d.id === 'center' ? 0 : 900 + globalNodes.indexOf(d) * 70) : 0;
 
         const main  = el.select(".bubble-main");
-        const shine = el.select(".bubble-shine");
 
         // ── 크기 애니메이션 ──
         if (main.attr("r") == 0) {
             main.transition().delay(textDelay).duration(isFirstRender ? 900 : 500)
                 .ease(d3.easeElasticOut.amplitude(2.2)).attr("r", r);
-            shine.transition().delay(textDelay + 200).duration(600)
-                .attr("opacity", 0.55).attr("r", r * 0.22)
-                .attr("cx", -(r * 0.34)).attr("cy", -(r * 0.34));
         } else {
             main.transition().duration(500).attr("r", r);
-            shine.transition().duration(500)
-                .attr("r", r * 0.22).attr("cx", -(r * 0.34)).attr("cy", -(r * 0.34));
         }
 
         // ── 색 채우기 (플랫 카와이) ──
@@ -556,15 +545,15 @@ function updateNodeVisuals() {
             textEl.transition().delay(textDelay).duration(800).style("opacity",1);
         }
 
-        // ── 별 배지 (기도 개수) ──
+        // ── 카와이 배지 (기도 개수) ──
         if (d.type !== 'root') {
             const cnt = getTotalPrayerCount(d);
             const isNew = newMemberIds.has(d.id);
             const badge = el.select(".node-badge");
-            // 왼쪽 위 (약 10시 방향)
             const bx = -(r * 0.62 + 2), by = -(r * 0.62 + 2);
             if (cnt > 0 || isNew) {
                 badge.style("display","block");
+                badge.select(".badge-bg").attr("fill", isNew && cnt === 0 ? "#7DDCC0" : "#FF85B0");
                 badge.select(".badge-num").text(isNew && cnt === 0 ? "N" : cnt);
                 badge.transition().delay(textDelay + 450).duration(300)
                     .attr("transform", `translate(${bx},${by})`).style("opacity",1);
