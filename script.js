@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// v2.8.8 — 배지 카와이 통통 별 모양
+// v2.9.0 — FCM 실시간 푸시 알림 추가
 // ==========================================
 
 // ── 서비스 워커 ──
@@ -146,6 +146,40 @@ function checkNotificationPermission() {
     }
 }
 checkNotificationPermission();
+
+// ── FCM 초기화 (푸시 알림 토큰 등록) ──
+const FCM_VAPID_KEY = 'REPLACE_WITH_YOUR_VAPID_KEY'; // Firebase Console → 프로젝트 설정 → 클라우드 메시징 → 웹 푸시 인증서
+
+async function initFCM() {
+    try {
+        if (!('Notification' in window)) return;
+        if (Notification.permission === 'denied') return;
+        if (Notification.permission !== 'granted') {
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') return;
+        }
+        const msg = firebase.messaging();
+        const token = await msg.getToken({ vapidKey: FCM_VAPID_KEY });
+        if (token) {
+            database.ref('fcmTokens').child(mySessionId).set({ token, updatedAt: Date.now() });
+        }
+        // 앱이 열린 상태에서 수신 → SW 통해 알림 표시
+        msg.onMessage(payload => {
+            const d = payload.data || {};
+            if (!d.title) return;
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification(d.title, {
+                    body: d.body || '',
+                    icon:  './icon-192.png',
+                    badge: './icon-192.png'
+                });
+            }).catch(() => {});
+        });
+    } catch (e) {
+        console.log('FCM init error:', e);
+    }
+}
+initFCM();
 
 function setAppBadge(count) {
     if ('setAppBadge' in navigator) {
@@ -894,6 +928,8 @@ function addPrayer() {
     p.unshift({ content:v, date:new Date().toISOString().split('T')[0] });
     membersRef.child(currentMemberData.firebaseKey).update({ prayers:p });
     document.getElementById("new-prayer").value = '';
+    // FCM 알림 트리거
+    database.ref('prayerEvents').push({ type:'new_prayer', memberName:currentMemberData.name, content:v, senderId:mySessionId, timestamp:firebase.database.ServerValue.TIMESTAMP });
 }
 function editPrayer(i) {
     openSimpleModal('기도제목 수정', 'textarea', '수정할 내용을 입력하세요', currentMemberData.prayers[i].content, value => {
@@ -910,6 +946,8 @@ function addReply(i) {
         if (!currentMemberData.prayers[i].replies) currentMemberData.prayers[i].replies = [];
         currentMemberData.prayers[i].replies.push({ content:value });
         membersRef.child(currentMemberData.firebaseKey).update({ prayers:currentMemberData.prayers });
+        // FCM 알림 트리거
+        database.ref('prayerEvents').push({ type:'new_reply', memberName:currentMemberData.name, content:value, senderId:mySessionId, timestamp:firebase.database.ServerValue.TIMESTAMP });
     });
 }
 function deleteReply(pi, ri) {
