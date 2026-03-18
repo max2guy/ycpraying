@@ -1,57 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
   <defs>
-    <radialGradient id="bg" cx="45%" cy="35%" r="70%">
-      <stop offset="0%" stop-color="#FFB0D0"/>
-      <stop offset="100%" stop-color="#C9507A"/>
+    <radialGradient id="bg" cx="42%" cy="38%" r="68%">
+      <stop offset="0%" stop-color="#FFB8D4"/>
+      <stop offset="60%" stop-color="#FF85B0"/>
+      <stop offset="100%" stop-color="#E05090"/>
     </radialGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
   </defs>
 
   <!-- 배경 원 -->
   <circle cx="96" cy="96" r="96" fill="url(#bg)"/>
-  <!-- 광택 -->
-  <ellipse cx="78" cy="62" rx="38" ry="22" fill="rgba(255,255,255,0.16)"/>
 
-  <!-- 기도하는 손 (흰색 실루엣) -->
-  <!--
-    전체 실루엣: 손가락 끝(위) → 손바닥(아래)
-    좌우 대칭. 중앙선: x=96
-    손가락 끝: y≈44, 손바닥 바닥: y≈148
-  -->
-  <path fill="white" d="
-    M 96 44
+  <!-- 광택 하이라이트 -->
+  <ellipse cx="80" cy="62" rx="38" ry="22" fill="rgba(255,255,255,0.22)"/>
 
-    C 88 44, 84 49, 84 55
-    L 84 90
-    C 81 88, 77 89, 76 93
-    L 76 100
-    C 73 99, 69 101, 68.5 106
-    L 68.5 116
-    C 66 116, 63 119, 63 124
-    L 63 130
-    C 63 141, 78 150, 96 150
-    C 114 150, 129 141, 129 130
-    L 129 124
-    C 129 119, 126 116, 123.5 116
-    L 123.5 106
-    C 123 101, 119 99, 116 100
-    L 116 93
-    C 115 89, 111 88, 108 90
-    L 108 55
-    C 108 49, 104 44, 96 44
-    Z
-  "/>
-
-  <!-- 손가락 구분선 4개 (연한 핑크) -->
-  <g stroke="#C9507A" stroke-width="2" stroke-linecap="round" opacity="0.35">
-    <!-- 왼쪽 손가락 선 -->
-    <line x1="84" y1="90" x2="84" y2="56"/>
-    <line x1="76" y1="100" x2="77" y2="82"/>
-    <!-- 오른쪽 손가락 선 -->
-    <line x1="108" y1="90" x2="108" y2="56"/>
-    <line x1="116" y1="100" x2="115" y2="82"/>
+  <!-- 십자가 그림자 (부드러운 깊이감) -->
+  <g opacity="0.18" transform="translate(4,5)">
+    <rect x="84" y="43" width="24" height="106" rx="12" fill="#7A1040"/>
+    <rect x="60" y="68" width="72" height="24" rx="12" fill="#7A1040"/>
   </g>
 
-  <!-- 중앙 손 맞닿는 선 -->
-  <line x1="96" y1="44" x2="96" y2="148" stroke="#C9507A" stroke-width="2" stroke-linecap="round" opacity="0.25"/>
+  <!-- 카와이 십자가 (둥글둥글한 끝) -->
+  <rect x="84" y="43" width="24" height="106" rx="12" fill="white"/>
+  <rect x="60" y="68" width="72" height="24" rx="12" fill="white"/>
+
+  <!-- 작은 반짝이 (카와이 포인트) -->
+  <g fill="white" opacity="0.7">
+    <circle cx="44" cy="52" r="3.5"/>
+    <circle cx="38" cy="64" r="2"/>
+    <circle cx="50" cy="40" r="2"/>
+    <circle cx="148" cy="52" r="3.5"/>
+    <circle cx="154" cy="64" r="2"/>
+    <circle cx="142" cy="40" r="2"/>
+  </g>
+  <g fill="white" opacity="0.5">
+    <circle cx="40" cy="44" r="1.5"/>
+    <circle cx="152" cy="44" r="1.5"/>
+  </g>
 
 </svg>
