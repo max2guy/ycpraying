@@ -201,8 +201,8 @@ async function initFCM() {
             navigator.serviceWorker.ready.then(reg => {
                 reg.showNotification(d.title, {
                     body: d.body || '',
-                    icon:  './icon-192.png',
-                    badge: './icon-192.png'
+                    icon:  './notification-icon.svg',
+                    badge: './notification-icon.svg'
                 });
             }).catch(() => {});
         });
@@ -1008,7 +1008,7 @@ messagesRef.limitToLast(50).on('child_added', snap => {
         }
         // 백그라운드 푸시 알림 (PWA / 탭 숨김 시)
         if (document.hidden && Notification.permission === 'granted') {
-            const notifOpts = { body: d.text, icon: './icon-192.png', badge: './icon-192.png', tag: 'chat-message', renotify: true };
+            const notifOpts = { body: d.text, icon: './notification-icon.svg', badge: './notification-icon.svg', tag: 'chat-message', renotify: true };
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then(reg => reg.showNotification('💬 새 메시지', notifOpts)).catch(() => {
                     new Notification('💬 새 메시지', notifOpts);

@@ -27,8 +27,8 @@ async function sendPush(tokenDatas, title, body, extraData = {}) {
         webpush: {
             notification: {
                 title, body,
-                icon:  APP_URL + 'icon-192.png',
-                badge: APP_URL + 'icon-192.png'
+                icon:  APP_URL + 'notification-icon.svg',
+                badge: APP_URL + 'notification-icon.svg'
             },
             fcmOptions: { link: APP_URL }
         }

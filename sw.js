@@ -21,8 +21,8 @@ messaging.onBackgroundMessage(payload => {
     const d = payload.data || {};
     self.registration.showNotification(d.title || '연천장로교회 청년부', {
         body: d.body || '',
-        icon:  './icon-192.png',
-        badge: './icon-192.png',
+        icon:  './notification-icon.svg',
+        badge: './notification-icon.svg',
         data:  { url: 'https://max2guy.github.io/ycpraying/' }
     });
 });
