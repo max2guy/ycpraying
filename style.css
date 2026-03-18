@@ -493,3 +493,67 @@ body.admin-mode .admin-indicator { display:block; animation:popUp .3s cubic-bezi
 /* ── ANIMATIONS ── */
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 @keyframes pulse  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.7;transform:scale(1.05)} }
+
+/* ── UPDATE OVERLAY ── */
+#update-overlay{
+  display:none;position:fixed;inset:0;z-index:99999;
+  background:var(--bg);
+  flex-direction:column;align-items:center;justify-content:center;gap:0;
+}
+#update-overlay.show{display:flex;}
+#update-overlay .u-gears{
+  display:flex;align-items:flex-end;gap:2px;margin-bottom:28px;line-height:1;
+}
+#update-overlay .u-gears .g1{
+  font-size:64px;color:var(--rose);
+  display:inline-block;animation:gear-cw 2.5s linear infinite;
+}
+#update-overlay .u-gears .g2{
+  font-size:38px;color:var(--rose);opacity:0.6;
+  display:inline-block;animation:gear-ccw 1.5s linear infinite;margin-bottom:4px;
+}
+@keyframes gear-cw  {from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes gear-ccw {from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+#update-overlay .u-title{
+  font-size:18px;font-weight:800;color:var(--rose-dim);letter-spacing:2px;margin-bottom:10px;
+}
+#update-overlay .u-text{
+  font-size:12px;letter-spacing:3px;color:var(--text-dim);margin-bottom:36px;
+}
+#update-overlay .u-bar-wrap{
+  width:240px;height:6px;background:var(--rose-soft);border-radius:3px;overflow:hidden;
+}
+#update-overlay .u-bar{
+  height:100%;width:0;background:linear-gradient(90deg,var(--rose-dim),var(--rose),var(--rose-dim));
+  background-size:200% 100%;border-radius:3px;
+  transition:width 3.2s cubic-bezier(0.4,0,0.2,1);
+  animation:rose-shimmer 1.5s linear infinite;
+}
+@keyframes rose-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+/* ── UPDATE PROMPT ── */
+#update-prompt{
+  display:none;position:fixed;inset:0;z-index:99998;
+  background:rgba(0,0,0,0.35);align-items:center;justify-content:center;padding:24px;
+}
+#update-prompt.show{display:flex;}
+#update-prompt .up-box{
+  background:var(--bg);border:1.5px solid var(--rose-border);
+  border-radius:var(--r-lg);padding:32px 28px 24px;
+  width:100%;max-width:320px;text-align:center;
+  box-shadow:0 8px 40px rgba(255,133,176,0.18);
+}
+#update-prompt .up-icon{font-size:36px;margin-bottom:14px;}
+#update-prompt .up-title{
+  font-size:17px;font-weight:800;color:var(--rose-dim);letter-spacing:1px;margin-bottom:10px;
+}
+#update-prompt .up-text{
+  font-size:14px;color:var(--text-muted);line-height:1.7;margin-bottom:24px;
+}
+#update-prompt .up-btns{display:flex;gap:10px;}
+#update-prompt .up-btns button{
+  flex:1;padding:13px 0;border-radius:var(--r-sm);border:none;
+  font-size:14px;font-weight:700;cursor:pointer;
+}
+#update-prompt .up-btns .btn-later{background:var(--rose-soft);color:var(--text-muted);}
+#update-prompt .up-btns .btn-update{background:var(--rose);color:#fff;}

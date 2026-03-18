@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="icon-192.png">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
-    <link rel="stylesheet" href="style.css?v=44">
+    <link rel="stylesheet" href="style.css?v=45">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
@@ -20,7 +20,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js" defer></script>
-    <script src="script.js?v=44" defer></script>
+    <script src="script.js?v=45" defer></script>
 </head>
 <body id="body">
 
@@ -233,7 +233,7 @@
                     <span class="setting-text">앱 새로고침</span>
                 </button>
             </div>
-            <div class="settings-version">✨ v2.9.0 | 연천장로교회 청년부 ✨</div>
+            <div class="settings-version">✨ v2.9.1 | 연천장로교회 청년부 ✨</div>
         </div>
     </div>
 
@@ -277,6 +277,27 @@
     </div>
 
     <div class="admin-indicator">🔒 관리자 모드 ON</div>
+
+    <!-- 업데이트 중 오버레이 -->
+    <div id="update-overlay">
+        <div class="u-gears"><span class="g1">⚙</span><span class="g2">⚙</span></div>
+        <div class="u-title">업데이트 중</div>
+        <div class="u-text">새 버전을 설치하고 있습니다...</div>
+        <div class="u-bar-wrap"><div class="u-bar"></div></div>
+    </div>
+
+    <!-- 업데이트 확인 프롬프트 -->
+    <div id="update-prompt">
+        <div class="up-box">
+            <div class="up-icon">🙏</div>
+            <div class="up-title">새 업데이트</div>
+            <div class="up-text">새 버전이 준비되었습니다.<br>지금 업데이트하시겠습니까?</div>
+            <div class="up-btns">
+                <button class="btn-later" onclick="dismissUpdate()">나중에</button>
+                <button class="btn-update" onclick="applyUpdate()">업데이트</button>
+            </div>
+        </div>
+    </div>
 
 </body>
 </html>

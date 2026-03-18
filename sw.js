@@ -1,4 +1,4 @@
-// Service Worker Version 47 (v2.9.0)
+// Service Worker Version 48 (v2.9.1)
 
 /* ===== FCM 백그라운드 메시지 — SW 최상단에 초기화 필수 ===== */
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -42,7 +42,7 @@ self.addEventListener('notificationclick', e => {
 });
 
 /* ===== 캐시 전략 ===== */
-const CACHE_NAME = 'yc-prayer-v47';
+const CACHE_NAME = 'yc-prayer-v48';
 
 const FILES_TO_CACHE = [
     './',
@@ -59,6 +59,11 @@ self.addEventListener('install', evt => {
         caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
     );
     self.skipWaiting();
+});
+
+// 앱에서 "업데이트" 버튼 클릭 시 SKIP_WAITING 메시지 수신
+self.addEventListener('message', evt => {
+    if (evt.data && evt.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', evt => {

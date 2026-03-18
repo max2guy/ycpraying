@@ -1,17 +1,48 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// v2.9.0 — FCM 실시간 푸시 알림 추가
+// v2.9.1 — FCM 실시간 푸시 알림 + SW 자동 업데이트
 // ==========================================
 
-// ── 서비스 워커 ──
+// ── 서비스 워커 (cross passport 방식: 업데이트 감지 + 자동 적용) ──
+var _swReg = null, _pendingWorker = null, _refreshing = false;
+
+function showUpdatePrompt() { document.getElementById('update-prompt').classList.add('show'); }
+function applyUpdate() {
+    document.getElementById('update-prompt').classList.remove('show');
+    if (_pendingWorker) { _pendingWorker.postMessage({ type: 'SKIP_WAITING' }); }
+}
+function dismissUpdate() { document.getElementById('update-prompt').classList.remove('show'); }
+
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').then(reg => {
-        reg.update(); // 페이지 로드마다 sw.js 강제 체크 (기본값 24시간 주기 무시)
-    }).catch(err => console.log('SW Fail:', err));
-    // 새 SW가 활성화되면 자동 reload → 업데이트 즉시 반영
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
+    // controllerchange → 업데이트 오버레이 → 자동 reload
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+        if (!_refreshing) {
+            _refreshing = true;
+            var ov = document.getElementById('update-overlay');
+            ov.classList.add('show');
+            setTimeout(function() { ov.querySelector('.u-bar').style.width = '100%'; }, 80);
+            setTimeout(function() { window.location.reload(); }, 3600);
+        }
     });
+
+    navigator.serviceWorker.register('sw.js').then(function(reg) {
+        _swReg = reg;
+        // 이미 대기 중인 SW 있으면 즉시 프롬프트
+        if (reg.waiting && navigator.serviceWorker.controller) {
+            _pendingWorker = reg.waiting; showUpdatePrompt();
+        }
+        // 새 SW 발견 시
+        reg.addEventListener('updatefound', function() {
+            var nw = reg.installing;
+            nw.addEventListener('statechange', function() {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                    _pendingWorker = nw; showUpdatePrompt();
+                }
+            });
+        });
+        // 2분마다 업데이트 체크
+        setInterval(function() { reg.update(); }, 2 * 60 * 1000);
+    }).catch(function(err) { console.log('SW Fail:', err); });
 }
 
 // ── PWA 설치 배너 ──
@@ -148,7 +179,7 @@ function checkNotificationPermission() {
 checkNotificationPermission();
 
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
-const FCM_VAPID_KEY = 'REPLACE_WITH_YOUR_VAPID_KEY'; // Firebase Console → 프로젝트 설정 → 클라우드 메시징 → 웹 푸시 인증서
+const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
 
 async function initFCM() {
     try {
