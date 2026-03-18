@@ -1,6 +1,6 @@
 // ==========================================
 // 연천장로교회 청년부 기도 네트워크
-// v3.0.0 — FCM 실시간 푸시 알림, SW 자동 업데이트, 카와이 아이콘
+// v3.0.1 — 강제 업데이트 브로드캐스트, DB 버전 체크
 // ==========================================
 
 // ── 서비스 워커 (cross passport 방식: 업데이트 감지 + 자동 적용) ──
@@ -180,6 +180,47 @@ checkNotificationPermission();
 
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
 const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
+const CURRENT_VERSION = '3.0.0';
+
+// ── 버전 강제 체크 (DB에서 requiredVersion 읽어 구버전이면 강제 갱신) ──
+function compareVersions(a, b) {
+    const pa = a.split('.').map(Number);
+    const pb = b.split('.').map(Number);
+    for (let i = 0; i < 3; i++) {
+        if ((pa[i]||0) < (pb[i]||0)) return -1;
+        if ((pa[i]||0) > (pb[i]||0)) return 1;
+    }
+    return 0;
+}
+function forceUpdateApp() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+    }
+    if ('caches' in window) {
+        caches.keys().then(names => { names.forEach(n => caches.delete(n)); window.location.reload(true); });
+    } else {
+        window.location.reload(true);
+    }
+}
+database.ref('appConfig/requiredVersion').once('value').then(snap => {
+    const required = snap.val();
+    if (required && compareVersions(CURRENT_VERSION, required) < 0) {
+        forceUpdateApp();
+    }
+});
+
+// ── 관리자 전체 업데이트 알림 발송 ──
+function sendBroadcastUpdate() {
+    if (!isAdmin) return;
+    if (!confirm('모든 사용자에게 업데이트 알림을 발송하시겠습니까?')) return;
+    database.ref('appConfig/broadcastPush').set({
+        title: '🔔 앱 업데이트',
+        message: '새 버전이 출시되었습니다. 앱을 열어 업데이트해 주세요!',
+        triggeredAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    database.ref('appConfig/requiredVersion').set(CURRENT_VERSION);
+    alert('전체 알림 발송 완료!');
+}
 
 async function initFCM() {
     try {
@@ -354,8 +395,17 @@ function containsBannedWords(text) { return bannedWords.some(w => text.includes(
 
 // ── 관리자 인증 ──
 firebase.auth().onAuthStateChanged(user => {
-    if (user) { isAdmin = true;  document.getElementById('body').classList.add('admin-mode'); }
-    else       { isAdmin = false; document.getElementById('body').classList.remove('admin-mode'); }
+    if (user) {
+        isAdmin = true;
+        document.getElementById('body').classList.add('admin-mode');
+        const btn = document.getElementById('btn-broadcast-update');
+        if (btn) btn.style.display = '';
+    } else {
+        isAdmin = false;
+        document.getElementById('body').classList.remove('admin-mode');
+        const btn = document.getElementById('btn-broadcast-update');
+        if (btn) btn.style.display = 'none';
+    }
 });
 
 // ── 데이터 ──

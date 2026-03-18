@@ -83,7 +83,27 @@ exports.onNewChatMessage = functions
         return null;
     });
 
-/* ── 3. 새 기도제목 / 새 답글 (prayerEvents 트리거) ── */
+/* ── 3. 전체 업데이트 알림 브로드캐스트 (appConfig/broadcastPush 트리거) ── */
+exports.onBroadcastTrigger = functions
+    .region('asia-northeast3')
+    .database.ref('appConfig/broadcastPush')
+    .onWrite(async change => {
+        const data = change.after.val();
+        if (!data || !data.message) return null;
+
+        const tokenDatas = await getAllTokens(null);
+        await sendPush(tokenDatas,
+            data.title || '📢 공지',
+            data.message,
+            { type: 'broadcast' }
+        );
+
+        // 트리거 초기화 (재발송 방지)
+        await change.after.ref.set(null);
+        return null;
+    });
+
+/* ── 4. 새 기도제목 / 새 답글 (prayerEvents 트리거) ── */
 exports.onNewPrayerEvent = functions
     .region('asia-northeast3')
     .database.ref('prayerEvents/{eventId}')
