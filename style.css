@@ -102,9 +102,13 @@ button,.float-btn,.icon-btn,.amen-btn,.setting-item,.camera-btn,.enter-btn {
 #intro-screen.fade-out { opacity:0; pointer-events:none; transform:scale(1.05); }
 .intro-content { position:relative; display:flex; flex-direction:column; align-items:center; padding:40px 24px; }
 .intro-icon {
-  font-size:4.5rem; margin-bottom:24px;
+  margin-bottom:24px;
   animation:float 3s ease-in-out infinite;
-  filter:drop-shadow(0 4px 20px rgba(255,130,180,0.50));
+  filter:drop-shadow(0 8px 24px rgba(255,130,180,0.55));
+}
+.intro-icon-img {
+  width:110px; height:110px; border-radius:50%;
+  display:block;
 }
 @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)} }
 .intro-content h1 { color:var(--rose-dim); margin:0 0 10px; font-size:1.65rem; font-weight:800; letter-spacing:1px; text-shadow:0 2px 12px rgba(255,130,180,0.25); }
