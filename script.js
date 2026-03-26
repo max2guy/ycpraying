@@ -1069,13 +1069,11 @@ messagesRef.limitToLast(50).on('child_added', snap => {
     const isMine = d.senderId === mySessionId;
     const wrapper = createSafeElement("div","chat-bubble-wrapper");
     wrapper.setAttribute('data-key', snap.key);
-    wrapper.style.alignItems = isMine ? 'flex-end' : 'flex-start';
-
     if (!isMine) {
         const sender = createSafeElement("span","chat-sender"); sender.textContent = d.name; wrapper.appendChild(sender);
     }
     const row = document.createElement("div");
-    row.style.cssText = "display:flex;align-items:center;gap:5px;";
+    row.style.cssText = `display:flex;align-items:center;gap:5px;width:100%;${isMine ? 'justify-content:flex-end;' : ''}`;
 
     // 관리자 삭제 버튼
     const delSpan = createSafeElement("span","admin-delete-chat"); delSpan.textContent = " [삭제]";
