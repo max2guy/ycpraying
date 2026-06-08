@@ -1,4 +1,4 @@
-// Service Worker Version 51 (v3.0.2)
+// Service Worker Version 52 (v3.0.3)
 
 /* ===== FCM 백그라운드 메시지 — SW 최상단에 초기화 필수 ===== */
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -42,7 +42,7 @@ self.addEventListener('notificationclick', e => {
 });
 
 /* ===== 캐시 전략 ===== */
-const CACHE_NAME = 'yc-prayer-v51';
+const CACHE_NAME = 'yc-prayer-v52';
 
 const FILES_TO_CACHE = [
     './',
@@ -91,12 +91,14 @@ self.addEventListener('fetch', evt => {
         evt.respondWith(
             caches.match(evt.request).then(cached => {
                 if (cached) return cached;
-                return fetch(evt.request).then(res => {
+                // CORS mode fetch: no-cors 요청은 opaque response(status 0)라 캐시 불가.
+                // CORS 요청으로 투명한 응답을 받아 CacheStorage에 저장한다.
+                return fetch(new Request(evt.request, {mode: 'cors', credentials: 'omit'})).then(res => {
                     if (res && res.status === 200) {
                         caches.open(CACHE_NAME).then(c => c.put(evt.request, res.clone()));
                     }
                     return res;
-                });
+                }).catch(() => fetch(evt.request)); // CORS 실패 시 원본 요청 폴백
             })
         );
         return;
