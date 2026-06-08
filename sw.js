@@ -1,4 +1,4 @@
-// Service Worker Version 52 (v3.0.3)
+// Service Worker Version 53 (v3.0.4)
 
 /* ===== FCM 백그라운드 메시지 — SW 최상단에 초기화 필수 ===== */
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -42,7 +42,7 @@ self.addEventListener('notificationclick', e => {
 });
 
 /* ===== 캐시 전략 ===== */
-const CACHE_NAME = 'yc-prayer-v52';
+const CACHE_NAME = 'yc-prayer-v53';
 
 const FILES_TO_CACHE = [
     './',
@@ -95,7 +95,10 @@ self.addEventListener('fetch', evt => {
                 // CORS 요청으로 투명한 응답을 받아 CacheStorage에 저장한다.
                 return fetch(new Request(evt.request, {mode: 'cors', credentials: 'omit'})).then(res => {
                     if (res && res.status === 200) {
-                        caches.open(CACHE_NAME).then(c => c.put(evt.request, res.clone()));
+                        // clone()은 return 전에 동기적으로 호출해야 한다.
+                        // 비동기로 호출하면 body가 이미 소비된 뒤라 저장 실패.
+                        const resClone = res.clone();
+                        caches.open(CACHE_NAME).then(c => c.put(evt.request, resClone));
                     }
                     return res;
                 }).catch(() => fetch(evt.request)); // CORS 실패 시 원본 요청 폴백
