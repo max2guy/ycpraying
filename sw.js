@@ -1,4 +1,4 @@
-// Service Worker Version 50 (v3.0.1)
+// Service Worker Version 51 (v3.0.2)
 
 /* ===== FCM 백그라운드 메시지 — SW 최상단에 초기화 필수 ===== */
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -42,7 +42,7 @@ self.addEventListener('notificationclick', e => {
 });
 
 /* ===== 캐시 전략 ===== */
-const CACHE_NAME = 'yc-prayer-v50';
+const CACHE_NAME = 'yc-prayer-v51';
 
 const FILES_TO_CACHE = [
     './',
@@ -76,6 +76,33 @@ self.addEventListener('activate', evt => {
 });
 
 self.addEventListener('fetch', evt => {
+    const url = new URL(evt.request.url);
+
+    // ── CDN 스크립트: Cache-First (Chrome 148 HTTP 캐시 파티셔닝 우회) ──
+    // CacheStorage에서 먼저 서빙 → 네트워크 fetch를 줄여 초기 로딩 속도 향상
+    const CDN_HOSTS = [
+        'www.gstatic.com',       // Firebase SDK
+        'd3js.org',              // D3.js
+        'cdnjs.cloudflare.com',  // CropperJS
+        'fonts.googleapis.com',  // Google Fonts CSS
+        'fonts.gstatic.com',     // Google Fonts 폰트 파일
+    ];
+    if (CDN_HOSTS.includes(url.hostname)) {
+        evt.respondWith(
+            caches.match(evt.request).then(cached => {
+                if (cached) return cached;
+                return fetch(evt.request).then(res => {
+                    if (res && res.status === 200) {
+                        caches.open(CACHE_NAME).then(c => c.put(evt.request, res.clone()));
+                    }
+                    return res;
+                });
+            })
+        );
+        return;
+    }
+
+    // ── 동일 출처: Stale-While-Revalidate (기존 유지) ──
     if (!evt.request.url.startsWith(self.location.origin)) return;
 
     evt.respondWith(
