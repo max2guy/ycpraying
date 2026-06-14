@@ -42,8 +42,6 @@ body.theme-s2 {
   --shadow-sm: 0 2px 12px rgba(200,60,60,0.12);
   --shadow-md: 0 6px 28px rgba(180,40,40,0.16);
   --shadow-lg: 0 10px 50px rgba(160,20,20,0.20);
-}
-body.theme-s2 {
   background: linear-gradient(135deg, #FFD6D6 0%, #FFEAEA 35%, #F9E8E8 70%, #EFD0D0 100%);
 }
 body.theme-s2::before {
