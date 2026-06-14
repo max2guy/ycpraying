@@ -29,7 +29,7 @@
         <div class="intro-content">
             <div class="intro-icon"><img src="./notification-icon.svg" alt="cross" class="intro-icon-img"/></div>
             <h1>연천장로교회 청년부</h1>
-            <p>기도 네트워크에 오신 것을 환영합니다</p>
+            <p id="intro-subtitle">기도 네트워크에 오신 것을 환영합니다</p>
             <div id="intro-loading-spinner" class="spinner"></div>
             <button id="enter-btn" class="enter-btn" onclick="enterApp()" style="display:none;" aria-label="앱 입장하기">
                 입장하기
@@ -46,6 +46,7 @@
 
     <!-- 상단 UI -->
     <button class="camp-btn top-ui-common" onclick="event.stopPropagation(); toggleCampPopup()" aria-label="2026 캠프 정보 보기">⛺ 2026 캠프</button>
+    <span id="season-badge" class="season-badge" style="display:none;">S2</span>
     <div class="online-counter top-ui-common" onclick="handleOnlineCounterClick()" role="status" aria-label="현재 접속자 수">
         <div class="online-dot"></div>
         <span id="online-count">접속 중...</span>
@@ -78,6 +79,10 @@
         </button>
         <button class="float-btn sub-btn add-member-btn" onclick="event.stopPropagation(); addNewMember()" title="사람 추가" aria-label="새로운 기도 멤버 추가">
             <span class="material-symbols-rounded">person_add</span>
+        </button>
+        <button class="float-btn sub-btn season-switch-btn" id="btn-season-switch" onclick="event.stopPropagation(); switchSeason(getActiveSeason()==='s1'?'s2':'s1')" aria-label="시즌 전환">
+            <span class="material-symbols-rounded">sync</span>
+            <span id="btn-season-label" style="font-size:0.6rem;line-height:1.1;text-align:center;display:block;"></span>
         </button>
     </div>
 
