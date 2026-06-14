@@ -768,6 +768,64 @@ function toggleChatPopup() {
         setTimeout(() => { document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight; }, 100);
     }
 }
+// ── 시즌 전환 ──
+function applySeasonTheme() {
+    const isS2 = getActiveSeason() === 's2';
+    document.body.classList.toggle('theme-s2', isS2);
+    const badge = document.getElementById('season-badge');
+    if (badge) badge.style.display = isS2 ? 'inline-flex' : 'none';
+    const sub = document.getElementById('intro-subtitle');
+    if (sub) sub.textContent = isS2 ? '시즌2 · 홈커밍데이' : '기도 네트워크에 오신 것을 환영합니다';
+}
+
+function updateSeasonUI() {
+    const isS2 = getActiveSeason() === 's2';
+    const label = document.getElementById('btn-season-label');
+    if (label) label.textContent = isS2 ? '🔄 시즌1으로' : '🔄 시즌2 · 홈커밍데이';
+}
+
+function switchSeason(target) {
+    if (getActiveSeason() === target) { if (isFabOpen) toggleFabMenu(); return; }
+    const name = target === 's2' ? '시즌2 · 홈커밍데이' : '시즌1';
+    showConfirmDialog('시즌 전환', `${name}로 전환할까요?`, () => {
+        // 기존 리스너 해제
+        membersRef.off();
+        messagesRef.off();
+        presenceRef.off();
+        onlineRef.off();
+
+        // 채팅 DOM 초기화
+        const chatEl = document.getElementById('chat-messages');
+        chatEl.innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:0.8rem;padding:10px;">이 소통방은 익명이며,<br>서로 사랑과 격려의 말을 나눠주세요.</div>';
+        unreadChatKeys.clear();
+        document.getElementById('chat-badge').classList.remove('active');
+
+        // 시즌 저장 + refs 재할당
+        localStorage.setItem('activeSeason', target);
+        initSeasonRefs();
+
+        // 상태 초기화
+        members = [];
+        centerNode = { id:"center", name:"연천장로교회\n청년부\n함께 기도해요", type:"root", icon:"✝️", color:"#FFF8E1" };
+        isDataLoaded = false;
+        isFirstRender = true;
+        currentMemberData = null;
+        closePrayerPopup();
+
+        // 테마 + UI 업데이트
+        applySeasonTheme();
+        updateSeasonUI();
+
+        // 리스너 재등록 + 데이터 로드
+        registerPresenceListeners();
+        registerMemberListeners();
+        registerChatListener();
+        loadData();
+
+        if (isFabOpen) toggleFabMenu();
+    });
+}
+
 function openPrayerPopup(data) {
     currentMemberData = data; newMemberIds.delete(data.id);
     readStatus[data.id] = getTotalPrayerCount(data);
@@ -1291,3 +1349,7 @@ function gameLoop(time) {
     }
 }
 requestAnimationFrame(gameLoop);
+
+// ── 앱 초기 시즌 적용 ──
+applySeasonTheme();
+updateSeasonUI();
