@@ -1,53 +1,55 @@
-# ycpraying — Codex Handoff (v3.0.4)
+# ycpraying — Codex Handoff (v3.1.0)
 
 ## 현재 상태
 - 브랜치: `main`
-- 최신 커밋: `3fcdab4 fix: SW CDN cache - clone() before return to avoid consumed body`
+- 최신 커밋: (이번 커밋 직후 갱신 필요)
 - 배포: GitHub Pages (https://max2guy.github.io/ycpraying/)
 
 ## 방금 수정한 내용
 
-### 문제 (3단계 디버깅으로 발견)
+### 시즌2 홈커밍데이 버그 수정 (3가지)
 
-**1단계**: `<script src>` 태그의 no-cors 요청 → opaque response(status 0) → `status===200` 체크 실패 → CacheStorage 저장 불가
-**2단계**: CORS mode fetch로 수정했으나, `res.clone()`을 `caches.open().then()` 내부(비동기)에서 호출 → `return res` 이후 body가 소비된 뒤 clone 시도 → 저장 실패
-**3단계**: `const resClone = res.clone()`을 return 이전 동기적으로 호출 → 정상 저장 확인
+**Bug 1 & 2: S1/S2 데이터 혼재 + 시즌2 멤버 추가 불가**
 
-### 해결 방법
-**index.html** (line 17):
-- `cropper.min.js`에 `defer` 추가 → 렌더 블로킹 제거
+- 원인: `initSeasonRefs()`가 앱 초기 로드 시 호출되지 않아 `localStorage.activeSeason === 's2'`여도 Firebase refs가 S1 경로(`members`, `presence` 등)를 가리켰음
+- 수정: `script.js` 285번 줄 `let myPresenceRef = ...` 선언 직후에 `initSeasonRefs();` 호출 추가
+  - `myPresenceRef` 선언 이전에 호출 불가 (`let` TDZ 문제), 이후 즉시 덮어쓰는 방식 사용
 
-**sw.js** (v50 → v53, 3번의 수정):
-- CDN 스크립트(gstatic/Firebase, d3js, cdnjs/Cropper, fonts.gstatic) cache-first 인터셉터
-- CORS mode fetch로 투명한 응답 획득
-- `const resClone = res.clone()` → return 전 동기 호출로 body 소비 전 clone 확보
-- CACHE_NAME: `yc-prayer-v50` → `yc-prayer-v53`
+**Bug 3: 시즌 전환 시 D3 구 노드 즉시 미제거**
 
-### 검증 결과 (브라우저 DevTools 확인)
-CacheStorage `yc-prayer-v53`에 저장된 CDN 항목:
-- `d3.v7.min.js` ✓
-- `firebase-app-compat.js` ✓
-- `firebase-auth-compat.js` ✓
-- `firebase-database-compat.js` ✓
-- `firebase-messaging-compat.js` ✓
-- Google Fonts CSS + woff2 ✓
+- 원인: `switchSeason()`에서 `members = []` 후 데이터 재로드 전 `updateGraph()` 미호출
+- 수정: `switchSeason()` 내 `members = []` 직후 `updateGraph()` 호출 추가 → 구 시즌 노드 즉시 제거
+
+**버전 범프**
+- SW: `yc-prayer-v54` → `yc-prayer-v55`
+- CSS/JS 쿼리스트링: `?v=47` → `?v=48`
 
 ## 프로젝트 개요
 - 연천장로교회 청년부 기도 네트워크 PWA
 - Firebase 10.7.1 (Auth, RTDB, FCM), D3 v7, CropperJS 1.5.13
-- GitHub Pages 배포, vanilla JS
-- FCM 푸시 알림 기능 있음 (알림 클릭 → 앱 열기)
+- GitHub Pages 배포, vanilla JS (단일 페이지)
+- FCM 푸시 알림, 시즌1(오렌지)/시즌2(레드 홈커밍데이) 전환 기능
 
 ## 주요 파일
-- `index.html` — 앱 진입점, CDN 스크립트 로드
-- `sw.js` — Service Worker v53 (FCM 백그라운드 메시지, CDN cache-first, stale-while-revalidate)
-- `script.js?v=46` — 앱 메인 로직 (D3 force simulation, Firebase RTDB, 28노드 기도 네트워크)
-- `style.css?v=46` — 스타일
+- `index.html` — 앱 진입점, FAB 메뉴에 시즌 전환 버튼 포함
+- `sw.js` — Service Worker v55
+- `script.js?v=48` — 메인 로직 (D3 force, Firebase RTDB, 시즌 전환)
+  - `initSeasonRefs()` (line 129): `localStorage.activeSeason`에 따라 Firebase refs 설정
+  - `switchSeason()` (line 791): 시즌 전환 핸들러 (리스너 해제 → 재연결)
+  - `applySeasonTheme()` (line 773): body 클래스 + 중심노드 이름 변경
+- `style.css?v=48` — 스타일 (`body.theme-s2` 레드 테마 포함)
+
+## Firebase 데이터 구조
+| 역할 | 시즌1 | 시즌2 |
+|------|-------|-------|
+| 멤버 | `members` | `s2/members` |
+| 채팅 | `messages` | `s2/messages` |
+| 접속자 | `presence` | `s2/presence` |
+| 중심노드 | `centerNode` | `s2/centerNode` |
 
 ## 다음으로 할 수 있는 작업
-- Chrome Task Manager로 실제 PWA 앱 실행 시 CPU 사용 프로세스 확인 (진단 미완료 — 소프트웨어 수정은 완료)
-- CDN 스크립트를 로컬로 다운로드하여 완전히 CDN 독립 (더 강력한 해결책)
-- `script.js` 버전 업그레이드 (현재 v46)
+- 시즌2 전용 캠프 포스터/공지 분리 (현재 시즌 무관 동일 팝업 표시)
+- FCM 알림 시즌별 분리 (현재 공통 사용)
 
 ## 빌드 & 배포
 ```bash
@@ -55,7 +57,7 @@ CacheStorage `yc-prayer-v53`에 저장된 CDN 항목:
 python3 -m http.server 8080
 
 # 배포 (GitHub Pages)
-git add .
+git add index.html script.js sw.js .claude/HANDOFF.md
 git commit -m "..."
 git push
 ```

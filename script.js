@@ -283,6 +283,7 @@ async function getMyIp() {
 // ── 접속자 현황 ──
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
+initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
@@ -809,6 +810,7 @@ function switchSeason(target) {
 
         // 상태 초기화
         members = [];
+        updateGraph(); // D3 구 노드 즉시 제거
         centerNode = { id:"center", name:"연천장로교회\n청년부\n함께 기도해요", type:"root", icon:"✝️", color:"#FFF8E1" };
         isDataLoaded = false;
         isFirstRender = true;

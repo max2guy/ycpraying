@@ -42,7 +42,7 @@ self.addEventListener('notificationclick', e => {
 });
 
 /* ===== 캐시 전략 ===== */
-const CACHE_NAME = 'yc-prayer-v54';
+const CACHE_NAME = 'yc-prayer-v55';
 
 const FILES_TO_CACHE = [
     './',
