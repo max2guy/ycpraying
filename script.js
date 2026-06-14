@@ -117,11 +117,23 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const database    = firebase.database();
-const membersRef  = database.ref('members');
-const centerNodeRef = database.ref('centerNode');
-const onlineRef   = database.ref('.info/connected');
-const presenceRef = database.ref('presence');
-const messagesRef = database.ref('messages');
+let membersRef    = database.ref('members');
+let centerNodeRef = database.ref('centerNode');
+const onlineRef   = database.ref('.info/connected');   // .info/connected는 고정 경로
+let presenceRef   = database.ref('presence');
+let messagesRef   = database.ref('messages');
+
+// ── 시즌 유틸 ──
+function getActiveSeason() { return localStorage.getItem('activeSeason') || 's1'; }
+
+function initSeasonRefs() {
+    const prefix = getActiveSeason() === 's2' ? 's2/' : '';
+    membersRef    = database.ref(prefix + 'members');
+    centerNodeRef = database.ref(prefix + 'centerNode');
+    presenceRef   = database.ref(prefix + 'presence');
+    messagesRef   = database.ref(prefix + 'messages');
+    myPresenceRef = presenceRef.child(mySessionId);
+}
 
 let mySessionId = localStorage.getItem('mySessionId');
 if (!mySessionId) {
@@ -270,7 +282,7 @@ async function getMyIp() {
 
 // ── 접속자 현황 ──
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
-const myPresenceRef = presenceRef.child(mySessionId);
+let myPresenceRef = presenceRef.child(mySessionId);
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 // 앱 시작 시 stale 레코드 정리 (이전 push() 방식 고아 레코드 포함)
