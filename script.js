@@ -285,40 +285,43 @@ async function getMyIp() {
 let myPresenceRef = presenceRef.child(mySessionId);
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
-// 앱 시작 시 stale 레코드 정리 (이전 push() 방식 고아 레코드 포함)
-presenceRef.once('value', snap => {
-    const now = Date.now();
-    snap.forEach(child => {
-        const data = child.val();
-        if (!data || !data.time || (now - data.time) > PRESENCE_TTL) {
-            child.ref.remove();
+function registerPresenceListeners() {
+    presenceRef.once('value', snap => {
+        const now = Date.now();
+        snap.forEach(child => {
+            const data = child.val();
+            if (!data || !data.time || (now - data.time) > PRESENCE_TTL) {
+                child.ref.remove();
+            }
+        });
+    });
+
+    onlineRef.on('value', async snap => {
+        if (snap.val()) {
+            const myIp = await getMyIp();
+            myPresenceRef.onDisconnect().remove();
+            myPresenceRef.set({ ip: myIp, time: Date.now(), device: navigator.userAgent });
         }
     });
-});
 
-onlineRef.on('value', async snap => {
-    if (snap.val()) {
-        const myIp = await getMyIp();
-        myPresenceRef.onDisconnect().remove();
-        myPresenceRef.set({ ip: myIp, time: Date.now(), device: navigator.userAgent });
-    }
-});
+    presenceRef.on('value', snap => {
+        const now = Date.now();
+        let count = 0;
+        snap.forEach(child => {
+            const data = child.val();
+            if (data && data.time && (now - data.time) <= PRESENCE_TTL) count++;
+            else child.ref.remove();
+        });
+        document.getElementById('online-count').innerText = `${count}명 접속 중`;
+    });
+}
 
-// 주기적으로 timestamp 갱신 (heartbeat) → stale 판정 방지
+// heartbeat (시즌 무관 — 항상 현재 myPresenceRef 사용)
 setInterval(() => {
     if (myPresenceRef) myPresenceRef.update({ time: Date.now() });
 }, 60 * 1000);
 
-presenceRef.on('value', snap => {
-    const now = Date.now();
-    let count = 0;
-    snap.forEach(child => {
-        const data = child.val();
-        if (data && data.time && (now - data.time) <= PRESENCE_TTL) count++;
-        else child.ref.remove(); // 실시간 stale 감지 시 즉시 제거
-    });
-    document.getElementById('online-count').innerText = `${count}명 접속 중`;
-});
+registerPresenceListeners();
 
 // ── 이스터에그 ──
 let eggClickCount = 0, eggTimer = null, isHeartRain = false;
@@ -453,34 +456,37 @@ function loadData() {
 }
 loadData();
 
-membersRef.on('child_added', snap => {
-    if (!isDataLoaded) return;
-    const val = snap.val();
-    if (!members.find(m => m.firebaseKey === snap.key)) {
-        members.push({ ...val, firebaseKey:snap.key, rotation:0, rotationDirection:1 });
-        if (!isFirstRender) newMemberIds.add(val.id);
-        updateGraph();
-    }
-});
-membersRef.on('child_changed', snap => {
-    if (!isDataLoaded) return;
-    const idx = members.findIndex(m => m.firebaseKey === snap.key);
-    if (idx !== -1) {
-        const old = members[idx];
-        Object.assign(members[idx], { ...snap.val(), firebaseKey:snap.key, x:old.x, y:old.y, vx:old.vx, vy:old.vy, rotation:old.rotation, rotationDirection:old.rotationDirection });
-        updateNodeVisuals();
-        if (currentMemberData && currentMemberData.firebaseKey === snap.key) {
-            currentMemberData = members[idx]; renderPrayers();
+function registerMemberListeners() {
+    membersRef.on('child_added', snap => {
+        if (!isDataLoaded) return;
+        const val = snap.val();
+        if (!members.find(m => m.firebaseKey === snap.key)) {
+            members.push({ ...val, firebaseKey:snap.key, rotation:0, rotationDirection:1 });
+            if (!isFirstRender) newMemberIds.add(val.id);
+            updateGraph();
         }
-    }
-});
-membersRef.on('child_removed', snap => {
-    const idx = members.findIndex(m => m.firebaseKey === snap.key);
-    if (idx !== -1) {
-        members.splice(idx, 1); updateGraph();
-        if (currentMemberData && currentMemberData.firebaseKey === snap.key) closePrayerPopup();
-    }
-});
+    });
+    membersRef.on('child_changed', snap => {
+        if (!isDataLoaded) return;
+        const idx = members.findIndex(m => m.firebaseKey === snap.key);
+        if (idx !== -1) {
+            const old = members[idx];
+            Object.assign(members[idx], { ...snap.val(), firebaseKey:snap.key, x:old.x, y:old.y, vx:old.vx, vy:old.vy, rotation:old.rotation, rotationDirection:old.rotationDirection });
+            updateNodeVisuals();
+            if (currentMemberData && currentMemberData.firebaseKey === snap.key) {
+                currentMemberData = members[idx]; renderPrayers();
+            }
+        }
+    });
+    membersRef.on('child_removed', snap => {
+        const idx = members.findIndex(m => m.firebaseKey === snap.key);
+        if (idx !== -1) {
+            members.splice(idx, 1); updateGraph();
+            if (currentMemberData && currentMemberData.firebaseKey === snap.key) closePrayerPopup();
+        }
+    });
+}
+registerMemberListeners();
 
 // ── D3 그래프 ──
 const width = window.innerWidth, height = window.innerHeight;
@@ -1060,45 +1066,48 @@ function deleteChatMessage(k) {
     if (confirm("메시지를 삭제하시겠습니까?")) messagesRef.child(k).remove();
 }
 
-messagesRef.limitToLast(50).on('child_added', snap => {
-    const d = snap.val();
-    if (d.timestamp > lastChatReadTime && d.senderId !== mySessionId) {
-        unreadChatKeys.add(snap.key);
-        if (!document.getElementById('chat-popup').classList.contains('active')) {
-            document.getElementById('chat-badge').classList.add('active');
-            setAppBadge(unreadChatKeys.size);
+function registerChatListener() {
+    messagesRef.limitToLast(50).on('child_added', snap => {
+        const d = snap.val();
+        if (d.timestamp > lastChatReadTime && d.senderId !== mySessionId) {
+            unreadChatKeys.add(snap.key);
+            if (!document.getElementById('chat-popup').classList.contains('active')) {
+                document.getElementById('chat-badge').classList.add('active');
+                setAppBadge(unreadChatKeys.size);
+            }
+            // 백그라운드 푸시 알림 (PWA / 탭 숨김 시)
+            if (document.hidden && Notification.permission === 'granted') {
+                const notifOpts = { body: d.text, icon: './notification-icon.svg', badge: './notification-icon.svg', tag: 'chat-message', renotify: true };
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(reg => reg.showNotification('💬 새 메시지', notifOpts)).catch(() => {
+                        new Notification('💬 새 메시지', notifOpts);
+                    });
+                } else { new Notification('💬 새 메시지', notifOpts); }
+            }
         }
-        // 백그라운드 푸시 알림 (PWA / 탭 숨김 시)
-        if (document.hidden && Notification.permission === 'granted') {
-            const notifOpts = { body: d.text, icon: './notification-icon.svg', badge: './notification-icon.svg', tag: 'chat-message', renotify: true };
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready.then(reg => reg.showNotification('💬 새 메시지', notifOpts)).catch(() => {
-                    new Notification('💬 새 메시지', notifOpts);
-                });
-            } else { new Notification('💬 새 메시지', notifOpts); }
+        const isMine = d.senderId === mySessionId;
+        const wrapper = createSafeElement("div","chat-bubble-wrapper");
+        wrapper.setAttribute('data-key', snap.key);
+        if (!isMine) {
+            const sender = createSafeElement("span","chat-sender"); sender.textContent = d.name; wrapper.appendChild(sender);
         }
-    }
-    const isMine = d.senderId === mySessionId;
-    const wrapper = createSafeElement("div","chat-bubble-wrapper");
-    wrapper.setAttribute('data-key', snap.key);
-    if (!isMine) {
-        const sender = createSafeElement("span","chat-sender"); sender.textContent = d.name; wrapper.appendChild(sender);
-    }
-    const row = document.createElement("div");
-    row.style.cssText = `display:flex;align-items:center;gap:5px;width:100%;${isMine ? 'justify-content:flex-end;' : ''}`;
+        const row = document.createElement("div");
+        row.style.cssText = `display:flex;align-items:center;gap:5px;width:100%;${isMine ? 'justify-content:flex-end;' : ''}`;
 
-    // 관리자 삭제 버튼
-    const delSpan = createSafeElement("span","admin-delete-chat"); delSpan.textContent = " [삭제]";
-    delSpan.onclick = () => deleteChatMessage(snap.key);
+        // 관리자 삭제 버튼
+        const delSpan = createSafeElement("span","admin-delete-chat"); delSpan.textContent = " [삭제]";
+        delSpan.onclick = () => deleteChatMessage(snap.key);
 
-    const bubble = createSafeElement("div", `chat-bubble ${isMine ? 'mine' : 'others'}`);
-    bubble.textContent = d.text; // ← XSS 방지: textContent 사용
+        const bubble = createSafeElement("div", `chat-bubble ${isMine ? 'mine' : 'others'}`);
+        bubble.textContent = d.text; // ← XSS 방지: textContent 사용
 
-    if (isMine) { row.append(delSpan, bubble); } else { row.append(bubble, delSpan); }
-    wrapper.appendChild(row);
-    document.getElementById("chat-messages").appendChild(wrapper);
-    setTimeout(() => { document.getElementById("chat-messages").scrollTop = document.getElementById("chat-messages").scrollHeight; }, 100);
-});
+        if (isMine) { row.append(delSpan, bubble); } else { row.append(bubble, delSpan); }
+        wrapper.appendChild(row);
+        document.getElementById("chat-messages").appendChild(wrapper);
+        setTimeout(() => { document.getElementById("chat-messages").scrollTop = document.getElementById("chat-messages").scrollHeight; }, 100);
+    });
+}
+registerChatListener();
 messagesRef.on('child_removed', snap => {
     const el = document.querySelector(`.chat-bubble-wrapper[data-key="${snap.key}"]`);
     if (el) el.remove();
