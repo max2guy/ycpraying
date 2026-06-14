@@ -776,6 +776,9 @@ function applySeasonTheme() {
     if (badge) badge.style.display = isS2 ? 'inline-flex' : 'none';
     const sub = document.getElementById('intro-subtitle');
     if (sub) sub.textContent = isS2 ? '시즌2 · 홈커밍데이' : '기도 네트워크에 오신 것을 환영합니다';
+    centerNode.name = isS2
+        ? "연천장로교회\n청년부\n홈커밍데이\n함께 기도해요"
+        : "연천장로교회\n청년부\n함께 기도해요";
 }
 
 function updateSeasonUI() {
