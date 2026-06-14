@@ -284,6 +284,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
+console.log('[ycpraying v3.0.4] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
@@ -905,7 +906,9 @@ function addNewMember() {
     openSimpleModal('새 기도 멤버 추가', 'text', '이름을 입력하세요', '', name => {
         if (!name) return;
         if (containsBannedWords(name)) return alert("부적절한 이름입니다.");
-        membersRef.push({ id:`member_${Date.now()}`, name, type:"member", color:getRandomColor(), prayers:[], rotation:0, rotationDirection:1 });
+        membersRef.push({ id:`member_${Date.now()}`, name, type:"member", color:getRandomColor(), prayers:[], rotation:0, rotationDirection:1 }, err => {
+            if (err) alert('멤버 추가 실패: ' + err.message);
+        });
     });
 }
 function updateMemberColor(v) { if (currentMemberData) membersRef.child(currentMemberData.firebaseKey).update({ color:v }); }

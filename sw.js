@@ -1,4 +1,4 @@
-// Service Worker Version 56 (v3.0.3)
+// Service Worker Version 57 (v3.0.4)
 
 /* ===== FCM 백그라운드 메시지 — SW 최상단에 초기화 필수 ===== */
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -42,7 +42,7 @@ self.addEventListener('notificationclick', e => {
 });
 
 /* ===== 캐시 전략 ===== */
-const CACHE_NAME = 'yc-prayer-v56';
+const CACHE_NAME = 'yc-prayer-v57';
 
 const FILES_TO_CACHE = [
     './',
@@ -107,18 +107,15 @@ self.addEventListener('fetch', evt => {
         return;
     }
 
-    // ── 동일 출처: Stale-While-Revalidate (기존 유지) ──
+    // ── 동일 출처: Network-First (캐시 스테일 문제 방지) ──
     if (!evt.request.url.startsWith(self.location.origin)) return;
 
     evt.respondWith(
-        caches.match(evt.request, { ignoreSearch: true }).then(cached => {
-            const fetchPromise = fetch(evt.request).then(networkRes => {
-                if (networkRes && networkRes.status === 200) {
-                    caches.open(CACHE_NAME).then(cache => cache.put(evt.request, networkRes.clone()));
-                }
-                return networkRes;
-            }).catch(() => null);
-            return cached || fetchPromise;
-        })
+        fetch(evt.request).then(networkRes => {
+            if (networkRes && networkRes.status === 200) {
+                caches.open(CACHE_NAME).then(cache => cache.put(evt.request, networkRes.clone()));
+            }
+            return networkRes;
+        }).catch(() => caches.match(evt.request, { ignoreSearch: true }))
     );
 });
