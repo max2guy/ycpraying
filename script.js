@@ -603,6 +603,11 @@ function updateGraph(softRestart = false) {
 
     // 1. 메인 버블 원 (플랫 단색)
     ne.append("circle").attr("class","bubble-main").attr("stroke-width",2.5).attr("r",0).style("pointer-events","all");
+    ne.append("ellipse").attr("class","node-gloss")
+        .attr("cx",-9).attr("cy",-12).attr("rx",11).attr("ry",7)
+        .attr("fill","rgba(255,255,255,0.0)")
+        .attr("transform","rotate(-30,-9,-12)")
+        .style("pointer-events","none");
     // 2. 이름 배경 pill
     ne.append("rect").attr("class","name-pill").attr("rx",14).attr("ry",14)
         .attr("fill","rgba(255,248,255,0.88)").style("opacity",0).style("pointer-events","none");
@@ -619,6 +624,16 @@ function updateGraph(softRestart = false) {
     badge.append("text").attr("class","badge-num").attr("x",0).attr("y","0.5").attr("dy","0.35em")
         .attr("text-anchor","middle").attr("fill","white")
         .style("font-size","9px").style("font-weight","900");
+    const s2badge = ne.append("g").attr("class","s2-center-badge")
+        .style("display","none").style("pointer-events","none");
+    s2badge.append("rect").attr("class","s2-divider")
+        .attr("x",-36).attr("y",42).attr("width",72).attr("height",1.5).attr("rx",1)
+        .attr("fill","rgba(192,57,43,0.28)");
+    s2badge.append("text").attr("class","s2-season-text")
+        .attr("x",0).attr("y",58).attr("text-anchor","middle")
+        .attr("font-size","10.5").attr("font-weight","900")
+        .style("letter-spacing","2px").attr("fill","#C0392B")
+        .text("SEASON 2");
     node = ne.merge(node);
     node.style("pointer-events","all");
     // raw DOM 캐싱 + CSS rotation 방향 설정
