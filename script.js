@@ -715,6 +715,7 @@ function updateNodeVisuals() {
                     .attr("font-size","13px").attr("fill","#7A4820").attr("font-weight","900");
             });
             rectEl.style("display","none");
+            el.select(".s2-center-badge").style("display", getActiveSeason() === 's2' ? null : "none");
             textEl.transition().delay(textDelay).duration(900).style("opacity",1);
         } else {
             // 멤버: 이름을 버블 아래에 표시
@@ -836,7 +837,7 @@ function applySeasonTheme() {
     const sub = document.getElementById('intro-subtitle');
     if (sub) sub.textContent = isS2 ? '시즌2 · 홈커밍데이' : '기도 네트워크에 오신 것을 환영합니다';
     centerNode.name = isS2
-        ? "연천장로교회\n청년부\n홈커밍데이\n함께 기도해요"
+        ? "연천장로교회\n청년부\n홈커밍데이"
         : "연천장로교회\n청년부\n함께 기도해요";
 }
 
