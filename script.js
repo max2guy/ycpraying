@@ -673,8 +673,32 @@ function updateNodeVisuals() {
             main.attr("fill", `url(#img-${d.id})`)
                 .attr("stroke","rgba(255,255,255,0.82)").attr("stroke-width","3.5");
         } else {
-            main.attr("fill", d.color)
-                .attr("stroke","rgba(255,255,255,0.80)").attr("stroke-width","2.5");
+            const isS2 = getActiveSeason() === 's2';
+            if (isS2) {
+                const gradId = 's2g' + d.id.replace(/\D/g,'');
+                let grad = defs.select('#' + gradId);
+                if (grad.empty()) {
+                    grad = defs.append("radialGradient").attr("id", gradId)
+                        .attr("cx","35%").attr("cy","35%").attr("r","65%");
+                    grad.append("stop").attr("class","grad-start");
+                    grad.append("stop").attr("class","grad-end").attr("offset","100%");
+                }
+                grad.select(".grad-start").attr("stop-color", d.color);
+                grad.select(".grad-end").attr("stop-color", blendColors(d.color,'#E74C3C',0.4));
+                main.attr("fill", `url(#${gradId})`)
+                    .attr("stroke","rgba(255,255,255,0.80)").attr("stroke-width","2.5");
+            } else {
+                main.attr("fill", d.color)
+                    .attr("stroke","rgba(255,255,255,0.80)").attr("stroke-width","2.5");
+            }
+        }
+
+        // S2 글로우 필터 + 글로스 하이라이트
+        const gloss = el.select(".node-gloss");
+        if (d.type !== 'root') {
+            const isS2now = getActiveSeason() === 's2';
+            main.style("filter", isS2now ? "url(#s2-member-glow)" : null);
+            gloss.attr("fill", isS2now ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.0)");
         }
 
         // ── 텍스트 (이름은 버블 아래 항상 표시) ──
