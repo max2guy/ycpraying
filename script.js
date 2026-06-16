@@ -495,6 +495,15 @@ const width = window.innerWidth, height = window.innerHeight;
 const svg = d3.select("#visualization").append("svg").attr("width", width).attr("height", height);
 const svgEl = svg.node(); // SVG DOM API용 raw 참조
 const defs = svg.append("defs");
+const glowFilter = defs.append("filter")
+    .attr("id","s2-member-glow")
+    .attr("x","-40%").attr("y","-40%").attr("width","180%").attr("height","180%");
+glowFilter.append("feGaussianBlur").attr("in","SourceAlpha").attr("stdDeviation","6").attr("result","blur");
+glowFilter.append("feFlood").attr("flood-color","rgba(192,57,43,0.32)").attr("result","color");
+glowFilter.append("feComposite").attr("in","color").attr("in2","blur").attr("operator","in").attr("result","shadow");
+const gFeMerge = glowFilter.append("feMerge");
+gFeMerge.append("feMergeNode").attr("in","shadow");
+gFeMerge.append("feMergeNode").attr("in","SourceGraphic");
 
 // SVG DOM API 헬퍼: 문자열 없이 숫자 직접 설정 → Chrome GC·파싱 부담 제거
 function svgTranslate(el, x, y) {
@@ -709,6 +718,15 @@ function getTotalPrayerCount(d) {
     return t;
 }
 function getRandomColor() { return brightColors[Math.floor(Math.random() * brightColors.length)]; }
+function blendColors(hex, targetHex, ratio) {
+    const parse = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+    const [r1,g1,b1] = parse(hex);
+    const [r2,g2,b2] = parse(targetHex);
+    const r = Math.round(r1+(r2-r1)*ratio);
+    const g = Math.round(g1+(g2-g1)*ratio);
+    const b = Math.round(b1+(b2-b1)*ratio);
+    return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
 let dragStartTime = 0;
 function dragstarted(event) {
     isDragAction = false;
