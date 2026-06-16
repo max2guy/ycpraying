@@ -284,7 +284,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.0.4] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.0.5] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
@@ -821,6 +821,7 @@ function switchSeason(target) {
         // 테마 + UI 업데이트
         applySeasonTheme();
         updateSeasonUI();
+        switchSeasonMusic(target);
 
         // 리스너 재등록 + 데이터 로드
         registerPresenceListeners();
@@ -1181,13 +1182,15 @@ messagesRef.on('child_removed', snap => {
 
 // ── BGM ──
 let player, isMusicPlaying = false;
+const SEASON_MUSIC = { s1: '0wcxl81QclQ', s2: 'KEN341CJV1E' };
 const ytTag = document.createElement('script');
 ytTag.src = "https://www.youtube.com/iframe_api";
 document.getElementsByTagName('script')[0].parentNode.insertBefore(ytTag, document.getElementsByTagName('script')[0]);
 function onYouTubeIframeAPIReady() {
+    const videoId = SEASON_MUSIC[getActiveSeason()] || SEASON_MUSIC.s1;
     player = new YT.Player('youtube-player', {
-        height:'0', width:'0', videoId:'0wcxl81QclQ',
-        playerVars:{ autoplay:0, loop:1, playlist:'0wcxl81QclQ', controls:0, showinfo:0, modestbranding:1, playsinline:1 },
+        height:'0', width:'0', videoId,
+        playerVars:{ autoplay:0, loop:1, playlist:videoId, controls:0, showinfo:0, modestbranding:1, playsinline:1 },
         events:{ onStateChange: onPlayerStateChange }
     });
 }
@@ -1212,9 +1215,18 @@ function onPlayerStateChange(e) {
     const btn = document.getElementById('music-btn'), icon = document.getElementById('music-icon');
     if (e.data === YT.PlayerState.PLAYING) {
         isMusicPlaying = true; if (btn) btn.classList.add('music-playing'); if (icon) icon.innerText = 'music_note';
+    } else if (e.data === YT.PlayerState.ENDED) {
+        // playlist 고정 문제로 수동 루프 처리
+        player.seekTo(0); player.playVideo();
     } else {
         isMusicPlaying = false; if (btn) btn.classList.remove('music-playing'); if (icon) icon.innerText = 'music_off';
     }
+}
+function switchSeasonMusic(season) {
+    if (!player || typeof player.loadVideoById !== 'function') return;
+    const videoId = SEASON_MUSIC[season] || SEASON_MUSIC.s1;
+    if (isMusicPlaying) player.loadVideoById(videoId);
+    else player.cueVideoById(videoId);
 }
 function toggleMusic() {
     if (!player) return;
