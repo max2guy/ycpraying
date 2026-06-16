@@ -656,6 +656,7 @@ function updateGraph(softRestart = false) {
         rawLinkEls.push({ el: this, d, gradEl });
     });
     updateNodeVisuals();
+    updateLinkVisuals();
     simulation.nodes(globalNodes);
     simulation.force("link").links(links);
     simulation.alpha(softRestart ? 0.2 : 0.6).restart();
@@ -759,6 +760,19 @@ function updateNodeVisuals() {
             } else {
                 badge.style("opacity", 0);
             }
+        }
+    });
+}
+
+function updateLinkVisuals() {
+    if (!link) return;
+    const isS2 = getActiveSeason() === 's2';
+    link.each(function(d) {
+        const targetId = (d.target.id != null) ? d.target.id : d.target;
+        if (isS2) {
+            this.setAttribute('stroke', 'url(#s2lg-' + String(targetId).replace(/[^a-zA-Z0-9]/g,'') + ')');
+        } else {
+            this.setAttribute('stroke', 'rgba(255,195,220,0.72)');
         }
     });
 }
