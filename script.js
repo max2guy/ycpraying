@@ -577,6 +577,15 @@ function updateGraph(softRestart = false) {
         });
     }
     const links = members.map(m => ({ source:centerNode.id, target:m.id }));
+    // S2 연결선 그라디언트: 멤버당 1개, exit 시 자동 제거
+    const s2Grads = defs.selectAll("linearGradient.s2-link-grad").data(members, d => d.id);
+    s2Grads.exit().remove();
+    const s2GradsEnter = s2Grads.enter().append("linearGradient")
+        .attr("class","s2-link-grad")
+        .attr("id", d => "s2lg-" + d.id.replace(/[^a-zA-Z0-9]/g,''))
+        .attr("gradientUnits","userSpaceOnUse");
+    s2GradsEnter.append("stop").attr("offset","0%").attr("stop-color","rgba(255,195,220,0.85)");
+    s2GradsEnter.append("stop").attr("offset","100%").attr("stop-color","rgba(192,57,43,0.85)");
     const patterns = defs.selectAll("pattern").data(members, d => d.id);
     patterns.enter().append("pattern")
         .attr("id", d => "img-" + d.id).attr("width",1).attr("height",1)
@@ -641,7 +650,11 @@ function updateGraph(softRestart = false) {
         d._el = this;
     });
     rawLinkEls = [];
-    link.each(function(d) { rawLinkEls.push({ el: this, d }); });
+    link.each(function(d) {
+        const targetId = (d.target.id != null) ? d.target.id : d.target;
+        const gradEl = document.getElementById('s2lg-' + String(targetId).replace(/[^a-zA-Z0-9]/g,''));
+        rawLinkEls.push({ el: this, d, gradEl });
+    });
     updateNodeVisuals();
     simulation.nodes(globalNodes);
     simulation.force("link").links(links);
@@ -1379,11 +1392,17 @@ function gameLoop(time) {
             if (d._el) svgTranslate(d._el, d.x, d.y);
         }
         for (let i = 0; i < rawLinkEls.length; i++) {
-            const { el, d } = rawLinkEls[i];
+            const { el, d, gradEl } = rawLinkEls[i];
             el.x1.baseVal.value = d.source.x;
             el.y1.baseVal.value = d.source.y;
             el.x2.baseVal.value = d.target.x;
             el.y2.baseVal.value = d.target.y;
+            if (gradEl) {
+                gradEl.setAttribute('x1', d.source.x);
+                gradEl.setAttribute('y1', d.source.y);
+                gradEl.setAttribute('x2', d.target.x);
+                gradEl.setAttribute('y2', d.target.y);
+            }
         }
     }
 
