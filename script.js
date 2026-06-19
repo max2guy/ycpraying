@@ -284,7 +284,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.0.8] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.0.9] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
@@ -679,10 +679,27 @@ function updateNodeVisuals() {
             main.transition().duration(500).attr("r", r);
         }
 
-        // ── 색 채우기 (플랫 카와이) ──
+        // ── 색 채우기 ──
         if (d.type === 'root') {
-            main.attr("fill","#FFD580")
-                .attr("stroke","rgba(255,240,160,0.90)").attr("stroke-width","3.5");
+            // 센터 노드: radialGradient + 글로스 하이라이트로 입체감
+            const cgId = 'center-node-grad';
+            let cg = defs.select('#' + cgId);
+            if (cg.empty()) {
+                cg = defs.append("radialGradient").attr("id", cgId)
+                    .attr("cx","30%").attr("cy","28%").attr("r","72%");
+                cg.append("stop").attr("offset","0%").attr("stop-color","#FFF4CC");
+                cg.append("stop").attr("offset","50%").attr("stop-color","#FFD580");
+                cg.append("stop").attr("offset","100%").attr("stop-color","#F5A623");
+            }
+            main.attr("fill","url(#center-node-grad)")
+                .attr("stroke","rgba(255,220,80,0.85)").attr("stroke-width","3.5")
+                .style("filter","drop-shadow(0 4px 10px rgba(180,110,0,0.30))");
+            // 글로스 하이라이트 — 센터 노드 크기에 맞게 스케일
+            el.select(".node-gloss")
+                .attr("cx",-28).attr("cy",-30)
+                .attr("rx",26).attr("ry",16)
+                .attr("fill","rgba(255,255,255,0.40)")
+                .attr("transform","rotate(-30,-28,-30)");
         } else if (d.photoUrl) {
             main.attr("fill", `url(#img-${d.id})`)
                 .attr("stroke","rgba(255,255,255,0.82)").attr("stroke-width","3.5");
@@ -871,7 +888,7 @@ function applySeasonTheme() {
 function updateSeasonUI() {
     const isS2 = getActiveSeason() === 's2';
     const label = document.getElementById('btn-season-label');
-    if (label) label.textContent = isS2 ? '🔄 시즌1으로' : '🔄 시즌2 · 홈커밍데이';
+    if (label) label.textContent = isS2 ? 'S1으로' : 'S2 홈커밍';
 }
 
 function switchSeason(target) {
