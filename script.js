@@ -284,7 +284,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.0.7] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.0.8] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
@@ -611,7 +611,7 @@ function updateGraph(softRestart = false) {
         .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended));
 
     // 1. 메인 버블 원 (플랫 단색)
-    ne.append("circle").attr("class","bubble-main").attr("stroke-width",2.5).attr("r",0).style("pointer-events","all");
+    ne.append("circle").attr("class","bubble-main").attr("stroke-width",2.5).attr("r",0).style("opacity",0).style("pointer-events","all");
     ne.append("ellipse").attr("class","node-gloss")
         .attr("cx",-9).attr("cy",-12).attr("rx",11).attr("ry",7)
         .attr("fill","rgba(255,255,255,0.0)")
@@ -667,14 +667,14 @@ function updateNodeVisuals() {
     node.each(function(d) {
         const el = d3.select(this);
         const r  = calculateRadius(d);
-        const textDelay = isFirstRender ? (d.id === 'center' ? 0 : 900 + globalNodes.indexOf(d) * 70) : 0;
+        const textDelay = isFirstRender ? (d.id === 'center' ? 0 : 250 + globalNodes.indexOf(d) * 60) : 0;
 
         const main  = el.select(".bubble-main");
 
         // ── 크기 애니메이션 ──
         if (main.attr("r") == 0) {
-            main.transition().delay(textDelay).duration(isFirstRender ? 900 : 500)
-                .ease(d3.easeElasticOut.amplitude(2.2)).attr("r", r);
+            main.transition().delay(textDelay).duration(isFirstRender ? 900 : 600)
+                .ease(d3.easeElasticOut.amplitude(2.2)).attr("r", r).style("opacity", 1);
         } else {
             main.transition().duration(500).attr("r", r);
         }
