@@ -150,6 +150,7 @@ let globalNodes   = [];
 let simulation    = null;
 let rawLinkEls    = [];
 let unreadChatKeys = new Set();
+let _linkShowTimer = null;
 // 터치 기기 감지 (iOS/Android PWA) — drop-shadow filter 제거 여부 결정
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 // 인트로 화면 활성 상태 — true일 때 gameLoop(60fps SVG/canvas)를 정지하여 GPU 부담 제거
@@ -664,6 +665,16 @@ function updateGraph(softRestart = false) {
     simulation.nodes(globalNodes);
     simulation.force("link").links(links);
     simulation.alpha(softRestart ? 0.2 : 0.6).restart();
+
+    // S2: 앱 진입 후 시즌 전환 시 연결선을 노드 등장 이후 표시
+    if (!isIntroActive && getActiveSeason() === 's2') {
+        const lg = document.querySelector('.links');
+        if (lg) {
+            lg.classList.remove('show');
+            clearTimeout(_linkShowTimer);
+            _linkShowTimer = setTimeout(() => lg.classList.add('show'), 2000);
+        }
+    }
 }
 
 function updateNodeVisuals() {
@@ -685,25 +696,32 @@ function updateNodeVisuals() {
 
         // ── 색 채우기 ──
         if (d.type === 'root') {
-            // 센터 노드: radialGradient + 글로스 하이라이트로 입체감
-            const cgId = 'center-node-grad';
-            let cg = defs.select('#' + cgId);
-            if (cg.empty()) {
-                cg = defs.append("radialGradient").attr("id", cgId)
-                    .attr("cx","30%").attr("cy","28%").attr("r","72%");
-                cg.append("stop").attr("offset","0%").attr("stop-color","#FFF4CC");
-                cg.append("stop").attr("offset","50%").attr("stop-color","#FFD580");
-                cg.append("stop").attr("offset","100%").attr("stop-color","#F5A623");
+            if (getActiveSeason() === 's2') {
+                // S2: 입체 골든 그라디언트 + 글로스
+                const cgId = 'center-node-grad';
+                let cg = defs.select('#' + cgId);
+                if (cg.empty()) {
+                    cg = defs.append("radialGradient").attr("id", cgId)
+                        .attr("cx","30%").attr("cy","28%").attr("r","72%");
+                    cg.append("stop").attr("offset","0%").attr("stop-color","#FFF4CC");
+                    cg.append("stop").attr("offset","50%").attr("stop-color","#FFD580");
+                    cg.append("stop").attr("offset","100%").attr("stop-color","#F5A623");
+                }
+                main.attr("fill","url(#center-node-grad)")
+                    .attr("stroke","rgba(255,220,80,0.85)").attr("stroke-width","3.5")
+                    .style("filter","drop-shadow(0 4px 10px rgba(180,110,0,0.30))");
+                el.select(".node-gloss")
+                    .attr("cx",-28).attr("cy",-30)
+                    .attr("rx",26).attr("ry",16)
+                    .attr("fill","rgba(255,255,255,0.40)")
+                    .attr("transform","rotate(-30,-28,-30)");
+            } else {
+                // S1: 기존 플랫 크림 스타일
+                main.attr("fill", d.color)
+                    .attr("stroke","rgba(255,255,255,0.80)").attr("stroke-width","2.5")
+                    .style("filter", null);
+                el.select(".node-gloss").attr("fill","rgba(255,255,255,0.0)");
             }
-            main.attr("fill","url(#center-node-grad)")
-                .attr("stroke","rgba(255,220,80,0.85)").attr("stroke-width","3.5")
-                .style("filter","drop-shadow(0 4px 10px rgba(180,110,0,0.30))");
-            // 글로스 하이라이트 — 센터 노드 크기에 맞게 스케일
-            el.select(".node-gloss")
-                .attr("cx",-28).attr("cy",-30)
-                .attr("rx",26).attr("ry",16)
-                .attr("fill","rgba(255,255,255,0.40)")
-                .attr("transform","rotate(-30,-28,-30)");
         } else if (d.photoUrl) {
             main.attr("fill", `url(#img-${d.id})`)
                 .attr("stroke","rgba(255,255,255,0.82)").attr("stroke-width","3.5");
@@ -789,7 +807,8 @@ function updateLinkVisuals() {
     if (!link) return;
     link.each(function(d) {
         const targetId = (d.target.id != null) ? d.target.id : d.target;
-        this.setAttribute('stroke', 'url(#lkg-' + String(targetId).replace(/[^a-zA-Z0-9]/g,'') + ')');
+        // inline style로 CSS !important 우회 → 그라디언트 적용
+        this.style.stroke = 'url(#lkg-' + String(targetId).replace(/[^a-zA-Z0-9]/g,'') + ')';
     });
 }
 
@@ -1300,9 +1319,16 @@ function enterApp() {
     if (player && typeof player.playVideo === 'function') player.playVideo();
     document.getElementById('intro-screen').classList.add('fade-out');
 
-    // 라인 CSS 페이드인 트리거
+    // 라인 CSS 페이드인 트리거 (S2: 노드 등장 후 지연)
     const linksGroup = document.querySelector('.links');
-    if (linksGroup) linksGroup.classList.add('show');
+    if (linksGroup) {
+        if (getActiveSeason() === 's2') {
+            clearTimeout(_linkShowTimer);
+            _linkShowTimer = setTimeout(() => linksGroup.classList.add('show'), 2000);
+        } else {
+            linksGroup.classList.add('show');
+        }
+    }
 
     // 뭉침 방지: 입장 시 물리엔진 재가동
     if (simulation) simulation.alpha(0.5).restart();

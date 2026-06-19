@@ -53,6 +53,27 @@ body.theme-s2::before {
 @media (hover: none) and (pointer: coarse) {
   body.theme-s2 #intro-screen { background: #FFEAEA; }
 }
+/* ── S2 FAB 아이콘 스타일 ── */
+body.theme-s2 .menu-main-btn {
+  background: linear-gradient(135deg, #E74C3C, #C0392B);
+  box-shadow: 0 4px 18px rgba(192,57,43,0.50), 0 0 0 3px rgba(192,57,43,0.12);
+}
+body.theme-s2 .menu-open .menu-main-btn {
+  box-shadow: 0 4px 24px rgba(192,57,43,0.65), 0 0 0 5px rgba(192,57,43,0.12);
+}
+body.theme-s2 .sub-btn {
+  background: rgba(192,57,43,0.88);
+  border-color: rgba(192,57,43,0.30);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  color: #fff !important;
+}
+body.theme-s2 .sub-btn .material-symbols-rounded { color: #fff !important; }
+body.theme-s2 .chat-btn {
+  background: rgba(192,57,43,0.88);
+  border-color: rgba(192,57,43,0.30);
+  color: #fff !important;
+}
+body.theme-s2 .chat-btn .material-symbols-rounded { color: #fff !important; }
 
 /* ── BASE ── */
 body {
@@ -502,7 +523,7 @@ body.admin-mode .admin-indicator { display:block; animation:popUp .3s cubic-bezi
 .links.show { opacity: 1; }
 
 .links line {
-  stroke:rgba(255,195,220,0.72)!important;
+  stroke:rgba(255,195,220,0.72);
   stroke-width:7px!important;
   stroke-dasharray:0.1 12!important;
   stroke-linecap:round!important;
