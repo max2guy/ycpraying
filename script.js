@@ -577,15 +577,19 @@ function updateGraph(softRestart = false) {
         });
     }
     const links = members.map(m => ({ source:centerNode.id, target:m.id }));
-    // S2 연결선 그라디언트: 멤버당 1개, exit 시 자동 제거
-    const s2Grads = defs.selectAll("linearGradient.s2-link-grad").data(members, d => d.id);
-    s2Grads.exit().remove();
-    const s2GradsEnter = s2Grads.enter().append("linearGradient")
-        .attr("class","s2-link-grad")
-        .attr("id", d => "s2lg-" + d.id.replace(/[^a-zA-Z0-9]/g,''))
+    // 연결선 그라디언트: 멤버당 1개, S1/S2 모두 적용, exit 시 자동 제거
+    const isS2grad = getActiveSeason() === 's2';
+    const lkGrads = defs.selectAll("linearGradient.lk-grad").data(members, d => d.id);
+    lkGrads.exit().remove();
+    const lkGradsEnter = lkGrads.enter().append("linearGradient")
+        .attr("class","lk-grad")
+        .attr("id", d => "lkg-" + d.id.replace(/[^a-zA-Z0-9]/g,''))
         .attr("gradientUnits","userSpaceOnUse");
-    s2GradsEnter.append("stop").attr("offset","0%").attr("stop-color","rgba(255,195,220,0.85)");
-    s2GradsEnter.append("stop").attr("offset","100%").attr("stop-color","rgba(192,57,43,0.85)");
+    lkGradsEnter.append("stop").attr("class","lkg-s").attr("offset","0%");
+    lkGradsEnter.append("stop").attr("class","lkg-e").attr("offset","100%");
+    const allLkGrads = lkGradsEnter.merge(lkGrads);
+    allLkGrads.select(".lkg-s").attr("stop-color", isS2grad ? "rgba(255,195,220,0.85)" : "rgba(255,220,235,0.50)");
+    allLkGrads.select(".lkg-e").attr("stop-color", isS2grad ? "rgba(192,57,43,0.85)"   : "rgba(255,155,195,0.90)");
     const patterns = defs.selectAll("pattern").data(members, d => d.id);
     patterns.enter().append("pattern")
         .attr("id", d => "img-" + d.id).attr("width",1).attr("height",1)
@@ -652,7 +656,7 @@ function updateGraph(softRestart = false) {
     rawLinkEls = [];
     link.each(function(d) {
         const targetId = (d.target.id != null) ? d.target.id : d.target;
-        const gradEl = document.getElementById('s2lg-' + String(targetId).replace(/[^a-zA-Z0-9]/g,''));
+        const gradEl = document.getElementById('lkg-' + String(targetId).replace(/[^a-zA-Z0-9]/g,''));
         rawLinkEls.push({ el: this, d, gradEl });
     });
     updateNodeVisuals();
@@ -739,10 +743,10 @@ function updateNodeVisuals() {
 
         if (d.type === 'root') {
             // 중앙: 이모지 + 이름 텍스트 (버블 안에)
-            textEl.append("tspan").text(d.icon).attr("x",0).attr("dy","-1.5em").attr("font-size","2.6rem");
+            textEl.append("tspan").text(d.icon).attr("x",0).attr("dy","-1.2em").attr("font-size","2.6rem");
             d.name.split("\n").forEach((l,i) => {
                 textEl.append("tspan").text(l).attr("x",0)
-                    .attr("dy", i===0 ? "4.4em" : "1.35em")
+                    .attr("dy", i===0 ? "2.5em" : "1.35em")
                     .attr("font-size","13px").attr("fill","#7A4820").attr("font-weight","900");
             });
             rectEl.style("display","none");
@@ -783,14 +787,9 @@ function updateNodeVisuals() {
 
 function updateLinkVisuals() {
     if (!link) return;
-    const isS2 = getActiveSeason() === 's2';
     link.each(function(d) {
         const targetId = (d.target.id != null) ? d.target.id : d.target;
-        if (isS2) {
-            this.setAttribute('stroke', 'url(#s2lg-' + String(targetId).replace(/[^a-zA-Z0-9]/g,'') + ')');
-        } else {
-            this.setAttribute('stroke', 'rgba(255,195,220,0.72)');
-        }
+        this.setAttribute('stroke', 'url(#lkg-' + String(targetId).replace(/[^a-zA-Z0-9]/g,'') + ')');
     });
 }
 
