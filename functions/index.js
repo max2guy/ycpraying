@@ -35,7 +35,7 @@ async function sendPush(tokenDatas, title, body, extraData = {}) {
             notification: {
                 title, body,
                 icon:  APP_URL + 'notification-icon.svg',
-                badge: APP_URL + 'notification-icon.svg'
+                badge: APP_URL + 'notification-badge.png'
             },
             fcmOptions: { link: APP_URL }
         }
