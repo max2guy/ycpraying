@@ -185,7 +185,7 @@ function createSafeElement(tag, className, text) {
 
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
 const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
-const CURRENT_VERSION = '3.2.12';
+const CURRENT_VERSION = '3.2.13';
 
 // ── 버전 강제 체크 (DB에서 requiredVersion 읽어 구버전이면 강제 갱신) ──
 function compareVersions(a, b) {
@@ -787,8 +787,7 @@ function updateGraph(softRestart = false) {
     s2badgeSel.append("text").attr("class","s2-season-text")
         .attr("x",0).attr("y",42).attr("text-anchor","middle")
         .attr("font-size","9.5").attr("font-weight","700")
-        .style("letter-spacing","1.6px").attr("fill","#C5533C")
-        .style("opacity","1")
+        .style("letter-spacing","1.6px").attr("fill","#B8322A")
         .text("Season 2");
     node = ne.merge(node);
     node.style("pointer-events","all");
