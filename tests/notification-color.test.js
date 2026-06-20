@@ -13,13 +13,15 @@ test('Season 2 label uses sampled color at full opacity', () => {
   assert.doesNotMatch(labelBlock, /["']opacity["']/);
 });
 
-test('v3.2.13 cache versions stay synchronized', () => {
+test('v3.2.14 cache versions stay synchronized', () => {
   const script = fs.readFileSync(path.join(root, 'script.js'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const worker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert.match(script, /CURRENT_VERSION = '3\.2\.13'/);
-  assert.match(html, /script\.js\?v=88/);
-  assert.match(html, /v3\.2\.13/);
-  assert.match(worker, /Service Worker Version 88 \(v3\.2\.13\)/);
-  assert.match(worker, /yc-prayer-v88/);
+  assert.match(script, /CURRENT_VERSION = '3\.2\.14'/);
+  assert.match(html, /style\.css\?v=73/);
+  assert.match(html, /<script src="s2-entry\.js\?v=1" defer><\/script>\s*<script src="script\.js\?v=89" defer><\/script>/);
+  assert.match(html, /v3\.2\.14/);
+  assert.match(worker, /Service Worker Version 89 \(v3\.2\.14\)/);
+  assert.match(worker, /yc-prayer-v89/);
+  assert.match(worker, /FILES_TO_CACHE = \[[\s\S]*?'\.\/s2-entry\.js'/);
 });
