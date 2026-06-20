@@ -161,6 +161,7 @@ let pendingS2InitialEntry = getActiveSeason() === 's2';
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 // 인트로 화면 활성 상태 — true일 때 gameLoop(60fps SVG/canvas)를 정지하여 GPU 부담 제거
 let isIntroActive = true;
+let isAppVisible = false;
 let touchStartTime = 0, touchStartX = 0, touchStartY = 0, isTouchMove = false;
 let dragStartX = 0, dragStartY = 0, isDragAction = false;
 let currentMemberData = null;   // ← 명시적 선언 (버그 수정)
@@ -581,6 +582,7 @@ firebase.auth().onAuthStateChanged(user => {
 let centerNode = { id:"center", name:"연천장로교회\n청년부\n함께 기도해요", type:"root", icon:"✝️", color:"#FFF8E1" };
 let members = [];
 let isDataLoaded = false;
+let initialDataSettled = false;
 
 function showEnterButton() {
     isDataLoaded = true;
@@ -594,6 +596,7 @@ function loadData() {
     clearTimeout(_loadFallbackTimer);
     clearTimeout(_firstRenderTimer);
     const generation = loadGeneration.begin();
+    initialDataSettled = false;
     const season = getActiveSeason();
     const loadMembersRef = membersRef;
     const loadCenterNodeRef = centerNodeRef;
@@ -616,9 +619,10 @@ function loadData() {
             if (!m.rotationDirection) m.rotationDirection = Math.random() < 0.5 ? 1 : -1;
             if (m.rotation === undefined) m.rotation = 0;
         });
+        initialDataSettled = true;
         showEnterButton();
         updateGraph();
-        launchPendingS2InitialEntry();
+        if (isAppVisible) launchPendingS2InitialEntry();
         fetchWeather();
         _firstRenderTimer = setTimeout(() => {
             if (!isStaleLoad()) isFirstRender = false;
@@ -631,7 +635,7 @@ function loadData() {
         console.log("Error:", err);
         showEnterButton();
         updateGraph();
-        launchPendingS2InitialEntry();
+        initialDataSettled = false;
         isFirstRender = false;
     });
 }
@@ -643,9 +647,13 @@ function registerMemberListeners() {
         const val = snap.val();
         if (!members.find(m => m.firebaseKey === snap.key)) {
             const nm = { ...val, firebaseKey:snap.key, rotation:0, rotationDirection:1 }; if (!nm.id) nm.id = snap.key; members.push(nm);
-            if (!isFirstRender) newMemberIds.add(val.id);
+            if (!initialDataSettled) {
+                updateGraph();
+                return;
+            }
+            if (!isFirstRender || getActiveSeason() === 's2') newMemberIds.add(nm.id);
             updateGraph();
-            if (getActiveSeason() === 's2' && !isFirstRender) {
+            if (getActiveSeason() === 's2') {
                 if (pendingS2InitialEntry) launchPendingS2InitialEntry();
                 else startS2MemberEntries([nm], false);
             }
@@ -772,7 +780,21 @@ function startS2MemberEntries(items, initial) {
     if (linksGroup) linksGroup.classList.add('show');
 
     if (reduceMotionQuery.matches) {
-        node.filter(d => enteringIds.has(d.id)).style('opacity', 0)
+        const enteringNodes = node.filter(d => enteringIds.has(d.id));
+        enteringNodes.each(function(d) {
+            const el = d3.select(this);
+            el.select('.bubble-main').interrupt().attr('r', calculateRadius(d)).style('opacity', 1);
+            el.select('.node-label').interrupt().style('opacity', 1);
+            el.select('.name-pill').interrupt().style('opacity', 1);
+            const badge = el.select('.node-badge').interrupt();
+            const cnt = getTotalPrayerCount(d);
+            const isNew = newMemberIds.has(d.id);
+            const bx = -(calculateRadius(d) * 0.62 + 2), by = -(calculateRadius(d) * 0.62 + 2);
+            if (cnt > 0 || isNew) {
+                badge.style('display', 'block').attr('transform', `translate(${bx},${by})`).style('opacity', 1);
+            } else badge.style('opacity', 0);
+        });
+        enteringNodes.interrupt().style('opacity', 0)
             .transition('s2-entry').duration(180).style('opacity', 1);
         link.filter(d => enteringIds.has(S2Entry.getTargetId(d.target)))
             .style('opacity', 0).transition('s2-entry').duration(180).style('opacity', 1);
@@ -817,7 +839,7 @@ function startS2MemberEntries(items, initial) {
 }
 
 function launchPendingS2InitialEntry() {
-    if (!pendingS2InitialEntry || isIntroActive || getActiveSeason() !== 's2' || !members.length) return;
+    if (!isAppVisible || !pendingS2InitialEntry || getActiveSeason() !== 's2' || !members.length) return;
     pendingS2InitialEntry = false;
     startS2MemberEntries(members, true);
 }
@@ -1175,6 +1197,7 @@ function switchSeason(target) {
     const name = target === 's2' ? '시즌2 · 홈커밍데이' : '시즌1';
     showConfirmDialog('시즌 전환', `${name}로 전환할까요?`, () => {
         loadGeneration.invalidate();
+        initialDataSettled = false;
         clearTimeout(_loadFallbackTimer);
         clearTimeout(_firstRenderTimer);
         _loadFallbackTimer = null;
@@ -1576,7 +1599,6 @@ function onYouTubeIframeAPIReady() {
 }
 function enterApp() {
     isIntroActive = false;
-    launchPendingS2InitialEntry();
     if (player && typeof player.playVideo === 'function') player.playVideo();
     document.getElementById('intro-screen').classList.add('fade-out');
 
@@ -1596,6 +1618,8 @@ function enterApp() {
 
     setTimeout(() => {
         document.getElementById('intro-screen').style.display = 'none';
+        isAppVisible = true;
+        launchPendingS2InitialEntry();
         showWeatherToast("환영합니다", "배경음악이 재생됩니다 🎵");
     }, 800);
 }
