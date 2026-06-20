@@ -193,7 +193,7 @@ checkNotificationPermission();
 
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
 const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
-const CURRENT_VERSION = '3.0.0';
+const CURRENT_VERSION = '3.1.8';
 
 // ── 버전 강제 체크 (DB에서 requiredVersion 읽어 구버전이면 강제 갱신) ──
 function compareVersions(a, b) {
@@ -285,7 +285,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.0.9] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.1.8] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
@@ -444,7 +444,7 @@ function loadData() {
     Promise.all([membersRef.once('value'), centerNodeRef.once('value')])
     .then(([mSnap, cSnap]) => {
         const mData = mSnap.val(), cData = cSnap.val();
-        if (mData) members = Object.keys(mData).map(k => ({ firebaseKey:k, ...mData[k] }));
+        if (mData) members = Object.keys(mData).map(k => { const m = { firebaseKey:k, ...mData[k] }; if (!m.id) m.id = k; return m; }).filter(m => m.name && m.type === 'member');
         if (cData && cData.icon) centerNode.icon = cData.icon;
         members.forEach(m => {
             if (!m.rotationDirection) m.rotationDirection = Math.random() < 0.5 ? 1 : -1;
@@ -464,7 +464,7 @@ function registerMemberListeners() {
         if (!isDataLoaded) return;
         const val = snap.val();
         if (!members.find(m => m.firebaseKey === snap.key)) {
-            members.push({ ...val, firebaseKey:snap.key, rotation:0, rotationDirection:1 });
+            const nm = { ...val, firebaseKey:snap.key, rotation:0, rotationDirection:1 }; if (!nm.id) nm.id = snap.key; members.push(nm);
             if (!isFirstRender) newMemberIds.add(val.id);
             updateGraph();
         }
@@ -580,11 +580,11 @@ function updateGraph(softRestart = false) {
     const links = members.map(m => ({ source:centerNode.id, target:m.id }));
     // 연결선 그라디언트: 멤버당 1개, S1/S2 모두 적용, exit 시 자동 제거
     const isS2grad = getActiveSeason() === 's2';
-    const lkGrads = defs.selectAll("linearGradient.lk-grad").data(members, d => d.id);
+    const lkGrads = defs.selectAll("linearGradient.lk-grad").data(members, d => d.id || d.firebaseKey);
     lkGrads.exit().remove();
     const lkGradsEnter = lkGrads.enter().append("linearGradient")
         .attr("class","lk-grad")
-        .attr("id", d => "lkg-" + d.id.replace(/[^a-zA-Z0-9]/g,''))
+        .attr("id", d => "lkg-" + (d.id || d.firebaseKey).replace(/[^a-zA-Z0-9]/g,''))
         .attr("gradientUnits","userSpaceOnUse");
     lkGradsEnter.append("stop").attr("class","lkg-s").attr("offset","0%");
     lkGradsEnter.append("stop").attr("class","lkg-e").attr("offset","100%");
