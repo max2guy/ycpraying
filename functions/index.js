@@ -131,3 +131,36 @@ exports.onNewPrayerEvent = functions
         await snap.ref.remove();
         return null;
     });
+
+/* ── 5. 시즌2 새 기도 멤버 추가 ── */
+exports.onNewMemberS2 = functions
+    .region('asia-northeast3')
+    .database.ref('s2/members/{memberId}')
+    .onCreate(async snap => {
+        const member = snap.val();
+        if (!member || !member.name) return null;
+        const tokenDatas = await getAllTokens(null);
+        await sendPush(tokenDatas,
+            '🙏 새 기도 멤버',
+            `${member.name}님이 기도 네트워크에 참여했습니다.`,
+            { type: 'new_member' }
+        );
+        return null;
+    });
+
+/* ── 6. 시즌2 새 채팅 메시지 ── */
+exports.onNewChatMessageS2 = functions
+    .region('asia-northeast3')
+    .database.ref('s2/messages/{msgId}')
+    .onCreate(async snap => {
+        const msg = snap.val();
+        if (!msg || !msg.text) return null;
+        const tokenDatas = await getAllTokens(msg.senderId);
+        const preview = msg.text.length > 50 ? msg.text.slice(0, 50) + '…' : msg.text;
+        await sendPush(tokenDatas,
+            '💬 새 채팅 메시지',
+            preview,
+            { type: 'chat' }
+        );
+        return null;
+    });

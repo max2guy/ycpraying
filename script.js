@@ -193,7 +193,7 @@ checkNotificationPermission();
 
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
 const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
-const CURRENT_VERSION = '3.1.9';
+const CURRENT_VERSION = '3.2.0';
 
 // ── 버전 강제 체크 (DB에서 requiredVersion 읽어 구버전이면 강제 갱신) ──
 function compareVersions(a, b) {
@@ -220,19 +220,24 @@ database.ref('appConfig/requiredVersion').once('value').then(snap => {
     if (required && compareVersions(CURRENT_VERSION, required) < 0) {
         forceUpdateApp();
     }
-});
+}).catch(() => {});
 
 // ── 관리자 전체 업데이트 알림 발송 ──
 function sendBroadcastUpdate() {
     if (!isAdmin) return;
     if (!confirm('모든 사용자에게 업데이트 알림을 발송하시겠습니까?')) return;
-    database.ref('appConfig/broadcastPush').set({
-        title: '🔔 앱 업데이트',
-        message: '새 버전이 출시되었습니다. 앱을 열어 업데이트해 주세요!',
-        triggeredAt: firebase.database.ServerValue.TIMESTAMP
+    Promise.all([
+        database.ref('appConfig/broadcastPush').set({
+            title: '🔔 앱 업데이트',
+            message: '새 버전이 출시되었습니다. 앱을 열어 업데이트해 주세요!',
+            triggeredAt: firebase.database.ServerValue.TIMESTAMP
+        }),
+        database.ref('appConfig/requiredVersion').set(CURRENT_VERSION)
+    ]).then(() => {
+        alert('전체 알림 발송 완료!');
+    }).catch(err => {
+        alert('발송 실패: ' + err.message);
     });
-    database.ref('appConfig/requiredVersion').set(CURRENT_VERSION);
-    alert('전체 알림 발송 완료!');
 }
 
 async function initFCM() {
@@ -285,7 +290,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.1.9] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.2.0] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
@@ -1130,7 +1135,8 @@ function renderPrayers() {
 
         // 아멘 버튼
         const amenBtn = createSafeElement("button", `amen-btn${iAmened ? ' active' : ''}`);
-        amenBtn.innerHTML = `<span>🙏</span><span>아멘${amens > 0 ? ' ' + amens : ''}</span>`;
+        amenBtn.setAttribute('aria-pressed', iAmened ? 'true' : 'false');
+        amenBtn.innerHTML = `<span>🙏</span><span>아멘${iAmened ? ' ✓' : ''}${amens > 0 ? ' ' + amens : ''}</span>`;
         amenBtn.addEventListener('click', e => toggleAmen(i, e));
 
         // 고정 버튼
@@ -1182,7 +1188,7 @@ function toggleAmen(i, e) {
     if (!currentMemberData) return;
     // 불꽃 파티클 (버그 수정: createFirework 구현)
     if (e && e.clientX) createFirework(e.clientX, e.clientY);
-    const ref = firebase.database().ref(`members/${currentMemberData.firebaseKey}/prayers/${i}/amens`);
+    const ref = membersRef.child(`${currentMemberData.firebaseKey}/prayers/${i}/amens`);
     if (currentMemberData.prayers[i].amens && currentMemberData.prayers[i].amens[mySessionId]) {
         ref.child(mySessionId).remove();
     } else {

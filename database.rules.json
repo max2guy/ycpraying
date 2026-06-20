@@ -24,6 +24,16 @@
       ".read": false,
       ".write": true
     },
+    "appConfig": {
+      "requiredVersion": {
+        ".read": true,
+        ".write": "auth != null"
+      },
+      "broadcastPush": {
+        ".read": false,
+        ".write": "auth != null"
+      }
+    },
     "s2": {
       "members": {
         ".read": true,

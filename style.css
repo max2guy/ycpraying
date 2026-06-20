@@ -372,6 +372,7 @@ button,.float-btn,.icon-btn,.amen-btn,.setting-item,.camera-btn,.enter-btn {
 .amen-btn:hover { background:rgba(255,133,176,0.22); border-color:var(--rose); color:var(--rose-dim); }
 .amen-btn:active { transform:scale(0.95); }
 .amen-btn.active { background:rgba(255,133,176,0.20); color:var(--rose-dim); border-color:var(--rose); box-shadow:0 0 12px rgba(255,133,176,0.25); }
+body.theme-s2 .amen-btn.active { background:rgba(231,76,60,0.18); color:#C0392B; border-color:#E74C3C; border-width:2px; box-shadow:0 0 14px rgba(231,76,60,0.35); }
 
 .reply-section { margin-top:12px; background:rgba(255,230,242,0.35); border-radius:var(--r-sm); padding:10px; border:1px solid rgba(255,180,210,0.18); }
 .reply-item { font-size:0.85rem; color:var(--text-muted); padding:8px 10px; background:#fff; border-radius:10px; margin-bottom:6px; display:flex; gap:6px; align-items:flex-start; box-shadow:0 1px 5px rgba(200,100,160,0.08); }
