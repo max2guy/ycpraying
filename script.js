@@ -193,7 +193,7 @@ checkNotificationPermission();
 
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
 const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
-const CURRENT_VERSION = '3.2.0';
+const CURRENT_VERSION = '3.2.1';
 
 // ── 버전 강제 체크 (DB에서 requiredVersion 읽어 구버전이면 강제 갱신) ──
 function compareVersions(a, b) {
@@ -290,7 +290,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.2.0] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.2.1] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
@@ -641,13 +641,14 @@ function updateGraph(softRestart = false) {
     badge.append("text").attr("class","badge-num").attr("x",0).attr("y","0.5").attr("dy","0.35em")
         .attr("text-anchor","middle").attr("fill","white")
         .style("font-size","9px").style("font-weight","900");
-    const s2badge = ne.append("g").attr("class","s2-center-badge")
+    // s2-center-badge는 root 노드에만 생성 (멤버 노드 제외)
+    const s2badgeSel = ne.filter(d => d.type === 'root').append("g").attr("class","s2-center-badge")
         .style("display","none").style("pointer-events","none");
-    s2badge.append("rect").attr("class","s2-divider")
-        .attr("x",-36).attr("y",42).attr("width",72).attr("height",1.5).attr("rx",1)
+    s2badgeSel.append("rect").attr("class","s2-divider")
+        .attr("x",-28).attr("y",84).attr("width",56).attr("height",1.5).attr("rx",1)
         .attr("fill","rgba(192,57,43,0.28)");
-    s2badge.append("text").attr("class","s2-season-text")
-        .attr("x",0).attr("y",58).attr("text-anchor","middle")
+    s2badgeSel.append("text").attr("class","s2-season-text")
+        .attr("x",0).attr("y",96).attr("text-anchor","middle")
         .attr("font-size","10.5").attr("font-weight","900")
         .style("letter-spacing","2px").attr("fill","#C0392B")
         .text("Season 2");
@@ -904,10 +905,8 @@ function applySeasonTheme() {
     centerNode.name = isS2
         ? "연천장로교회\n청년부\n홈커밍데이"
         : "연천장로교회\n청년부\n함께 기도해요";
-    // SVG 뱃지 즉시 동기 업데이트 (updateGraph 타이밍에 의존하지 않도록)
-    document.querySelectorAll('.s2-center-badge').forEach(el => {
-        el.style.display = isS2 ? '' : 'none';
-    });
+    // 배지 표시 여부는 updateNodeVisuals에서 단일 결정 (D3 노드가 준비된 경우만)
+    if (node) updateNodeVisuals();
 }
 
 function updateSeasonUI() {
