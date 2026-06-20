@@ -77,6 +77,15 @@ body.theme-s2 .chat-btn {
 }
 body.theme-s2 .chat-btn .material-symbols-rounded { color:#fff !important; }
 
+/* ── iOS GPU 가속 / 렌더링 최적화 ── */
+html {
+  overscroll-behavior-y: none;
+}
+/* 점선 연결선 */
+.links line {
+  stroke-dasharray: 5 8;
+}
+
 /* ── BASE ── */
 body {
   margin:0; padding:0;

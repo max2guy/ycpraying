@@ -193,7 +193,7 @@ checkNotificationPermission();
 
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
 const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
-const CURRENT_VERSION = '3.1.8';
+const CURRENT_VERSION = '3.1.9';
 
 // ── 버전 강제 체크 (DB에서 requiredVersion 읽어 구버전이면 강제 갱신) ──
 function compareVersions(a, b) {
@@ -285,7 +285,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.1.8] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.1.9] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
@@ -602,10 +602,10 @@ function updateGraph(softRestart = false) {
 
     link = linkGroup.selectAll("line").data(links, d => d.target.id || d.target);
     link.exit().remove();
-    // 진주알 구슬 연결선: 개별 투명도 애니메이션 제거 → .links CSS 그룹 트랜지션에 위임
+    // 연결선 — 점선: CSS stroke-dasharray로 제어 (D3 attr 없이 CSS 우선)
     const le = link.enter().append("line")
         .attr("stroke","rgba(255,195,220,0.72)")
-        .attr("stroke-width", 3);
+        .attr("stroke-width", 2.5);
     link = le.merge(link);
 
     node = nodeGroup.selectAll("g").data(globalNodes, d => d.id);
@@ -690,7 +690,8 @@ function updateNodeVisuals() {
             main.transition().delay(textDelay).duration(isFirstRender ? 900 : 600)
                 .ease(d3.easeElasticOut.amplitude(2.2)).attr("r", r).style("opacity", 1);
         } else {
-            main.transition().duration(500).attr("r", r);
+            // opacity도 함께 1로 보장: child_changed 인터럽트로 입장 애니메이션이 중단돼도 노드가 사라지지 않게
+            main.transition().duration(500).attr("r", r).style("opacity", 1);
         }
 
         // ── 색 채우기 ──
@@ -749,7 +750,7 @@ function updateNodeVisuals() {
         const gloss = el.select(".node-gloss");
         if (d.type !== 'root') {
             const isS2now = getActiveSeason() === 's2';
-            main.style("filter", isS2now ? "url(#s2-member-glow)" : null);
+            main.style("filter", isS2now && !isTouchDevice ? "url(#s2-member-glow)" : null);
             gloss.attr("fill", isS2now ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.0)");
         }
 
