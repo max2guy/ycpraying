@@ -605,9 +605,7 @@ function updateGraph(softRestart = false) {
     // 진주알 구슬 연결선: 개별 투명도 애니메이션 제거 → .links CSS 그룹 트랜지션에 위임
     const le = link.enter().append("line")
         .attr("stroke","rgba(255,195,220,0.72)")
-        .attr("stroke-width", 7)
-        .attr("stroke-dasharray","0.1 12")
-        .attr("stroke-linecap","round");
+        .attr("stroke-width", 3);
     link = le.merge(link);
 
     node = nodeGroup.selectAll("g").data(globalNodes, d => d.id);
