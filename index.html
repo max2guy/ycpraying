@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="icon-192.png">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
-    <link rel="stylesheet" href="style.css?v=68">
+    <link rel="stylesheet" href="style.css?v=69">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" defer></script>
@@ -236,6 +236,17 @@
                     </span>
                     <span class="setting-text">앱 새로고침</span>
                 </button>
+                <!-- 알림 설정 -->
+                <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:5px;cursor:default;">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <span class="setting-icon-badge" style="background:linear-gradient(135deg,#A8D8FF,#5BA8E8);flex-shrink:0;">
+                            <span class="material-symbols-rounded" style="font-size:1.1rem;color:#fff;">notifications</span>
+                        </span>
+                        <span class="setting-text" style="flex:1;">알림</span>
+                        <button id="btn-notif" onclick="requestNotificationPermission()" style="padding:5px 12px;font-size:0.82rem;font-weight:700;border-radius:12px;border:1.5px solid var(--rose);background:var(--rose-soft);color:var(--rose-dim);cursor:pointer;touch-action:manipulation;flex-shrink:0;">알림 켜기</button>
+                    </div>
+                    <span id="notif-status-label" style="font-size:0.78rem;color:var(--text-muted);padding-left:52px;">확인 중...</span>
+                </div>
                 <button class="setting-item" id="btn-broadcast-update" onclick="sendBroadcastUpdate(); closeSettingsModal();" aria-label="전체 업데이트 알림 발송" style="display:none;">
                     <span class="setting-icon-badge" style="background:linear-gradient(135deg,#FFB347,#FF6B35);">
                         <span class="material-symbols-rounded" style="font-size:1.1rem;color:#fff;">campaign</span>
@@ -243,7 +254,7 @@
                     <span class="setting-text">전체 업데이트 알림 발송</span>
                 </button>
             </div>
-            <div class="settings-version">✨ v3.2.1 | 연천장로교회 청년부 ✨</div>
+            <div class="settings-version">✨ v3.2.2 | 연천장로교회 청년부 ✨</div>
         </div>
     </div>
 

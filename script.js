@@ -101,7 +101,7 @@ function forceRefresh() {
     });
 }
 
-function openSettingsModal()  { if (isFabOpen) toggleFabMenu(); document.getElementById('settings-modal').classList.add('active'); }
+function openSettingsModal()  { if (isFabOpen) toggleFabMenu(); document.getElementById('settings-modal').classList.add('active'); updateNotifStatus(); }
 function closeSettingsModal() { document.getElementById('settings-modal').classList.remove('active'); }
 
 // ── Firebase 초기화 ──
@@ -183,17 +183,9 @@ function createSafeElement(tag, className, text) {
     return el;
 }
 
-function checkNotificationPermission() {
-    if (!('Notification' in window)) return;
-    if (Notification.permission !== 'denied' && Notification.permission !== 'granted') {
-        Notification.requestPermission();
-    }
-}
-checkNotificationPermission();
-
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
 const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
-const CURRENT_VERSION = '3.2.1';
+const CURRENT_VERSION = '3.2.2';
 
 // ── 버전 강제 체크 (DB에서 requiredVersion 읽어 구버전이면 강제 갱신) ──
 function compareVersions(a, b) {
@@ -240,36 +232,86 @@ function sendBroadcastUpdate() {
     });
 }
 
-async function initFCM() {
+let _fcmMsgInitialized = false;
+
+function setNotifStatus(status) {
+    const map = { unsupported:'지원 안 됨', default:'알림 꺼짐', denied:'권한 거부됨', requesting:'등록 중...', granted:'알림 켜짐 ✓', error:'등록 실패' };
+    const lbl = document.getElementById('notif-status-label');
+    const btn = document.getElementById('btn-notif');
+    if (lbl) lbl.textContent = map[status] || status;
+    if (btn) btn.disabled = ['granted','requesting','unsupported'].includes(status);
+}
+
+function updateNotifStatus() {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) { setNotifStatus('unsupported'); return; }
+    const isIOS = /iP(ad|hone|od)/.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || !!navigator.standalone;
+    if (isIOS && !isStandalone) {
+        const lbl = document.getElementById('notif-status-label');
+        const btn = document.getElementById('btn-notif');
+        if (lbl) lbl.textContent = 'iOS: 홈 화면 설치 후 사용 가능';
+        if (btn) btn.disabled = true;
+        return;
+    }
+    if (Notification.permission === 'granted') setNotifStatus('granted');
+    else if (Notification.permission === 'denied') setNotifStatus('denied');
+    else setNotifStatus('default');
+}
+
+function _initFCMForeground() {
+    if (_fcmMsgInitialized) return;
+    _fcmMsgInitialized = true;
     try {
-        if (!('Notification' in window)) return;
-        if (Notification.permission === 'denied') return;
-        if (Notification.permission !== 'granted') {
-            const perm = await Notification.requestPermission();
-            if (perm !== 'granted') return;
-        }
         const msg = firebase.messaging();
-        const token = await msg.getToken({ vapidKey: FCM_VAPID_KEY });
-        if (token) {
-            database.ref('fcmTokens').child(mySessionId).set({ token, updatedAt: Date.now() });
-        }
-        // 앱이 열린 상태에서 수신 → SW 통해 알림 표시
         msg.onMessage(payload => {
             const d = payload.data || {};
-            if (!d.title) return;
-            navigator.serviceWorker.ready.then(reg => {
-                reg.showNotification(d.title, {
-                    body: d.body || '',
-                    icon:  './notification-icon.svg',
-                    badge: './notification-icon.svg'
-                });
-            }).catch(() => {});
+            if (d.title) showWeatherToast(d.title, d.body || '');
         });
+    } catch (e) { console.error('[FCM] onMessage 초기화 실패:', e); }
+}
+
+async function registerFCMToken() {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+        setNotifStatus('requesting');
+        const msg = firebase.messaging();
+        const reg = await navigator.serviceWorker.ready;
+        const token = await msg.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: reg });
+        if (token) {
+            await database.ref('fcmTokens').child(mySessionId).set({ token, updatedAt: Date.now() });
+            console.log('[FCM] 토큰 등록 완료');
+            setNotifStatus('granted');
+            _initFCMForeground();
+        } else {
+            console.error('[FCM] 토큰 발급 실패');
+            setNotifStatus('error');
+        }
     } catch (e) {
-        console.log('FCM init error:', e);
+        console.error('[FCM] 토큰 등록 실패:', e);
+        setNotifStatus('error');
     }
 }
-initFCM();
+
+async function requestNotificationPermission() {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) { setNotifStatus('unsupported'); return; }
+    try {
+        setNotifStatus('requesting');
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') {
+            await registerFCMToken();
+        } else {
+            setNotifStatus(perm === 'denied' ? 'denied' : 'default');
+        }
+    } catch (e) {
+        console.error('[FCM] 권한 요청 실패:', e);
+        setNotifStatus('error');
+    }
+}
+
+// 앱 시작 시 이미 권한 있으면 토큰 갱신
+if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
+    navigator.serviceWorker.ready.then(() => registerFCMToken()).catch(() => {});
+}
 
 function setAppBadge(count) {
     if ('setAppBadge' in navigator) {
@@ -290,7 +332,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.2.1] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.2.2] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
@@ -645,10 +687,10 @@ function updateGraph(softRestart = false) {
     const s2badgeSel = ne.filter(d => d.type === 'root').append("g").attr("class","s2-center-badge")
         .style("display","none").style("pointer-events","none");
     s2badgeSel.append("rect").attr("class","s2-divider")
-        .attr("x",-28).attr("y",84).attr("width",56).attr("height",1.5).attr("rx",1)
+        .attr("x",-28).attr("y",64).attr("width",56).attr("height",1.5).attr("rx",1)
         .attr("fill","rgba(192,57,43,0.28)");
     s2badgeSel.append("text").attr("class","s2-season-text")
-        .attr("x",0).attr("y",96).attr("text-anchor","middle")
+        .attr("x",0).attr("y",74).attr("text-anchor","middle")
         .attr("font-size","10.5").attr("font-weight","900")
         .style("letter-spacing","2px").attr("fill","#C0392B")
         .text("Season 2");
@@ -767,10 +809,11 @@ function updateNodeVisuals() {
 
         if (d.type === 'root') {
             // 중앙: 이모지 + 이름 텍스트 (버블 안에)
+            const isS2root = getActiveSeason() === 's2';
             textEl.append("tspan").text(d.icon).attr("x",0).attr("dy","-1.2em").attr("font-size","2.6rem");
             d.name.split("\n").forEach((l,i) => {
                 textEl.append("tspan").text(l).attr("x",0)
-                    .attr("dy", i===0 ? "2.5em" : "1.35em")
+                    .attr("dy", i===0 ? (isS2root ? "1.9em" : "2.5em") : "1.35em")
                     .attr("font-size","13px").attr("fill","#7A4820").attr("font-weight","900");
             });
             rectEl.style("display","none");
@@ -892,7 +935,6 @@ function toggleChatPopup() {
         document.getElementById('chat-badge').classList.remove('active');
         unreadChatKeys.clear(); setAppBadge(0);
         lastChatReadTime = Date.now(); localStorage.setItem('lastChatReadTime', lastChatReadTime);
-        checkNotificationPermission();
         setTimeout(() => { document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight; }, 100);
     }
 }
@@ -1268,15 +1310,6 @@ function registerChatListener() {
             if (!document.getElementById('chat-popup').classList.contains('active')) {
                 document.getElementById('chat-badge').classList.add('active');
                 setAppBadge(unreadChatKeys.size);
-            }
-            // 백그라운드 푸시 알림 (PWA / 탭 숨김 시)
-            if (document.hidden && Notification.permission === 'granted') {
-                const notifOpts = { body: d.text, icon: './notification-icon.svg', badge: './notification-icon.svg', tag: 'chat-message', renotify: true };
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.ready.then(reg => reg.showNotification('💬 새 메시지', notifOpts)).catch(() => {
-                        new Notification('💬 새 메시지', notifOpts);
-                    });
-                } else { new Notification('💬 새 메시지', notifOpts); }
             }
         }
         const isMine = d.senderId === mySessionId;

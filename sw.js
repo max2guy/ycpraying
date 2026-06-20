@@ -1,4 +1,4 @@
-// Service Worker Version 76 (v3.2.1)
+// Service Worker Version 77 (v3.2.2)
 
 /* ===== FCM 백그라운드 메시지 — SW 최상단에 초기화 필수 ===== */
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -16,15 +16,10 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// 앱이 꺼져있을 때 수신 → 시스템 알림 표시
-messaging.onBackgroundMessage(payload => {
-    const d = payload.data || {};
-    self.registration.showNotification(d.title || '연천장로교회 청년부', {
-        body: d.body || '',
-        icon:  './notification-icon.svg',
-        badge: './notification-icon.svg',
-        data:  { url: 'https://max2guy.github.io/ycpraying/' }
-    });
+// 백그라운드 메시지 핸들러 — webpush.notification이 시스템 알림을 자동 표시하므로
+// 여기서 showNotification을 다시 호출하면 중복 알림이 발생한다.
+messaging.onBackgroundMessage(_payload => {
+    // no-op: Cloud Functions의 webpush.notification이 알림 표시를 담당
 });
 
 // 알림 탭 → 앱 열기
@@ -42,7 +37,7 @@ self.addEventListener('notificationclick', e => {
 });
 
 /* ===== 캐시 전략 ===== */
-const CACHE_NAME = 'yc-prayer-v76';
+const CACHE_NAME = 'yc-prayer-v77';
 
 const FILES_TO_CACHE = [
     './',
