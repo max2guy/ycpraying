@@ -192,7 +192,7 @@ function createSafeElement(tag, className, text) {
 
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
 const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
-const CURRENT_VERSION = '3.2.15';
+const CURRENT_VERSION = '3.2.16';
 
 // ── 버전 강제 체크 (DB에서 requiredVersion 읽어 구버전이면 강제 갱신) ──
 function compareVersions(a, b) {
@@ -437,7 +437,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.2.15] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.2.16] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
@@ -622,7 +622,6 @@ function loadData() {
         initialDataSettled = true;
         showEnterButton();
         updateGraph();
-        if (isAppVisible) launchPendingS2InitialEntry();
         fetchWeather();
         _firstRenderTimer = setTimeout(() => {
             if (!isStaleLoad()) isFirstRender = false;
@@ -653,10 +652,6 @@ function registerMemberListeners() {
             }
             if (!isFirstRender || getActiveSeason() === 's2') newMemberIds.add(nm.id);
             updateGraph();
-            if (getActiveSeason() === 's2') {
-                if (pendingS2InitialEntry) launchPendingS2InitialEntry();
-                else startS2MemberEntries([nm], false);
-            }
         }
     });
     membersRef.on('child_changed', snap => {
@@ -976,9 +971,7 @@ function updateNodeVisuals() {
 
         // ── 크기 애니메이션 ──
         d._r = r; // gameLoop 선 오프셋용 반경 캐시
-        if (d._s2Launching) {
-            // 발사 준비 중 — 크기 성장은 타이머 콜백에서 담당; 현재 r=7 유지
-        } else if (main.attr("r") == 0) {
+        if (main.attr("r") == 0) {
             main.transition().delay(textDelay).duration(isFirstRender ? 900 : 600)
                 .ease(d3.easeElasticOut.amplitude(2.2)).attr("r", r).style("opacity", 1);
         } else {
@@ -1628,7 +1621,6 @@ function enterApp() {
     setTimeout(() => {
         document.getElementById('intro-screen').style.display = 'none';
         isAppVisible = true;
-        launchPendingS2InitialEntry();
         showWeatherToast("환영합니다", "배경음악이 재생됩니다 🎵");
     }, 800);
 }
