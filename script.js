@@ -185,7 +185,7 @@ function createSafeElement(tag, className, text) {
 
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
 const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
-const CURRENT_VERSION = '3.2.10';
+const CURRENT_VERSION = '3.2.11';
 
 // ── 버전 강제 체크 (DB에서 requiredVersion 읽어 구버전이면 강제 갱신) ──
 function compareVersions(a, b) {
@@ -316,19 +316,21 @@ function _initFCMForeground() {
 /* ── 토큰 발급 및 DB 저장 (permission=granted 전제) ── */
 async function registerFCMToken() {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    console.log('[FCM] 토큰 등록 시작 | perm:', Notification.permission, '| flag:', localStorage.getItem('notificationEnabled'));
     try {
         setNotifUI('loading');
         const msg = firebase.messaging();
         const reg = await navigator.serviceWorker.ready;
+        console.log('[FCM] SW 준비됨:', reg.active?.scriptURL);
         const token = await msg.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: reg });
         if (token) {
             await database.ref('fcmTokens').child(mySessionId).set({ token, updatedAt: Date.now() });
             localStorage.setItem('notificationEnabled', 'true');
-            console.log('[FCM] 토큰 등록 완료');
+            console.log('[FCM] 토큰 등록 완료 | sessionId:', mySessionId, '| token:', token.slice(0,20) + '...');
             setNotifUI('on');
             _initFCMForeground();
         } else {
-            console.error('[FCM] 토큰 발급 실패');
+            console.error('[FCM] 토큰 발급 실패 (빈 토큰)');
             setNotifUI('error');
         }
     } catch (e) {
@@ -428,7 +430,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.2.10] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.2.11] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
