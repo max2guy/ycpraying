@@ -185,7 +185,7 @@ function createSafeElement(tag, className, text) {
 
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
 const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
-const CURRENT_VERSION = '3.2.8';
+const CURRENT_VERSION = '3.2.9';
 
 // ── 버전 강제 체크 (DB에서 requiredVersion 읽어 구버전이면 강제 갱신) ──
 function compareVersions(a, b) {
@@ -428,7 +428,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.2.8] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.2.9] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
@@ -785,8 +785,8 @@ function updateGraph(softRestart = false) {
     s2badgeSel.append("text").attr("class","s2-season-text")
         .attr("x",0).attr("y",42).attr("text-anchor","middle")
         .attr("font-size","9.5").attr("font-weight","700")
-        .style("letter-spacing","1.6px").attr("fill","#B85A45")
-        .style("opacity","0.78")
+        .style("letter-spacing","1.6px").attr("fill","#E8442A")
+        .style("opacity","0.85")
         .text("Season 2");
     node = ne.merge(node);
     node.style("pointer-events","all");
