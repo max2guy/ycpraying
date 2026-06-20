@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const admin     = require('firebase-admin');
+const { summarizePushResponse } = require('./push-result');
 admin.initializeApp();
 
 const APP_URL = 'https://max2guy.github.io/ycpraying/';
@@ -18,7 +19,13 @@ async function getAllTokens(excludeSessionId) {
 
 /* ── 멀티캐스트 발송 + 만료 토큰 자동 정리 ── */
 async function sendPush(tokenDatas, title, body, extraData = {}) {
-    if (!tokenDatas.length) return;
+    if (!tokenDatas.length) {
+        console.log('[FCM]', JSON.stringify({
+            type: extraData.type || 'unknown',
+            recipients: 0
+        }));
+        return;
+    }
     const tokens = tokenDatas.map(t => t.token);
 
     const message = {
@@ -35,6 +42,12 @@ async function sendPush(tokenDatas, title, body, extraData = {}) {
     };
 
     const resp = await admin.messaging().sendEachForMulticast(message);
+    const summary = summarizePushResponse(resp);
+    console.log('[FCM]', JSON.stringify({
+        type: extraData.type || 'unknown',
+        recipients: tokenDatas.length,
+        ...summary
+    }));
 
     // 만료/무효 토큰 삭제
     const removes = [];
