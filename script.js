@@ -710,7 +710,7 @@ function updateNodeVisuals() {
                 }
                 main.attr("fill","url(#center-node-grad)")
                     .attr("stroke","rgba(255,220,80,0.85)").attr("stroke-width","3.5")
-                    .style("filter","drop-shadow(0 4px 10px rgba(180,110,0,0.30))");
+                    .style("filter", isTouchDevice ? null : "drop-shadow(0 4px 10px rgba(180,110,0,0.30))");
                 el.select(".node-gloss")
                     .attr("cx",-28).attr("cy",-30)
                     .attr("rx",26).attr("ry",16)

@@ -119,6 +119,10 @@ button,.float-btn,.icon-btn,.amen-btn,.setting-item,.camera-btn,.enter-btn {
   .music-btn { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(255, 245, 252, 0.96); }
   .sub-btn { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(255, 245, 252, 0.96); }
   .chat-btn { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(255, 245, 252, 0.96) !important; }
+  body.theme-s2 .chat-btn { background: #FF85B0 !important; }
+  body.theme-s2 .settings-btn     { background: #FF85B0 !important; }
+  body.theme-s2 .add-member-btn   { background: #5CC5B0 !important; }
+  body.theme-s2 .season-switch-btn{ background: #A08FD8 !important; }
   body::after { animation: none; }
   .deco-bg text { animation: none; }
   #intro-screen { background: #FFEAF5; }
@@ -526,7 +530,7 @@ body.admin-mode .admin-indicator { display:block; animation:popUp .3s cubic-bezi
 
 .links line {
   stroke:rgba(255,195,220,0.72);
-  stroke-width:5px!important;
+  stroke-width:3px!important;
   stroke-dasharray:0.1 12!important;
   stroke-linecap:round!important;
   filter:none; pointer-events:none;
