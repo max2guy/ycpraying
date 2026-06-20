@@ -687,6 +687,7 @@ function updateNodeVisuals() {
         const main  = el.select(".bubble-main");
 
         // ── 크기 애니메이션 ──
+        d._r = r; // gameLoop 선 오프셋용 반경 캐시
         if (main.attr("r") == 0) {
             main.transition().delay(textDelay).duration(isFirstRender ? 900 : 600)
                 .ease(d3.easeElasticOut.amplitude(2.2)).attr("r", r).style("opacity", 1);
@@ -1449,10 +1450,15 @@ function gameLoop(time) {
         }
         for (let i = 0; i < rawLinkEls.length; i++) {
             const { el, d, gradEl } = rawLinkEls[i];
-            el.x1.baseVal.value = d.source.x;
-            el.y1.baseVal.value = d.source.y;
-            el.x2.baseVal.value = d.target.x;
-            el.y2.baseVal.value = d.target.y;
+            const dx = d.target.x - d.source.x;
+            const dy = d.target.y - d.source.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const srcR = d.source._r || 80;
+            const tgtR = d.target._r || 30;
+            el.x1.baseVal.value = d.source.x + dx / dist * srcR;
+            el.y1.baseVal.value = d.source.y + dy / dist * srcR;
+            el.x2.baseVal.value = d.target.x - dx / dist * tgtR;
+            el.y2.baseVal.value = d.target.y - dy / dist * tgtR;
             if (gradEl) {
                 gradEl.setAttribute('x1', d.source.x);
                 gradEl.setAttribute('y1', d.source.y);

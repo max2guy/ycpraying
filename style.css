@@ -526,7 +526,7 @@ body.admin-mode .admin-indicator { display:block; animation:popUp .3s cubic-bezi
 
 .links line {
   stroke:rgba(255,195,220,0.72);
-  stroke-width:7px!important;
+  stroke-width:5px!important;
   stroke-dasharray:0.1 12!important;
   stroke-linecap:round!important;
   filter:none; pointer-events:none;
