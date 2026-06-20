@@ -26,5 +26,41 @@
         };
     }
 
-    return { createEntryPlan, STAGGER_MS, INITIAL_DELAY_MS, OUTWARD_SPEED };
+    function createGenerationGuard() {
+        let generation = 0;
+        return {
+            begin() { generation += 1; return generation; },
+            invalidate() { generation += 1; },
+            isCurrent(token) { return token === generation; }
+        };
+    }
+
+    function createTimerRegistry({ setTimer = setTimeout, clearTimer = clearTimeout } = {}) {
+        const handles = new Set();
+        return {
+            schedule(callback, delay) {
+                let handle;
+                handle = setTimer(() => {
+                    handles.delete(handle);
+                    callback();
+                }, delay);
+                handles.add(handle);
+                return handle;
+            },
+            clear() {
+                handles.forEach(handle => clearTimer(handle));
+                handles.clear();
+            },
+            get size() { return handles.size; }
+        };
+    }
+
+    function getTargetId(target) {
+        return typeof target === 'object' ? target.id : target;
+    }
+
+    return {
+        createEntryPlan, createGenerationGuard, createTimerRegistry, getTargetId,
+        STAGGER_MS, INITIAL_DELAY_MS, OUTWARD_SPEED
+    };
 });

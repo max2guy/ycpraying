@@ -3,7 +3,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const { createEntryPlan, STAGGER_MS } = require('../s2-entry');
+const {
+  createEntryPlan, createGenerationGuard, createTimerRegistry, getTargetId, STAGGER_MS
+} = require('../s2-entry');
 
 test('S2 members receive a stable 70ms radial group schedule', () => {
   const plan = createEntryPlan({
@@ -67,4 +69,43 @@ test('UMD exposes browser API without polluting CommonJS globalThis', () => {
   const context = {};
   vm.runInNewContext(source, context);
   assert.equal(typeof context.S2Entry.createEntryPlan, 'function');
+  assert.equal(typeof context.S2Entry.createGenerationGuard, 'function');
+  assert.equal(typeof context.S2Entry.createTimerRegistry, 'function');
+  assert.equal(typeof context.S2Entry.getTargetId, 'function');
+});
+
+test('generation guard rejects stale loads after rapid begin and invalidate', () => {
+  const guard = createGenerationGuard();
+  const first = guard.begin();
+  const second = guard.begin();
+  assert.equal(guard.isCurrent(first), false);
+  assert.equal(guard.isCurrent(second), true);
+  guard.invalidate();
+  assert.equal(guard.isCurrent(second), false);
+});
+
+test('timer registry removes fired handles and clears pending callbacks', () => {
+  let nextHandle = 0;
+  const pending = new Map();
+  const registry = createTimerRegistry({
+    setTimer(callback) { const handle = ++nextHandle; pending.set(handle, callback); return handle; },
+    clearTimer(handle) { pending.delete(handle); }
+  });
+  let calls = 0;
+  const fired = registry.schedule(() => { calls += 1; }, 10);
+  registry.schedule(() => { calls += 10; }, 20);
+  assert.equal(registry.size, 2);
+  const fireCallback = pending.get(fired);
+  pending.delete(fired);
+  fireCallback();
+  assert.equal(calls, 1);
+  assert.equal(registry.size, 1);
+  registry.clear();
+  assert.equal(registry.size, 0);
+  assert.equal(pending.size, 0);
+});
+
+test('target id supports D3 object targets and unresolved string targets', () => {
+  assert.equal(getTargetId({ id: 'member-1' }), 'member-1');
+  assert.equal(getTargetId('member-2'), 'member-2');
 });

@@ -151,6 +151,12 @@ let simulation    = null;
 let rawLinkEls    = [];
 let unreadChatKeys = new Set();
 let _linkShowTimer = null;
+const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+const loadGeneration = S2Entry.createGenerationGuard();
+const s2EntryTimers = S2Entry.createTimerRegistry({ setTimer: setTimeout, clearTimer: clearTimeout });
+let _loadFallbackTimer = null;
+let _firstRenderTimer = null;
+let pendingS2InitialEntry = getActiveSeason() === 's2';
 // 터치 기기 감지 (iOS/Android PWA) — drop-shadow filter 제거 여부 결정
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 // 인트로 화면 활성 상태 — true일 때 gameLoop(60fps SVG/canvas)를 정지하여 GPU 부담 제거
@@ -585,9 +591,24 @@ function showEnterButton() {
 }
 
 function loadData() {
-    setTimeout(() => { if (!isDataLoaded) showEnterButton(); }, 5000);
-    Promise.all([membersRef.once('value'), centerNodeRef.once('value')])
+    clearTimeout(_loadFallbackTimer);
+    clearTimeout(_firstRenderTimer);
+    const generation = loadGeneration.begin();
+    const season = getActiveSeason();
+    const loadMembersRef = membersRef;
+    const loadCenterNodeRef = centerNodeRef;
+    const isStaleLoad = () => !loadGeneration.isCurrent(generation)
+        || getActiveSeason() !== season
+        || membersRef !== loadMembersRef
+        || centerNodeRef !== loadCenterNodeRef;
+    _loadFallbackTimer = setTimeout(() => {
+        if (!isStaleLoad() && !isDataLoaded) showEnterButton();
+    }, 5000);
+    Promise.all([loadMembersRef.once('value'), loadCenterNodeRef.once('value')])
     .then(([mSnap, cSnap]) => {
+        if (isStaleLoad()) return;
+        clearTimeout(_loadFallbackTimer);
+        _loadFallbackTimer = null;
         const mData = mSnap.val(), cData = cSnap.val();
         if (mData) members = Object.keys(mData).map(k => { const m = { firebaseKey:k, ...mData[k] }; if (!m.id) m.id = k; return m; }).filter(m => m.name && m.type === 'member');
         if (cData && cData.icon) centerNode.icon = cData.icon;
@@ -597,10 +618,22 @@ function loadData() {
         });
         showEnterButton();
         updateGraph();
+        launchPendingS2InitialEntry();
         fetchWeather();
-        setTimeout(() => { isFirstRender = false; }, 5000);
+        _firstRenderTimer = setTimeout(() => {
+            if (!isStaleLoad()) isFirstRender = false;
+        }, 5000);
     })
-    .catch(err => { console.log("Error:", err); showEnterButton(); updateGraph(); });
+    .catch(err => {
+        if (isStaleLoad()) return;
+        clearTimeout(_loadFallbackTimer);
+        _loadFallbackTimer = null;
+        console.log("Error:", err);
+        showEnterButton();
+        updateGraph();
+        launchPendingS2InitialEntry();
+        isFirstRender = false;
+    });
 }
 loadData();
 
@@ -612,6 +645,10 @@ function registerMemberListeners() {
             const nm = { ...val, firebaseKey:snap.key, rotation:0, rotationDirection:1 }; if (!nm.id) nm.id = snap.key; members.push(nm);
             if (!isFirstRender) newMemberIds.add(val.id);
             updateGraph();
+            if (getActiveSeason() === 's2' && !isFirstRender) {
+                if (pendingS2InitialEntry) launchPendingS2InitialEntry();
+                else startS2MemberEntries([nm], false);
+            }
         }
     });
     membersRef.on('child_changed', snap => {
@@ -706,6 +743,85 @@ simulation = d3.forceSimulation()
     .force("collide", d3.forceCollide().radius(d => calculateRadius(d) + 16).strength(0.85).iterations(2));
 let link, node;
 
+function clearS2EntryTimers() {
+    s2EntryTimers.clear();
+    globalNodes.forEach(d => {
+        if (!d._s2EntryPlan) return;
+        d.fx = null;
+        d.fy = null;
+        delete d._s2EntryPlan;
+    });
+    if (link) {
+        link.interrupt('s2-entry').style('opacity', null).style('stroke-width', null);
+    }
+}
+
+function startS2MemberEntries(items, initial) {
+    if (getActiveSeason() !== 's2' || !node || !link || !items.length) return;
+    const plans = items.filter(Boolean).map(d => ({
+        d,
+        plan: S2Entry.createEntryPlan({
+            season: 's2', nodeType: d.type, index: members.indexOf(d),
+            total: members.length, initial,
+            reducedMotion: reduceMotionQuery.matches
+        })
+    })).filter(({ d, plan }) => plan.travel || (reduceMotionQuery.matches && d.type === 'member'));
+    if (!plans.length) return;
+    const enteringIds = new Set(plans.map(({ d }) => d.id));
+    const linksGroup = document.querySelector('.links');
+    if (linksGroup) linksGroup.classList.add('show');
+
+    if (reduceMotionQuery.matches) {
+        node.filter(d => enteringIds.has(d.id)).style('opacity', 0)
+            .transition('s2-entry').duration(180).style('opacity', 1);
+        link.filter(d => enteringIds.has(S2Entry.getTargetId(d.target)))
+            .style('opacity', 0).transition('s2-entry').duration(180).style('opacity', 1);
+        return;
+    }
+
+    plans.forEach(({ d, plan }) => {
+        d._s2EntryPlan = plan;
+        d.x = centerNode.x;
+        d.y = centerNode.y;
+        d.fx = centerNode.x;
+        d.fy = centerNode.y;
+        d.vx = 0;
+        d.vy = 0;
+    });
+    node.filter(d => enteringIds.has(d.id)).each(function() {
+        const el = d3.select(this);
+        el.select('.bubble-main').interrupt().attr('r', 0).style('opacity', 0);
+        el.select('.node-label').interrupt().style('opacity', 0);
+        el.select('.name-pill').interrupt().style('opacity', 0);
+        el.select('.node-badge').interrupt().style('opacity', 0);
+    });
+    const targetLinks = link.filter(d => enteringIds.has(S2Entry.getTargetId(d.target)));
+    targetLinks.interrupt('s2-entry').style('opacity', 0).style('stroke-width', '5px', 'important');
+    updateNodeVisuals();
+
+    plans.forEach(({ d, plan }) => {
+        s2EntryTimers.schedule(() => {
+            d.fx = null;
+            d.fy = null;
+            d.vx = plan.vx;
+            d.vy = plan.vy;
+            delete d._s2EntryPlan;
+            link.filter(l => S2Entry.getTargetId(l.target) === d.id)
+                .style('opacity', 1).style('stroke-width', '5px', 'important')
+                .transition('s2-entry').duration(180).style('opacity', 0.35)
+                .transition('s2-entry').duration(450).style('opacity', 1)
+                .style('stroke-width', '3px', 'important');
+            simulation.alpha(0.72).restart();
+        }, plan.delay);
+    });
+}
+
+function launchPendingS2InitialEntry() {
+    if (!pendingS2InitialEntry || isIntroActive || getActiveSeason() !== 's2' || !members.length) return;
+    pendingS2InitialEntry = false;
+    startS2MemberEntries(members, true);
+}
+
 function updateGraph(softRestart = false) {
     globalNodes = [centerNode, ...members];
     // 위치 없는 노드 → 원형으로 사전 배치 (가운데 몰림 방지)
@@ -745,7 +861,7 @@ function updateGraph(softRestart = false) {
     patterns.select("image").attr("xlink:href", d => d.photoUrl);
     patterns.exit().remove();
 
-    link = linkGroup.selectAll("line").data(links, d => d.target.id || d.target);
+    link = linkGroup.selectAll("line").data(links, d => S2Entry.getTargetId(d.target));
     link.exit().remove();
     // 연결선 — 점선: CSS stroke-dasharray로 제어 (D3 attr 없이 CSS 우선)
     const le = link.enter().append("line")
@@ -797,7 +913,7 @@ function updateGraph(softRestart = false) {
     });
     rawLinkEls = [];
     link.each(function(d) {
-        const targetId = (d.target.id != null) ? d.target.id : d.target;
+        const targetId = S2Entry.getTargetId(d.target);
         const gradEl = document.getElementById('lkg-' + String(targetId).replace(/[^a-zA-Z0-9]/g,''));
         rawLinkEls.push({ el: this, d, gradEl });
     });
@@ -823,7 +939,9 @@ function updateNodeVisuals() {
     node.each(function(d) {
         const el = d3.select(this);
         const r  = calculateRadius(d);
-        const textDelay = isFirstRender ? (d.id === 'center' ? 0 : 250 + globalNodes.indexOf(d) * 60) : 0;
+        const textDelay = d._s2EntryPlan
+            ? d._s2EntryPlan.delay
+            : (isFirstRender ? (d.id === 'center' ? 0 : 250 + globalNodes.indexOf(d) * 60) : 0);
 
         const main  = el.select(".bubble-main");
 
@@ -951,7 +1069,7 @@ function updateLinkVisuals() {
     if (!link) return;
     if (isTouchDevice) return; // 터치 기기: CSS 기본 stroke 사용, 그라디언트 생략
     link.each(function(d) {
-        const targetId = (d.target.id != null) ? d.target.id : d.target;
+        const targetId = S2Entry.getTargetId(d.target);
         this.style.stroke = 'url(#lkg-' + String(targetId).replace(/[^a-zA-Z0-9]/g,'') + ')';
     });
 }
@@ -1056,6 +1174,13 @@ function switchSeason(target) {
     if (getActiveSeason() === target) { if (isFabOpen) toggleFabMenu(); return; }
     const name = target === 's2' ? '시즌2 · 홈커밍데이' : '시즌1';
     showConfirmDialog('시즌 전환', `${name}로 전환할까요?`, () => {
+        loadGeneration.invalidate();
+        clearTimeout(_loadFallbackTimer);
+        clearTimeout(_firstRenderTimer);
+        _loadFallbackTimer = null;
+        _firstRenderTimer = null;
+        clearS2EntryTimers();
+        pendingS2InitialEntry = target === 's2';
         // 기존 리스너 해제
         membersRef.off();
         messagesRef.off();
@@ -1451,6 +1576,7 @@ function onYouTubeIframeAPIReady() {
 }
 function enterApp() {
     isIntroActive = false;
+    launchPendingS2InitialEntry();
     if (player && typeof player.playVideo === 'function') player.playVideo();
     document.getElementById('intro-screen').classList.add('fade-out');
 
