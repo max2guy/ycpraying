@@ -647,7 +647,7 @@ function updateGraph(softRestart = false) {
         .attr("x",0).attr("y",58).attr("text-anchor","middle")
         .attr("font-size","10.5").attr("font-weight","900")
         .style("letter-spacing","2px").attr("fill","#C0392B")
-        .text("SEASON 2");
+        .text("Season 2");
     node = ne.merge(node);
     node.style("pointer-events","all");
     // raw DOM 캐싱 + CSS rotation 방향 설정
@@ -895,13 +895,15 @@ function toggleChatPopup() {
 function applySeasonTheme() {
     const isS2 = getActiveSeason() === 's2';
     document.body.classList.toggle('theme-s2', isS2);
-    const badge = document.getElementById('season-badge');
-    if (badge) badge.style.display = isS2 ? 'inline-flex' : 'none';
     const sub = document.getElementById('intro-subtitle');
     if (sub) sub.textContent = isS2 ? '시즌2 · 홈커밍데이' : '기도 네트워크에 오신 것을 환영합니다';
     centerNode.name = isS2
         ? "연천장로교회\n청년부\n홈커밍데이"
         : "연천장로교회\n청년부\n함께 기도해요";
+    // SVG 뱃지 즉시 동기 업데이트 (updateGraph 타이밍에 의존하지 않도록)
+    document.querySelectorAll('.s2-center-badge').forEach(el => {
+        el.style.display = isS2 ? '' : 'none';
+    });
 }
 
 function updateSeasonUI() {
