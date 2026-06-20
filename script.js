@@ -192,7 +192,7 @@ function createSafeElement(tag, className, text) {
 
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
 const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
-const CURRENT_VERSION = '3.2.14';
+const CURRENT_VERSION = '3.2.15';
 
 // ── 버전 강제 체크 (DB에서 requiredVersion 읽어 구버전이면 강제 갱신) ──
 function compareVersions(a, b) {
@@ -437,7 +437,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.2.11] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.2.15] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
@@ -810,12 +810,13 @@ function startS2MemberEntries(items, initial) {
         d.vx = 0;
         d.vy = 0;
     });
-    node.filter(d => enteringIds.has(d.id)).each(function() {
+    node.filter(d => enteringIds.has(d.id)).each(function(d) {
         const el = d3.select(this);
-        el.select('.bubble-main').interrupt().attr('r', 0).style('opacity', 0);
+        el.select('.bubble-main').interrupt().attr('r', 7).style('opacity', 0.8);
         el.select('.node-label').interrupt().style('opacity', 0);
         el.select('.name-pill').interrupt().style('opacity', 0);
         el.select('.node-badge').interrupt().style('opacity', 0);
+        d._s2Launching = true;
     });
     const targetLinks = link.filter(d => enteringIds.has(S2Entry.getTargetId(d.target)));
     targetLinks.interrupt('s2-entry').style('opacity', 0).style('stroke-width', '5px', 'important');
@@ -828,6 +829,12 @@ function startS2MemberEntries(items, initial) {
             d.vx = plan.vx;
             d.vy = plan.vy;
             delete d._s2EntryPlan;
+            delete d._s2Launching;
+            node.filter(n => n.id === d.id).select('.bubble-main')
+                .interrupt()
+                .transition('s2-bubble').duration(520)
+                .ease(d3.easeElasticOut.amplitude(2.4))
+                .attr('r', calculateRadius(d)).style('opacity', 1);
             link.filter(l => S2Entry.getTargetId(l.target) === d.id)
                 .style('opacity', 1).style('stroke-width', '5px', 'important')
                 .transition('s2-entry').duration(180).style('opacity', 0.35)
@@ -969,7 +976,9 @@ function updateNodeVisuals() {
 
         // ── 크기 애니메이션 ──
         d._r = r; // gameLoop 선 오프셋용 반경 캐시
-        if (main.attr("r") == 0) {
+        if (d._s2Launching) {
+            // 발사 준비 중 — 크기 성장은 타이머 콜백에서 담당; 현재 r=7 유지
+        } else if (main.attr("r") == 0) {
             main.transition().delay(textDelay).duration(isFirstRender ? 900 : 600)
                 .ease(d3.easeElasticOut.amplitude(2.2)).attr("r", r).style("opacity", 1);
         } else {

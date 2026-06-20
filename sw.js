@@ -1,4 +1,4 @@
-// Service Worker Version 89 (v3.2.14)
+// Service Worker Version 90 (v3.2.15)
 
 /* ===== FCM 백그라운드 메시지 — SW 최상단에 초기화 필수 ===== */
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -37,7 +37,7 @@ self.addEventListener('notificationclick', e => {
 });
 
 /* ===== 캐시 전략 ===== */
-const CACHE_NAME = 'yc-prayer-v89';
+const CACHE_NAME = 'yc-prayer-v90';
 
 const FILES_TO_CACHE = [
     './',
