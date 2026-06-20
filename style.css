@@ -531,8 +531,6 @@ body.admin-mode .admin-indicator { display:block; animation:popUp .3s cubic-bezi
 .links line {
   stroke:rgba(255,195,220,0.72);
   stroke-width:3px!important;
-  stroke-dasharray:0.1 12!important;
-  stroke-linecap:round!important;
   filter:none; pointer-events:none;
 }
 /* ── [패치] 모바일 터치 드래그 시 번쩍임(Flickering) 제거 ── */

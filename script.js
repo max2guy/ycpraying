@@ -806,9 +806,9 @@ function updateNodeVisuals() {
 
 function updateLinkVisuals() {
     if (!link) return;
+    if (isTouchDevice) return; // 터치 기기: CSS 기본 stroke 사용, 그라디언트 생략
     link.each(function(d) {
         const targetId = (d.target.id != null) ? d.target.id : d.target;
-        // inline style로 CSS !important 우회 → 그라디언트 적용
         this.style.stroke = 'url(#lkg-' + String(targetId).replace(/[^a-zA-Z0-9]/g,'') + ')';
     });
 }
@@ -1459,7 +1459,7 @@ function gameLoop(time) {
             el.y1.baseVal.value = d.source.y + dy / dist * srcR;
             el.x2.baseVal.value = d.target.x - dx / dist * tgtR;
             el.y2.baseVal.value = d.target.y - dy / dist * tgtR;
-            if (gradEl) {
+            if (!isTouchDevice && gradEl) {
                 gradEl.setAttribute('x1', d.source.x);
                 gradEl.setAttribute('y1', d.source.y);
                 gradEl.setAttribute('x2', d.target.x);
