@@ -185,7 +185,7 @@ function createSafeElement(tag, className, text) {
 
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
 const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
-const CURRENT_VERSION = '3.2.7';
+const CURRENT_VERSION = '3.2.8';
 
 // ── 버전 강제 체크 (DB에서 requiredVersion 읽어 구버전이면 강제 갱신) ──
 function compareVersions(a, b) {
@@ -234,16 +234,54 @@ function sendBroadcastUpdate() {
 
 let _fcmMsgInitialized = false;
 
-function setNotifStatus(status) {
-    const map = { unsupported:'지원 안 됨', default:'알림 꺼짐', denied:'권한 거부됨', requesting:'등록 중...', granted:'알림 켜짐 ✓', error:'등록 실패' };
-    const lbl = document.getElementById('notif-status-label');
-    const btn = document.getElementById('btn-notif');
-    if (lbl) lbl.textContent = map[status] || status;
-    if (btn) btn.disabled = ['granted','requesting','unsupported'].includes(status);
+/* ── 앱 내부 알림 활성 플래그 (localStorage) ── */
+function isNotifEnabled() {
+    return localStorage.getItem('notificationEnabled') === 'true';
 }
 
+/* ── 버튼·레이블 UI 상태 업데이트 ── */
+function setNotifUI(state) {
+    const btn = document.getElementById('btn-notif');
+    const lbl = document.getElementById('notif-status-label');
+    if (!btn || !lbl) return;
+    btn.disabled = false;
+    btn.style.cursor = 'pointer';
+    if (state === 'on') {
+        btn.textContent = '알림 끄기';
+        btn.style.background = 'var(--rose)';
+        btn.style.color = '#fff';
+        lbl.textContent = '알림 켜짐 ✓';
+    } else if (state === 'off') {
+        btn.textContent = '알림 켜기';
+        btn.style.background = 'var(--rose-soft)';
+        btn.style.color = 'var(--rose-dim)';
+        lbl.textContent = '알림 꺼짐';
+    } else if (state === 'loading') {
+        btn.textContent = '처리 중...';
+        btn.disabled = true;
+        btn.style.cursor = 'not-allowed';
+        btn.style.background = 'var(--rose-soft)';
+        btn.style.color = 'var(--rose-dim)';
+        lbl.textContent = '처리 중...';
+    } else if (state === 'unsupported') {
+        btn.textContent = '지원 안 됨';
+        btn.disabled = true;
+        lbl.textContent = '이 환경에서는 알림이 지원되지 않습니다';
+    } else if (state === 'denied') {
+        btn.textContent = '권한 거부됨';
+        btn.disabled = true;
+        lbl.textContent = '브라우저 설정에서 알림 권한을 허용해 주세요';
+    } else if (state === 'error') {
+        btn.textContent = '다시 시도';
+        btn.style.background = 'var(--rose-soft)';
+        btn.style.color = 'var(--rose-dim)';
+        lbl.textContent = '등록 실패 — 다시 시도해 주세요';
+    }
+}
+
+/* ── 설정 모달 열릴 때 현재 상태 표시 ── */
 function updateNotifStatus() {
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) { setNotifStatus('unsupported'); return; }
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) { setNotifUI('unsupported'); return; }
     const isIOS = /iP(ad|hone|od)/.test(navigator.userAgent);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || !!navigator.standalone;
     if (isIOS && !isStandalone) {
@@ -253,64 +291,122 @@ function updateNotifStatus() {
         if (btn) btn.disabled = true;
         return;
     }
-    if (Notification.permission === 'granted') setNotifStatus('granted');
-    else if (Notification.permission === 'denied') setNotifStatus('denied');
-    else setNotifStatus('default');
+    if (Notification.permission === 'denied') { setNotifUI('denied'); return; }
+    // flag가 null이고 permission이 granted → 기존 사용자 (켜진 상태로 간주)
+    const flag = localStorage.getItem('notificationEnabled');
+    const effective = flag === 'true' || (flag === null && Notification.permission === 'granted');
+    if (effective && Notification.permission === 'granted') { setNotifUI('on'); return; }
+    setNotifUI('off');
 }
 
+/* ── FCM foreground 핸들러 (최초 1회 등록) ── */
 function _initFCMForeground() {
     if (_fcmMsgInitialized) return;
     _fcmMsgInitialized = true;
     try {
         const msg = firebase.messaging();
         msg.onMessage(payload => {
+            if (!isNotifEnabled()) return;
             const d = payload.data || {};
             if (d.title) showWeatherToast(d.title, d.body || '');
         });
     } catch (e) { console.error('[FCM] onMessage 초기화 실패:', e); }
 }
 
+/* ── 토큰 발급 및 DB 저장 (permission=granted 전제) ── */
 async function registerFCMToken() {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     try {
-        setNotifStatus('requesting');
+        setNotifUI('loading');
         const msg = firebase.messaging();
         const reg = await navigator.serviceWorker.ready;
         const token = await msg.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: reg });
         if (token) {
             await database.ref('fcmTokens').child(mySessionId).set({ token, updatedAt: Date.now() });
+            localStorage.setItem('notificationEnabled', 'true');
             console.log('[FCM] 토큰 등록 완료');
-            setNotifStatus('granted');
+            setNotifUI('on');
             _initFCMForeground();
         } else {
             console.error('[FCM] 토큰 발급 실패');
-            setNotifStatus('error');
+            setNotifUI('error');
         }
     } catch (e) {
         console.error('[FCM] 토큰 등록 실패:', e);
-        setNotifStatus('error');
+        setNotifUI('error');
     }
 }
 
+/* ── 알림 켜기 (사용자 클릭 이벤트 내에서 권한 요청) ── */
 async function requestNotificationPermission() {
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) { setNotifStatus('unsupported'); return; }
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) { setNotifUI('unsupported'); return; }
+    setNotifUI('loading');
     try {
-        setNotifStatus('requesting');
         const perm = await Notification.requestPermission();
         if (perm === 'granted') {
             await registerFCMToken();
         } else {
-            setNotifStatus(perm === 'denied' ? 'denied' : 'default');
+            setNotifUI(perm === 'denied' ? 'denied' : 'off');
         }
     } catch (e) {
         console.error('[FCM] 권한 요청 실패:', e);
-        setNotifStatus('error');
+        setNotifUI('error');
     }
 }
 
-// 앱 시작 시 이미 권한 있으면 토큰 갱신
+/* ── 알림 끄기 ── */
+async function disableNotifications() {
+    if (!confirm('이 앱의 알림을 끄시겠습니까?\n\n(브라우저 권한은 유지되며, 앱 알림 수신만 중단됩니다.)')) return;
+    setNotifUI('loading');
+    const lbl = document.getElementById('notif-status-label');
+    // 1. DB 토큰 삭제 — 성공하면 Cloud Functions 발송 대상에서 제외됨
+    try {
+        await database.ref(`fcmTokens/${mySessionId}`).remove();
+        console.log('[FCM] DB 토큰 삭제 완료');
+    } catch (e) {
+        console.error('[FCM] DB 토큰 삭제 실패:', e);
+        if (lbl) lbl.textContent = 'DB 토큰 삭제 실패 — 알림이 계속 올 수 있습니다';
+        setNotifUI('error');
+        return;
+    }
+    // 2. Firebase 토큰 삭제 (실패해도 DB 레코드 삭제됐으면 발송 차단됨)
+    try {
+        await firebase.messaging().deleteToken();
+        console.log('[FCM] 토큰 삭제 완료');
+    } catch (e) {
+        console.error('[FCM] deleteToken 실패 (DB 레코드는 삭제됨):', e);
+    }
+    // 3. 플래그 + 배지 초기화
+    localStorage.setItem('notificationEnabled', 'false');
+    setAppBadge(0);
+    // 4. UI 업데이트
+    setNotifUI('off');
+    // 5. 시스템 권한 해제 안내
+    if (lbl) {
+        const isIOS = /iP(ad|hone|od)/.test(navigator.userAgent);
+        lbl.textContent = isIOS
+            ? '알림 꺼짐 · 완전 차단: 설정 → 알림 → 해당 앱'
+            : '알림 꺼짐 · 완전 차단: 설정 → Chrome → 알림';
+    }
+}
+
+/* ── 버튼 클릭 핸들러 — 현재 상태에 따라 켜기/끄기 분기 ── */
+function handleNotifToggle() {
+    const flag = localStorage.getItem('notificationEnabled');
+    const effective = flag === 'true' || (flag === null && Notification.permission === 'granted');
+    if (effective && Notification.permission === 'granted') {
+        disableNotifications();
+    } else {
+        requestNotificationPermission();
+    }
+}
+
+// 앱 시작 시: flag가 없거나 true이고 permission이 granted이면 토큰 갱신
 if ('Notification' in window && 'serviceWorker' in navigator && Notification.permission === 'granted') {
-    navigator.serviceWorker.ready.then(() => registerFCMToken()).catch(() => {});
+    const _startFlag = localStorage.getItem('notificationEnabled');
+    if (_startFlag === 'true' || _startFlag === null) {
+        navigator.serviceWorker.ready.then(() => registerFCMToken()).catch(() => {});
+    }
 }
 
 function setAppBadge(count) {
@@ -332,7 +428,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.2.7] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.2.8] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
