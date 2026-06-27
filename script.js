@@ -192,7 +192,7 @@ function createSafeElement(tag, className, text) {
 
 // ── FCM 초기화 (푸시 알림 토큰 등록) ──
 const FCM_VAPID_KEY = 'BPR31FIgOf9laREssQekHeXWL_8QsFg-LxvRmGUjBEBlsuTwTJxW8RN62QfB4Gk0rDaz9jXdByi8P0CuBA7ew0U';
-const CURRENT_VERSION = '3.2.18';
+const CURRENT_VERSION = '3.2.19';
 
 // ── 버전 강제 체크 (DB에서 requiredVersion 읽어 구버전이면 강제 갱신) ──
 function compareVersions(a, b) {
@@ -224,19 +224,24 @@ database.ref('appConfig/requiredVersion').once('value').then(snap => {
 // ── 관리자 전체 업데이트 알림 발송 ──
 function sendBroadcastUpdate() {
     if (!isAdmin) return;
-    if (!confirm('모든 사용자에게 업데이트 알림을 발송하시겠습니까?')) return;
-    Promise.all([
-        database.ref('appConfig/broadcastPush').set({
-            title: '🔔 앱 업데이트',
-            message: '새 버전이 출시되었습니다. 앱을 열어 업데이트해 주세요!',
-            triggeredAt: firebase.database.ServerValue.TIMESTAMP
-        }),
-        database.ref('appConfig/requiredVersion').set(CURRENT_VERSION)
-    ]).then(() => {
-        alert('전체 알림 발송 완료!');
-    }).catch(err => {
-        alert('발송 실패: ' + err.message);
-    });
+    showConfirmDialog(
+        '전체 업데이트 알림 발송',
+        '모든 사용자에게 업데이트 알림을 발송하시겠습니까?',
+        () => {
+            Promise.all([
+                database.ref('appConfig/broadcastPush').set({
+                    title: '🔔 앱 업데이트',
+                    message: '새 버전이 출시되었습니다. 앱을 열어 업데이트해 주세요!',
+                    triggeredAt: firebase.database.ServerValue.TIMESTAMP
+                }),
+                database.ref('appConfig/requiredVersion').set(CURRENT_VERSION)
+            ]).then(() => {
+                showWeatherToast('✅ 알림 발송 완료', '전체 사용자에게 전송됐습니다');
+            }).catch(err => {
+                showWeatherToast('❌ 발송 실패', err.message);
+            });
+        }
+    );
 }
 
 let _fcmMsgInitialized = false;
@@ -437,7 +442,7 @@ async function getMyIp() {
 // 세션ID 고정 경로: 1세션 = 1레코드 보장
 let myPresenceRef = presenceRef.child(mySessionId);
 initSeasonRefs(); // localStorage 저장된 시즌으로 모든 ref 초기화
-console.log('[ycpraying v3.2.18] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
+console.log('[ycpraying v3.2.19] season:', getActiveSeason(), 'membersRef:', membersRef.toString());
 const PRESENCE_TTL = 5 * 60 * 1000; // 5분 이상 heartbeat 없으면 stale
 
 function registerPresenceListeners() {
